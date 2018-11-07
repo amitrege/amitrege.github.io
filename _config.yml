@@ -14,7 +14,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 title: Amit on th Web
-email:amitrege96@gmail.com
+email: amitrege96@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   Hi! I'm Amit Rege, currently a Masters student in Computer Science. I am interested in building AI which is able to reason about code. Besides computer science, I enjoy watching and playing soccer, cricket, listening to music and thinking about current affairs. (for
   Google search results) and in your feed.xml site description.
