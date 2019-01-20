@@ -19,7 +19,7 @@ description: >- # this means to ignore newlines until "baseurl:"
   Thoughts on computers 
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "amitrege.github.io" # the base hostname & protocol for your site, e.g. http://example.com
-twitter_username: jekyllrb
+twitter_username: Amit_rege96
 github_username:  amitrege
 
 # Build settings
@@ -27,6 +27,17 @@ markdown: kramdown
 theme: minima
 plugins:
   - jekyll-feed
+
+# Navigation Link Order
+header_pages:
+  - about.md
+  - Resume.md
+
+# Show Excerpts on Posts
+show_excerpts : true
+
+# Enable Google Analytics
+google_analytics: UA-NNNNNNNN-N
 
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
