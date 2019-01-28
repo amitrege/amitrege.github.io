@@ -1,11 +1,9 @@
 ---
 layout: post
 title:  "Netflix Architecture"
-date:   2018-01-27 3:11:06 -0700
+date:   2019-01-27 3:11:06 -0700
 categories: notes
 ---
-
-# Netflix Architecture
 
 **This article is mostly adapted from [here](http://highscalability.com/blog/2017/12/11/netflix-what-happens-when-you-press-play.html). However, the article is laboriously long and not enough meat. This is, what I hope, a condensed version.**   
 
