@@ -5,7 +5,7 @@ date:   2019-01-29 3:11:06 -0700
 categories: notes
 ---
 
-** Notes from the book [Thinking Funtionally in Haskell](https://www.amazon.com/Thinking-Functionally-Haskell-Richard-Bird/dp/1107452643)**
+**Notes from the book [Thinking Funtionally in Haskell](https://www.amazon.com/Thinking-Functionally-Haskell-Richard-Bird/dp/1107452643)**
 
 Haskell is a functional language. Functional Programming is, broadly speaking, characterized by repeated application of functions as opposed to sequential execution of commands.
 
