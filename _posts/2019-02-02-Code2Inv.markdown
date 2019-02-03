@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Code2Inv - Si et al Notes"
-date:   2019-01-29 3:11:06 -0700
+date:   2019-02-02 3:11:06 -0700
 categories: notes
 mathjax: true
 ---
@@ -40,6 +40,3 @@ Why RL? Because we have no supervision
 Problems for the RL setup : 
 1. Reward is sparse (we only know correctness at the end) 
 2. Non smooth objective (either correct or not)
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbNDQ5MzI3NzE3XX0=
--->

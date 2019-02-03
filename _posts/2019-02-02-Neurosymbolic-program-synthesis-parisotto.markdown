@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Neuro-Symbolic Program Synthesis - Parisotto et al Notes"
-date:   2019-01-29 3:11:06 -0700
+date:   2019-02-02 3:11:06 -0700
 categories: notes
 mathjax: true
 ---
@@ -21,6 +21,3 @@ A deep net g for each rule r which takes as input a M dim vector and produces a 
 To compute probability over the next expansion, we  start building vectors from leaves to root  using the deep net f. Once at the root, we go from the root again to leaves. Why? To encode a notion of position in the representation. In the first pass, two leaves with the same symbol would have the same vector, but when we come back they won’t.
 
 Score of an expansion is the product of the leaf representation and M dimensional vector for the rule. The probability is the softmax over all possible combinations of leaf and production rule.
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbODI3OTU0OTI2XX0=
--->
