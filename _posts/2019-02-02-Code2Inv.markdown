@@ -1,0 +1,40 @@
+---
+layout: post
+title:  "Code2Inv - Si et al Notes"
+date:   2019-01-29 3:11:06 -0700
+categories: notes
+---
+
+https://www.seas.upenn.edu/~xsi/data/nips18.pdf
+
+Why Machine learning ? We want to avoid hand crafted invariants of a particular form . Also, obtaining labels (invariants here) is expensive as the problem is undecidable so we use RL.
+
+For a program with a single loop and pre and post conditions, we only need the invariant for a solver to be able to prove it.
+Strategy -> Organize the program in a hierarchical way, compose the invariant step by step, focus on a different part of the program step by step
+
+### Structured external memory
+Encode the program as a graph (Allamanis et al). First convert the program to SSA form and then construct a CFG. Then for each node in the graph, build an AST. 3 edge types used (6 including reverse edges) i.e. CFG edge, AST edge or variable linking edge (this edge connects each occurrence of a variable to a canonical node for that variable)
+
+Using GNN, we get an embedding for each node after a fixed number of iterations. This is the memory module. 
+
+### Step by Step invariant generation
+Invariant is assumed to be in CNF form (tree). Model the process as a MDP with a T step time horizon. (S, a, r) -> state, action, reward
+Action: (op, T) -> at each step the action can add to an existing clause or add a new clause
+
+The policy is :
+ $$π(T |G)= \prod_{t = 1\ to\ T} π(a|T (<t),G) = \prod_{t = 1\ to\ T} π(opt,T_t|T _{(<t)},G)$$ where T_{(<t)} is the tree constructed till time t.
+
+Trees are generated using a pre defined language and using a syntax directed decoder (a la Rishabh Singh's neuro symbolic PS)
+State: Partial tree and graph
+
+### Attention
+Encode the partial tree into embedding using TreeLSTM and then use it to read into the external memory
+
+### RL setup
+Why RL? Because we have no supervision
+Problems for the RL setup : 
+1. Reward is sparse (we only know correctness at the end) 
+2. Non smooth objective (either correct or not)
+<!--stackedit_data:
+eyJoaXN0b3J5IjpbNDQ5MzI3NzE3XX0=
+-->
