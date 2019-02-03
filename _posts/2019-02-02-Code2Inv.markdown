@@ -23,9 +23,12 @@ Invariant is assumed to be in CNF form (tree). Model the process as a MDP with a
 Action: (op, T) -> at each step the action can add to an existing clause or add a new clause
 
 The policy is :
- $$π(T |G)= \prod_{t = 1\ to\ T} π(a|T (<t),G) = \prod_{t = 1\ to\ T} π(opt,T_t|T _{(<t)},G)$$ where T_{(<t)} is the tree constructed till time t.
+ $$ π(T |G)= \prod_{t = 1\ to\ T} π(a|T_{(<t)},G) = \prod_{t = 1\ to\ T} π(opt,T_t|T _{(<t)},G) $$ 
+ 
+ where $T_{(<t)}$ is the tree constructed till time t.
 
 Trees are generated using a pre defined language and using a syntax directed decoder (a la Rishabh Singh's neuro symbolic PS)
+
 State: Partial tree and graph
 
 ### Attention
@@ -33,6 +36,7 @@ Encode the partial tree into embedding using TreeLSTM and then use it to read in
 
 ### RL setup
 Why RL? Because we have no supervision
+
 Problems for the RL setup : 
 1. Reward is sparse (we only know correctness at the end) 
 2. Non smooth objective (either correct or not)
