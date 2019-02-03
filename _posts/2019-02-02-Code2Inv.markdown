@@ -3,9 +3,10 @@ layout: post
 title:  "Code2Inv - Si et al Notes"
 date:   2019-01-29 3:11:06 -0700
 categories: notes
+mathjax: true
 ---
 
-https://www.seas.upenn.edu/~xsi/data/nips18.pdf
+[Paper](https://www.seas.upenn.edu/~xsi/data/nips18.pdf)
 
 Why Machine learning ? We want to avoid hand crafted invariants of a particular form . Also, obtaining labels (invariants here) is expensive as the problem is undecidable so we use RL.
 

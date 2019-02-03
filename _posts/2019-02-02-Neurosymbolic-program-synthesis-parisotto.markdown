@@ -1,11 +1,12 @@
 ---
 layout: post
-title:  "NeuroSymbolic Program Synthesis - Parisotto et al Notes"
+title:  "Neuro-Symbolic Program Synthesis - Parisotto et al Notes"
 date:   2019-01-29 3:11:06 -0700
 categories: notes
+mathjax: true
 ---
 
-https://arxiv.org/pdf/1611.01855.pdf
+[Paper](https://arxiv.org/pdf/1611.01855.pdf)
 
 We want to avoid having search heuristics in program synthesis . Use DSL  to generate programs which are correct by definition. 
 Partial Program trees (PPT)  ->  leaf may or may not be terminals, complete program tree has all leaves as terminals

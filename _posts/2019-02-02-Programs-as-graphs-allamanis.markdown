@@ -3,9 +3,10 @@ layout: post
 title:  "Learning to represent programs as graphs - Allamanis et al Notes"
 date:   2019-01-29 3:11:06 -0700
 categories: notes
+mathjax: true
 ---
 
-https://arxiv.org/pdf/1711.00740.pdf
+[Paper](https://arxiv.org/pdf/1711.00740.pdf)
 
 ### The model : Gated Graph Neural Nets (Yujia li et al)
 Each node is represented as a vector of features (important properties of the node). We also associate a state vector with each node. This state vector is usually initialized with the feature vector ( and sometimes padded with zeros)
