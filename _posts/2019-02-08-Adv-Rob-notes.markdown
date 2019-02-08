@@ -44,5 +44,7 @@ note: The minimum of S occurs when $$\frac{\partial S}{\partial \beta_j} = 2 \su
 
 The process through which the value of $\beta$ given values of x s.t. this function is minimized is a root finding algorithm.
 Approach : guess at $\beta$ parameters values and iteratively optimize.
+
 $$ \beta^{k+1}_j = \beta_j^{k} + \Delta\beta_j$$
+
 Possible algorithms: Gauss-Newton, Gradient Descent, Levenberg-Marquordt etc (convex optimization methods)
