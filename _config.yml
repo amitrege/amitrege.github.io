@@ -31,8 +31,9 @@ plugins:
 # Navigation Link Order
 header_pages:
   - about.md
-  - Resume.md
   - Notes.md
+  - Projects.md
+  - Resume.md 
 
 # Show Excerpts on Posts
 show_excerpts : true
