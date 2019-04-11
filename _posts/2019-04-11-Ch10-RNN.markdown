@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Deep Learning Book Notes Ch10"
-date:   2019-04-1 3:11:06 -0700
+date:   2019-04-11 3:11:06 -0700
 categories: notes
 mathjax: true
 ---
