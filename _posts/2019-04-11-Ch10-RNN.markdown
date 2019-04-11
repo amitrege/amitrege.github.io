@@ -1,0 +1,32 @@
+---
+layout: post
+title:  "Deep Learning Book Notes Ch10"
+date:   2019-04-1 3:11:06 -0700
+categories: notes
+mathjax: true
+---
+
+RNNs are specialized architectures for sequential data. The key idea is to leverage parameter sharing which has two benefits : the sequence length can be one not found in the training set and that we maintain the statistical power of learned features across all time steps (we don't have to learn the same features again and again).
+
+1-D Convolutions also use parameter sharing by using features in the neighborhood. On the other hand, RNNs repeatedly apply the same operation to the input.
+
+### Computational Graphs
+RNN Computational graphs can contain cycles. Therefore, we unfold the graph completely so that it contains no cycles. The equation for a RNN is : $h^t = f(h^{(t-1)}, x^t, \theta)$
+
+### RNNs 
+RNNs are universal i.e they can simulate a Turing machine (See references on Page 379 for proof).
+
+The forward propagation equations are (we start with $h^{(0)}$) :
+
+ - $a^t = b^t + Wh^{(t-1)} + Ux^t$
+ - $h^t = tanh(a^t)$ Note: Tanh is assumed to be the activation
+ - $o^t = c + Vh^t$
+ - $\hat{y}^t = softmax(o^t)$ Note: we apply softmax when we need to discretize the output (we get probabilities as output)
+
+The Loss is the total loss over the entire sequence. Thus,
+$$ L = \sum_{t} L^t = -\sum_{t} log(y^t|x^t, x^{(t-1)}\cdots x^1)$$
+ The likelihood is the $y^t$ entry in the output of the softmax.
+
+BPTT has linear costs in both memory (we need prep state for forward pass) and time (cannot be parallelized due to sequential nature). 
+
+After unrolling the computation graph, BPTT is the same as regular backdrop. The only gotcha is that internal parameters of the RNN cell have gradients across time steps which need to be summed up.
