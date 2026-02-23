@@ -1,0 +1,15 @@
+- title: Interactive Demo Placeholder
+  status: Active
+  blurb: Add a short description of what users can try and what makes this demo technically interesting.
+  tech: PyTorch, Gradio, CUDA
+  link: "#"
+- title: Research Toolkit Placeholder
+  status: In Progress
+  blurb: Use this section for utilities, datasets, benchmark suites, and reproducibility tools.
+  tech: Python, JAX, Docker
+  link: "#"
+- title: Side Project Placeholder
+  status: Archived
+  blurb: Keep older projects visible with clear status labels so visitors can navigate quickly.
+  tech: Rust, WebAssembly
+  link: "#"

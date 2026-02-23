@@ -1,0 +1,12 @@
+- date: 2026-02-20
+  title: Placeholder update headline
+  detail: Replace with a short one-line update, for example a workshop acceptance, invited talk, or new code release.
+  link: ""
+- date: 2026-02-05
+  title: Paper submitted to Conference XYZ
+  detail: Keep this concise. You can add optional links to project pages, preprints, or talk videos.
+  link: ""
+- date: 2026-01-12
+  title: Released a reproducibility benchmark
+  detail: This section is designed to be edited quickly from a single YAML file.
+  link: ""

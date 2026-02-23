@@ -1,0 +1,228 @@
+---
+---
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: 'en' }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="{{ page.description | default: site.description }}">
+    {% seo %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ '/assets/css/showcase.css' | relative_url }}">
+    {% if jekyll.environment == 'production' and site.google_analytics %}
+      {% include google-analytics.html %}
+    {% endif %}
+  </head>
+  <body data-theme="signal">
+    {% assign profile = site.data.profile %}
+    <div class="mesh" aria-hidden="true">
+      <span class="orb orb-a"></span>
+      <span class="orb orb-b"></span>
+      <span class="orb orb-c"></span>
+      <span class="gridlines"></span>
+    </div>
+
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <a class="brand" href="#home">{{ profile.short_name | default: site.title }}</a>
+        <nav class="site-nav" aria-label="Primary navigation">
+          <a href="#updates">Updates</a>
+          <a href="#publications">Publications</a>
+          <a href="#blog">Blog</a>
+          <a href="#projects">Demos</a>
+          <a href="#cv">CV/Resume</a>
+        </nav>
+        <div class="theme-switcher" role="group" aria-label="Design presets">
+          <button type="button" class="theme-btn is-active" data-theme="signal">Signal</button>
+          <button type="button" class="theme-btn" data-theme="neural">Neural</button>
+          <button type="button" class="theme-btn" data-theme="graph">Graph</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section id="home" class="hero section">
+        <div class="hero-copy">
+          <p class="kicker">Machine Learning PhD</p>
+          <h1>{{ profile.name | default: "Your Name" }}</h1>
+          <p class="hero-subtitle">
+            {{ profile.tagline | default: "A research-forward site for papers, ideas, experiments, and open-source work." }}
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#publications">View Publications</a>
+            <a class="btn btn-ghost" href="#cv">CV and Resume</a>
+          </div>
+          <ul class="hero-meta" aria-label="Research profile">
+            <li>
+              <span>Focus</span>
+              <strong>{{ profile.focus | default: "Large models, reasoning, and embodied intelligence" }}</strong>
+            </li>
+            <li>
+              <span>Location</span>
+              <strong>{{ profile.location | default: "Add location in _data/profile.yml" }}</strong>
+            </li>
+            <li>
+              <span>Email</span>
+              <a href="mailto:{{ profile.email | default: site.email }}">{{ profile.email | default: site.email }}</a>
+            </li>
+          </ul>
+        </div>
+        <aside class="profile-card">
+          {% if profile.photo and profile.photo != "" %}
+            <img class="profile-photo" src="{{ profile.photo | relative_url }}" alt="Profile portrait of {{ profile.name | default: site.title }}">
+          {% else %}
+            <div class="photo-placeholder">Photo placeholder</div>
+          {% endif %}
+          <div class="profile-lines">
+            <p class="mono">{{ profile.role | default: "PhD Researcher, AI/ML" }}</p>
+            <p>{{ profile.card_summary | default: "Swap this text in _data/profile.yml with your current lab, advisor, and research mission." }}</p>
+          </div>
+          {% if profile.keywords %}
+            <div class="chip-list">
+              {% for keyword in profile.keywords %}
+                <span class="chip">{{ keyword }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </aside>
+      </section>
+
+      <section id="updates" class="section">
+        <div class="section-head">
+          <h2>Updates</h2>
+          <p>Quick highlights for talks, releases, internships, milestones, and travel.</p>
+        </div>
+        <div class="grid two">
+          {% assign updates = site.data.updates %}
+          {% if updates and updates.size > 0 %}
+            {% for item in updates limit: 6 %}
+              <article class="card update-card">
+                <p class="meta">{{ item.date }}</p>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.detail }}</p>
+                {% if item.link and item.link != "" %}
+                  <a class="text-link" href="{{ item.link }}">Read more</a>
+                {% endif %}
+              </article>
+            {% endfor %}
+          {% else %}
+            <article class="card">
+              <h3>Add your first update</h3>
+              <p>Create `_data/updates.yml` with date, title, and detail.</p>
+            </article>
+          {% endif %}
+        </div>
+      </section>
+
+      <section id="publications" class="section">
+        <div class="section-head">
+          <h2>Publications</h2>
+          <p>Featured papers with quick links to PDF, code, slides, and project pages.</p>
+        </div>
+        <div class="stack">
+          {% assign publications = site.data.publications %}
+          {% if publications and publications.size > 0 %}
+            {% for pub in publications limit: 8 %}
+              <article class="card publication">
+                <div>
+                  <p class="meta">{{ pub.venue }} - {{ pub.year }}</p>
+                  <h3>{{ pub.title }}</h3>
+                  <p class="authors">{{ pub.authors }}</p>
+                  <p>{{ pub.summary }}</p>
+                </div>
+                {% if pub.links %}
+                  <div class="chip-list">
+                    {% for link in pub.links %}
+                      <a class="chip chip-link" href="{{ link.url }}">{{ link.label }}</a>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </article>
+            {% endfor %}
+          {% else %}
+            <article class="card">
+              <h3>Add your first publication</h3>
+              <p>Create `_data/publications.yml` with title, venue, year, and links.</p>
+            </article>
+          {% endif %}
+        </div>
+      </section>
+
+      <section id="blog" class="section">
+        <div class="section-head">
+          <h2>Blog Posts</h2>
+          <p>Latest long-form notes and explainers from your Jekyll `_posts` folder.</p>
+        </div>
+        <div class="grid three">
+          {% if site.posts.size > 0 %}
+            {% for post in site.posts limit: 6 %}
+              <article class="card post-card">
+                <p class="meta">{{ post.date | date: "%b %-d, %Y" }}</p>
+                <h3><a href="{{ post.url | relative_url }}">{{ post.title | escape }}</a></h3>
+                <p>{{ post.excerpt | strip_html | truncate: 145 }}</p>
+              </article>
+            {% endfor %}
+          {% else %}
+            <article class="card">
+              <h3>Add your first blog post</h3>
+              <p>Create a file in `_posts` named `YYYY-MM-DD-your-title.md`.</p>
+            </article>
+          {% endif %}
+        </div>
+      </section>
+
+      <section id="projects" class="section">
+        <div class="section-head">
+          <h2>Side Projects and Demos</h2>
+          <p>Interactive prototypes, tooling, and research engineering experiments.</p>
+        </div>
+        <div class="grid three">
+          {% assign projects = site.data.projects %}
+          {% if projects and projects.size > 0 %}
+            {% for project in projects %}
+              <article class="card project-card">
+                <p class="meta">{{ project.status }}</p>
+                <h3>{{ project.title }}</h3>
+                <p>{{ project.blurb }}</p>
+                <p class="mono">{{ project.tech }}</p>
+                {% if project.link and project.link != "" %}
+                  <a class="text-link" href="{{ project.link }}">Open project</a>
+                {% endif %}
+              </article>
+            {% endfor %}
+          {% else %}
+            <article class="card">
+              <h3>Add your first demo</h3>
+              <p>Create entries in `_data/projects.yml`.</p>
+            </article>
+          {% endif %}
+        </div>
+      </section>
+
+      <section id="cv" class="section cv-panel">
+        <div class="section-head">
+          <h2>CV and Resume</h2>
+          <p>Set your links in `_data/profile.yml` and these buttons will update automatically.</p>
+        </div>
+        <div class="card cv-card">
+          {% assign cv_url = profile.cv_url | default: "#" %}
+          {% assign resume_url = profile.resume_url | default: "#" %}
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="{{ cv_url }}" {% if cv_url contains 'http' %}target="_blank" rel="noopener noreferrer"{% endif %}>Open CV</a>
+            <a class="btn btn-ghost" href="{{ resume_url }}" {% if resume_url contains 'http' %}target="_blank" rel="noopener noreferrer"{% endif %}>Open Resume</a>
+          </div>
+          <p class="mono">Tip: host PDFs in `assets/docs/` and link them as `/assets/docs/cv.pdf`.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer shell">
+      <p>{{ profile.name | default: site.title }} - Built with Jekyll - Last built {{ "now" | date: "%B %-d, %Y" }}</p>
+    </footer>
+
+    <script src="{{ '/assets/js/showcase.js' | relative_url }}"></script>
+  </body>
+</html>
