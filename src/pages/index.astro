@@ -6,6 +6,16 @@ import projects from "../data/projects.json";
 import publications from "../data/publications.json";
 import updates from "../data/updates.json";
 
+const recentUpdates = [...updates]
+  .sort((a, b) => new Date(b.date).valueOf() - new Date(a.date).valueOf())
+  .slice(0, 3);
+
+const recentPublications = [...publications]
+  .sort((a, b) => Number(b.year) - Number(a.year))
+  .slice(0, 3);
+
+const recentProjects = [...projects].slice(0, 3);
+
 const recentPosts = (await getCollection("blog", ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 3);
@@ -16,6 +26,22 @@ const formatDate = (value: string | Date) =>
     month: "short",
     day: "numeric"
   });
+
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+};
+
+const getFavicon = (url: string) => {
+  const domain = getDomain(url);
+  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : "";
+};
+
+const isOralVenue = (venue: string) => /\boral\b/i.test(venue);
+const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim();
 ---
 
 <MainLayout>
@@ -23,7 +49,10 @@ const formatDate = (value: string | Date) =>
     <div class="hero-copy glass">
       <p class="kicker">{profile.headline}</p>
       <h1>{profile.name}</h1>
-      <p class="hero-subtitle">{profile.tagline}</p>
+      <div class="hero-bio">
+        {profile.bioParagraphs.map((paragraph) => <p set:html={paragraph}></p>)}
+      </div>
+      <p class="job-market">{profile.jobMarketNotice}</p>
 
       <div class="hero-actions">
         <a class="btn btn-primary" href="#publications">View Publications</a>
@@ -31,10 +60,6 @@ const formatDate = (value: string | Date) =>
       </div>
 
       <ul class="hero-meta" aria-label="Research profile">
-        <li>
-          <span>Focus</span>
-          <strong>{profile.focus}</strong>
-        </li>
         <li>
           <span>Location</span>
           <strong>{profile.location}</strong>
@@ -44,6 +69,15 @@ const formatDate = (value: string | Date) =>
           <a href={`mailto:${profile.email}`}>{profile.email}</a>
         </li>
       </ul>
+
+      <div class="social-links" aria-label="External links">
+        {profile.socials.map((social) => (
+          <a href={social.url} class="social-link" target="_blank" rel="noreferrer" title={social.label}>
+            <img src={getFavicon(social.url)} alt="" width="18" height="18" loading="lazy" />
+            <span>{social.label}</span>
+          </a>
+        ))}
+      </div>
     </div>
 
     <aside class="profile-card glass">
@@ -56,18 +90,22 @@ const formatDate = (value: string | Date) =>
       }
 
       <div class="profile-lines">
-        <p class="mono">{profile.headline}</p>
-        <p>{profile.cardSummary}</p>
+        <p class="mono">Current Titles</p>
+        <ul class="profile-list">
+          {profile.titles.map((title) => <li>{title}</li>)}
+        </ul>
       </div>
 
-      <div class="chip-list">
-        {profile.keywords.map((keyword) => <span class="chip">{keyword}</span>)}
-      </div>
-
-      <div class="chip-list">
-        {profile.socials.map((social) => (
-          <a href={social.url} class="chip chip-link" target="_blank" rel="noreferrer">{social.label}</a>
-        ))}
+      <div class="profile-lines">
+        <p class="mono">Education</p>
+        <ul class="profile-list education-list">
+          {profile.education.map((record) => (
+            <li>
+              <strong>{record.degree}</strong>
+              <span>{record.institution}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </aside>
   </section>
@@ -78,7 +116,7 @@ const formatDate = (value: string | Date) =>
       <p>Quick highlights for talks, releases, paper milestones, and travel.</p>
     </div>
     <div class="grid two">
-      {updates.map((item) => (
+      {recentUpdates.map((item) => (
         <article class="card glass">
           <p class="meta">{formatDate(item.date)}</p>
           <h3>{item.title}</h3>
@@ -89,6 +127,7 @@ const formatDate = (value: string | Date) =>
         </article>
       ))}
     </div>
+    <a class="btn btn-ghost section-link" href="/updates">View all updates</a>
   </section>
 
   <section id="publications" class="section shell reveal">
@@ -97,23 +136,34 @@ const formatDate = (value: string | Date) =>
       <p>Featured papers with links to PDFs, code, slides, and project pages.</p>
     </div>
     <div class="stack">
-      {publications.map((publication) => (
+      {recentPublications.map((publication) => (
         <article class="card publication glass">
           <div>
-            <p class="meta">{publication.venue} - {publication.year}</p>
+            <p class="meta">
+              {formatVenue(publication.venue)} - {publication.year}
+              {isOralVenue(publication.venue) && <span class="oral-badge">ORAL</span>}
+            </p>
             <h3>{publication.title}</h3>
             <p class="authors">{publication.authors}</p>
             <p>{publication.summary}</p>
           </div>
 
-          <div class="chip-list">
-            {publication.links.map((link) => (
-              <a class="chip chip-link" href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
-            ))}
-          </div>
+          {
+            publication.links.length > 0 && (
+              <div class="chip-list publication-links">
+                {publication.links.map((link) => (
+                  <a class="chip chip-link" href={link.url} target="_blank" rel="noreferrer">
+                    <img src={getFavicon(link.url)} alt="" width="16" height="16" loading="lazy" />
+                    <span>{link.label}</span>
+                  </a>
+                ))}
+              </div>
+            )
+          }
         </article>
       ))}
     </div>
+    <a class="btn btn-ghost section-link" href="/publications">View all publications</a>
   </section>
 
   <section id="blog" class="section shell reveal">
@@ -142,7 +192,7 @@ const formatDate = (value: string | Date) =>
       <p>Interactive prototypes and research engineering experiments.</p>
     </div>
     <div class="grid three">
-      {projects.map((project) => (
+      {recentProjects.map((project) => (
         <article class="card glass">
           <p class="meta">{project.status}</p>
           <h3>{project.title}</h3>
@@ -152,12 +202,13 @@ const formatDate = (value: string | Date) =>
         </article>
       ))}
     </div>
+    <a class="btn btn-ghost section-link" href="/demos">View all demos</a>
   </section>
 
   <section id="cv" class="section shell reveal">
     <div class="section-head">
       <h2>CV and Resume</h2>
-      <p>Keep PDFs in `public/assets/docs/` and update links in `src/data/profile.json`.</p>
+      <p>Keep CV/Resume files in `public/assets/docs/` and update links in `src/data/profile.json`.</p>
     </div>
     <div class="card glass cv-card">
       <div class="hero-actions">

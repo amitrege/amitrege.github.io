@@ -8,7 +8,7 @@ interface Props {
 }
 
 const {
-  title = "Amit Rege | AI/ML Research",
+  title = "Amit Kiran Rege | AI/ML Research",
   description = "Machine learning research, publications, blog posts, and demos.",
   pageClass = ""
 } = Astro.props;
@@ -48,11 +48,6 @@ const currentYear = new Date().getFullYear();
           <a href="/#projects">Demos</a>
           <a href="/#cv">CV/Resume</a>
         </nav>
-        <div class="theme-switcher" role="group" aria-label="Design presets">
-          <button type="button" class="theme-btn is-active" data-theme="signal">Signal</button>
-          <button type="button" class="theme-btn" data-theme="neural">Neural</button>
-          <button type="button" class="theme-btn" data-theme="graph">Graph</button>
-        </div>
       </div>
     </header>
 
@@ -61,35 +56,11 @@ const currentYear = new Date().getFullYear();
     </main>
 
     <footer class="shell footer">
-      <p>{currentYear} Amit Rege - Built with Astro</p>
+      <p>{currentYear} Amit Kiran Rege - Built with Astro</p>
     </footer>
 
     <script is:inline>
       (() => {
-        const storageKey = "theme";
-        const themes = ["signal", "neural", "graph"];
-        const buttons = Array.from(document.querySelectorAll(".theme-btn"));
-
-        function setTheme(theme) {
-          if (!themes.includes(theme)) return;
-          document.documentElement.dataset.theme = theme;
-          buttons.forEach((button) => {
-            button.classList.toggle("is-active", button.dataset.theme === theme);
-          });
-          try {
-            localStorage.setItem(storageKey, theme);
-          } catch (_) {}
-        }
-
-        try {
-          const saved = localStorage.getItem(storageKey);
-          if (saved) setTheme(saved);
-        } catch (_) {}
-
-        buttons.forEach((button) => {
-          button.addEventListener("click", () => setTheme(button.dataset.theme));
-        });
-
         const observer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {

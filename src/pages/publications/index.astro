@@ -1,0 +1,64 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import publications from "../../data/publications.json";
+
+const allPublications = [...publications].sort((a, b) => Number(b.year) - Number(a.year));
+
+const getDomain = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+};
+
+const getFavicon = (url: string) => {
+  const domain = getDomain(url);
+  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : "";
+};
+
+const isOralVenue = (venue: string) => /\boral\b/i.test(venue);
+const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim();
+---
+
+<MainLayout title="Publications | Amit Kiran Rege" description="Full publication list." pageClass="blog-page">
+  <section class="section shell reveal">
+    <div class="section-head">
+      <h1>All Publications</h1>
+      <p>Complete list of papers, journals, and related artifacts.</p>
+    </div>
+
+    <div class="stack">
+      {
+        allPublications.map((publication) => (
+          <article class="card publication glass">
+            <div>
+              <p class="meta">
+                {formatVenue(publication.venue)} - {publication.year}
+                {isOralVenue(publication.venue) && <span class="oral-badge">ORAL</span>}
+              </p>
+              <h2>{publication.title}</h2>
+              <p class="authors">{publication.authors}</p>
+              <p>{publication.summary}</p>
+            </div>
+
+            {
+              publication.links.length > 0 && (
+                <div class="chip-list publication-links">
+                  {
+                    publication.links.map((link) => (
+                      <a class="chip chip-link" href={link.url} target="_blank" rel="noreferrer">
+                        <img src={getFavicon(link.url)} alt="" width="16" height="16" loading="lazy" />
+                        <span>{link.label}</span>
+                      </a>
+                    ))
+                  }
+                </div>
+              )
+            }
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</MainLayout>

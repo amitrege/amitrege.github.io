@@ -1,20 +1,26 @@
 [
   {
-    "date": "2026-02-23",
-    "title": "Template launch",
-    "detail": "This is a placeholder update card. Replace with your talks, awards, paper milestones, or releases.",
+    "date": "2026-02-15",
+    "title": "Attended ITA Workshop in San Diego",
+    "detail": "Presented our ongoing work on LLM reasoning.",
     "link": ""
   },
   {
-    "date": "2026-02-10",
-    "title": "Paper in submission",
-    "detail": "Use short one-liners here for quick profile updates.",
+    "date": "2026-01-20",
+    "title": "Paper accepted at AISTATS 2026",
+    "detail": "Presentation venue: Tangier, Morocco.",
     "link": ""
   },
   {
-    "date": "2026-01-28",
-    "title": "Released reproducibility benchmark",
-    "detail": "Add links when available (project page, code, or talk recording).",
+    "date": "2026-01-10",
+    "title": "Two papers accepted at L4DC 2026",
+    "detail": "Conference location: Los Angeles, CA.",
+    "link": ""
+  },
+  {
+    "date": "2025-11-15",
+    "title": "Successfully defended PhD Proposal",
+    "detail": "Completed PhD proposal defense milestone.",
     "link": ""
   }
 ]

@@ -1,0 +1,29 @@
+---
+import MainLayout from "../../layouts/MainLayout.astro";
+import projects from "../../data/projects.json";
+
+const allProjects = [...projects];
+---
+
+<MainLayout title="Demos | Amit Kiran Rege" description="All side projects and demos." pageClass="blog-page">
+  <section class="section shell reveal">
+    <div class="section-head">
+      <h1>All Demos and Side Projects</h1>
+      <p>Complete list of prototypes, tools, and research engineering experiments.</p>
+    </div>
+
+    <div class="grid three">
+      {
+        allProjects.map((project) => (
+          <article class="card glass">
+            <p class="meta">{project.status}</p>
+            <h2>{project.title}</h2>
+            <p>{project.blurb}</p>
+            <p class="mono">{project.tech}</p>
+            <a class="text-link" href={project.link} target="_blank" rel="noreferrer">Open project</a>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</MainLayout>

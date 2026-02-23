@@ -1,25 +1,43 @@
 {
-  "name": "Amit Rege",
+  "name": "Amit Kiran Rege",
   "shortName": "AR",
-  "headline": "Machine Learning PhD",
-  "tagline": "I build machine learning systems that connect theory, large-scale experimentation, and reliable real-world behavior.",
-  "focus": "Foundation models, reasoning, robustness, and scientific ML",
-  "location": "Add your location + institution",
-  "email": "amitrege96@gmail.com",
-  "photo": "",
-  "cardSummary": "Replace this text with your current lab, advisor, and research mission.",
-  "cvUrl": "/assets/docs/cv.pdf",
-  "resumeUrl": "/assets/docs/resume.pdf",
-  "keywords": [
-    "Representation Learning",
-    "Multimodal Systems",
-    "Robustness",
-    "Research Engineering"
+  "headline": "PhD Student in Computer Science, CU Boulder",
+  "tagline": "Theoretical machine learning for AI safety, control, and reliable LLM post-training.",
+  "focus": "Theoretical ML, AI safety and control, RL for LLM post-training, and interpretability foundations.",
+  "location": "Boulder, CO",
+  "email": "amit.rege@colorado.edu",
+  "photo": "/assets/img/headshot_prof.jpg",
+  "bioParagraphs": [
+    "Hi! I am Amit Kiran Rege, a PhD student in Computer Science at the University of Colorado Boulder advised by <a href=\"https://www.colorado.edu/cs/claire-monteleoni\" target=\"_blank\" rel=\"noreferrer\">Claire Monteleoni</a>.",
+    "My research is in theoretical machine learning broadly construed, especially problems in AI safety and control. My recent focus is applying reinforcement learning theory to LLM post-training, while maintaining interests in foundational RL theory and the foundations of interpretability.",
+    "I am also interested in startups and early-stage venture through my role as an Associate at the <a href=\"https://www.colorado.edu/dcvf/\" target=\"_blank\" rel=\"noreferrer\">Deming Center Venture Fund</a>, where I help source and evaluate early-stage Colorado startups.",
+    "Outside work, I enjoy soccer, cricket, music, and following current affairs."
   ],
+  "jobMarketNotice": "I am on the job market for Research Scientist/Engineer positions in Summer/Fall 2026.",
+  "titles": [
+    "PhD Student, Department of Computer Science, University of Colorado Boulder",
+    "Associate, Deming Center Venture Fund"
+  ],
+  "education": [
+    {
+      "degree": "PhD in Computer Science",
+      "institution": "University of Colorado Boulder"
+    },
+    {
+      "degree": "MS in Computer Science",
+      "institution": "University of Colorado Boulder"
+    },
+    {
+      "degree": "BE (Hons.) in Computer Science",
+      "institution": "BITS Pilani, Goa"
+    }
+  ],
+  "cvUrl": "/assets/docs/amit_rege_cv.tex",
+  "resumeUrl": "/assets/docs/amit_rege_cv.tex",
   "socials": [
     {
       "label": "Google Scholar",
-      "url": "#"
+      "url": "https://scholar.google.com/citations?user=XeT3y04AAAAJ&hl=en"
     },
     {
       "label": "GitHub",
@@ -27,7 +45,11 @@
     },
     {
       "label": "LinkedIn",
-      "url": "#"
+      "url": "https://www.linkedin.com/in/amre1996/"
+    },
+    {
+      "label": "Deming Center Venture Fund",
+      "url": "https://www.colorado.edu/dcvf/"
     }
   ]
 }
