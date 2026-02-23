@@ -1,0 +1,33 @@
+{
+  "name": "Amit Rege",
+  "shortName": "AR",
+  "headline": "Machine Learning PhD",
+  "tagline": "I build machine learning systems that connect theory, large-scale experimentation, and reliable real-world behavior.",
+  "focus": "Foundation models, reasoning, robustness, and scientific ML",
+  "location": "Add your location + institution",
+  "email": "amitrege96@gmail.com",
+  "photo": "",
+  "cardSummary": "Replace this text with your current lab, advisor, and research mission.",
+  "cvUrl": "/assets/docs/cv.pdf",
+  "resumeUrl": "/assets/docs/resume.pdf",
+  "keywords": [
+    "Representation Learning",
+    "Multimodal Systems",
+    "Robustness",
+    "Research Engineering"
+  ],
+  "socials": [
+    {
+      "label": "Google Scholar",
+      "url": "#"
+    },
+    {
+      "label": "GitHub",
+      "url": "https://github.com/amitrege"
+    },
+    {
+      "label": "LinkedIn",
+      "url": "#"
+    }
+  ]
+}

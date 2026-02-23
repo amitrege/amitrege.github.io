@@ -1,6 +1,11 @@
-_site
-.sass-cache
-.jekyll-metadata
+node_modules/
+dist/
+.astro/
 .DS_Store
-.bundle
+
+# Legacy local artifacts
+.bundle/
 vendor/
+legacy-jekyll/.sass-cache/
+legacy-jekyll/.jekyll-metadata
+legacy-jekyll/_site/

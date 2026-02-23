@@ -1,0 +1,169 @@
+---
+import { getCollection } from "astro:content";
+import MainLayout from "../layouts/MainLayout.astro";
+import profile from "../data/profile.json";
+import projects from "../data/projects.json";
+import publications from "../data/publications.json";
+import updates from "../data/updates.json";
+
+const recentPosts = (await getCollection("blog", ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+const formatDate = (value: string | Date) =>
+  new Date(value).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+---
+
+<MainLayout>
+  <section id="home" class="hero section shell reveal">
+    <div class="hero-copy glass">
+      <p class="kicker">{profile.headline}</p>
+      <h1>{profile.name}</h1>
+      <p class="hero-subtitle">{profile.tagline}</p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="#publications">View Publications</a>
+        <a class="btn btn-ghost" href="#cv">CV and Resume</a>
+      </div>
+
+      <ul class="hero-meta" aria-label="Research profile">
+        <li>
+          <span>Focus</span>
+          <strong>{profile.focus}</strong>
+        </li>
+        <li>
+          <span>Location</span>
+          <strong>{profile.location}</strong>
+        </li>
+        <li>
+          <span>Email</span>
+          <a href={`mailto:${profile.email}`}>{profile.email}</a>
+        </li>
+      </ul>
+    </div>
+
+    <aside class="profile-card glass">
+      {
+        profile.photo ? (
+          <img class="profile-photo" src={profile.photo} alt={`Portrait of ${profile.name}`} />
+        ) : (
+          <div class="photo-placeholder">Photo placeholder</div>
+        )
+      }
+
+      <div class="profile-lines">
+        <p class="mono">{profile.headline}</p>
+        <p>{profile.cardSummary}</p>
+      </div>
+
+      <div class="chip-list">
+        {profile.keywords.map((keyword) => <span class="chip">{keyword}</span>)}
+      </div>
+
+      <div class="chip-list">
+        {profile.socials.map((social) => (
+          <a href={social.url} class="chip chip-link" target="_blank" rel="noreferrer">{social.label}</a>
+        ))}
+      </div>
+    </aside>
+  </section>
+
+  <section id="updates" class="section shell reveal">
+    <div class="section-head">
+      <h2>Updates</h2>
+      <p>Quick highlights for talks, releases, paper milestones, and travel.</p>
+    </div>
+    <div class="grid two">
+      {updates.map((item) => (
+        <article class="card glass">
+          <p class="meta">{formatDate(item.date)}</p>
+          <h3>{item.title}</h3>
+          <p>{item.detail}</p>
+          {item.link && (
+            <a class="text-link" href={item.link} target="_blank" rel="noreferrer">Read more</a>
+          )}
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section id="publications" class="section shell reveal">
+    <div class="section-head">
+      <h2>Publications</h2>
+      <p>Featured papers with links to PDFs, code, slides, and project pages.</p>
+    </div>
+    <div class="stack">
+      {publications.map((publication) => (
+        <article class="card publication glass">
+          <div>
+            <p class="meta">{publication.venue} - {publication.year}</p>
+            <h3>{publication.title}</h3>
+            <p class="authors">{publication.authors}</p>
+            <p>{publication.summary}</p>
+          </div>
+
+          <div class="chip-list">
+            {publication.links.map((link) => (
+              <a class="chip chip-link" href={link.url} target="_blank" rel="noreferrer">{link.label}</a>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section id="blog" class="section shell reveal">
+    <div class="section-head">
+      <h2>Blog Posts</h2>
+      <p>Long-form technical notes and research explainers.</p>
+    </div>
+    <div class="grid three">
+      {recentPosts.map((post) => (
+        <article class="card glass post-card">
+          <p class="meta">{formatDate(post.data.date)}</p>
+          <h3>
+            <a href={`/blog/${post.slug}/`}>{post.data.title}</a>
+          </h3>
+          <p>{post.data.excerpt}</p>
+          <a class="text-link" href={`/blog/${post.slug}/`}>Read post</a>
+        </article>
+      ))}
+    </div>
+    <a class="btn btn-ghost" href="/blog">View all posts</a>
+  </section>
+
+  <section id="projects" class="section shell reveal">
+    <div class="section-head">
+      <h2>Side Projects and Demos</h2>
+      <p>Interactive prototypes and research engineering experiments.</p>
+    </div>
+    <div class="grid three">
+      {projects.map((project) => (
+        <article class="card glass">
+          <p class="meta">{project.status}</p>
+          <h3>{project.title}</h3>
+          <p>{project.blurb}</p>
+          <p class="mono">{project.tech}</p>
+          <a class="text-link" href={project.link} target="_blank" rel="noreferrer">Open project</a>
+        </article>
+      ))}
+    </div>
+  </section>
+
+  <section id="cv" class="section shell reveal">
+    <div class="section-head">
+      <h2>CV and Resume</h2>
+      <p>Keep PDFs in `public/assets/docs/` and update links in `src/data/profile.json`.</p>
+    </div>
+    <div class="card glass cv-card">
+      <div class="hero-actions">
+        <a class="btn btn-primary" href={profile.cvUrl} target="_blank" rel="noreferrer">Open CV</a>
+        <a class="btn btn-ghost" href={profile.resumeUrl} target="_blank" rel="noreferrer">Open Resume</a>
+      </div>
+    </div>
+  </section>
+</MainLayout>

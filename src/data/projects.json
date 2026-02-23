@@ -1,0 +1,23 @@
+[
+  {
+    "title": "Interactive Demo Placeholder",
+    "status": "Active",
+    "blurb": "Describe what users can try and why the demo is technically interesting.",
+    "tech": "PyTorch, Gradio, CUDA",
+    "link": "#"
+  },
+  {
+    "title": "Research Toolkit Placeholder",
+    "status": "In Progress",
+    "blurb": "Use this for libraries, benchmark suites, or evaluation tools.",
+    "tech": "Python, JAX, Docker",
+    "link": "#"
+  },
+  {
+    "title": "Side Project Placeholder",
+    "status": "Archived",
+    "blurb": "Older experiments can stay visible with clear status labels.",
+    "tech": "Rust, WebAssembly",
+    "link": "#"
+  }
+]

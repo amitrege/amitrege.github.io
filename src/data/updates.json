@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-02-23",
+    "title": "Template launch",
+    "detail": "This is a placeholder update card. Replace with your talks, awards, paper milestones, or releases.",
+    "link": ""
+  },
+  {
+    "date": "2026-02-10",
+    "title": "Paper in submission",
+    "detail": "Use short one-liners here for quick profile updates.",
+    "link": ""
+  },
+  {
+    "date": "2026-01-28",
+    "title": "Released reproducibility benchmark",
+    "detail": "Add links when available (project page, code, or talk recording).",
+    "link": ""
+  }
+]

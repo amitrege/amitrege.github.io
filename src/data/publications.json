@@ -1,0 +1,53 @@
+[
+  {
+    "title": "Placeholder Paper Title 1",
+    "authors": "A. Rege, Collaborator A, Collaborator B",
+    "venue": "NeurIPS",
+    "year": 2026,
+    "summary": "Replace with a one-sentence summary of your contribution and key result.",
+    "links": [
+      {
+        "label": "Paper",
+        "url": "#"
+      },
+      {
+        "label": "Code",
+        "url": "#"
+      }
+    ]
+  },
+  {
+    "title": "Placeholder Paper Title 2",
+    "authors": "A. Rege, Collaborator C",
+    "venue": "ICML",
+    "year": 2025,
+    "summary": "Keep publication summaries concise and technical.",
+    "links": [
+      {
+        "label": "Paper",
+        "url": "#"
+      },
+      {
+        "label": "Poster",
+        "url": "#"
+      }
+    ]
+  },
+  {
+    "title": "Placeholder Journal Article",
+    "authors": "A. Rege, Collaborator D, Advisor E",
+    "venue": "JMLR",
+    "year": 2024,
+    "summary": "You can include journals, conferences, workshops, and selected preprints.",
+    "links": [
+      {
+        "label": "PDF",
+        "url": "#"
+      },
+      {
+        "label": "BibTeX",
+        "url": "#"
+      }
+    ]
+  }
+]

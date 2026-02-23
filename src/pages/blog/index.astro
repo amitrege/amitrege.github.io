@@ -1,0 +1,39 @@
+---
+import { getCollection } from "astro:content";
+import MainLayout from "../../layouts/MainLayout.astro";
+
+const posts = (await getCollection("blog", ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const formatDate = (value: Date) =>
+  value.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+---
+
+<MainLayout title="Blog | Amit Rege" description="Research notes, explainers, and technical posts." pageClass="blog-page">
+  <section class="section shell reveal">
+    <div class="section-head">
+      <h1>Blog</h1>
+      <p>Technical notes, paper deep-dives, and experiments.</p>
+    </div>
+
+    <div class="stack">
+      {
+        posts.map((post) => (
+          <article class="card glass blog-row">
+            <div>
+              <p class="meta">{formatDate(post.data.date)}</p>
+              <h2><a href={`/blog/${post.slug}/`}>{post.data.title}</a></h2>
+              <p>{post.data.excerpt}</p>
+            </div>
+            <a class="btn btn-ghost" href={`/blog/${post.slug}/`}>Read</a>
+          </article>
+        ))
+      }
+    </div>
+  </section>
+</MainLayout>
