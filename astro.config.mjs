@@ -4,5 +4,8 @@ import sitemap from "@astrojs/sitemap";
 export default defineConfig({
   site: "https://amitrege.github.io",
   output: "static",
+  redirects: {
+    "/about": "/"
+  },
   integrations: [sitemap()]
 });
