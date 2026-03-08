@@ -1,8 +1,6 @@
 ---
-import { getCollection } from "astro:content";
 import MainLayout from "../layouts/MainLayout.astro";
 import profile from "../data/profile.json";
-import projects from "../data/projects.json";
 import publications from "../data/publications.json";
 import updates from "../data/updates.json";
 
@@ -12,12 +10,6 @@ const recentUpdates = [...updates]
 
 const recentPublications = [...publications]
   .sort((a, b) => Number(b.year) - Number(a.year))
-  .slice(0, 3);
-
-const recentProjects = [...projects].slice(0, 3);
-
-const recentPosts = (await getCollection("blog", ({ data }) => !data.draft))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 3);
 
 const formatDate = (value: string | Date) =>
@@ -171,17 +163,12 @@ const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim
       <h2>Blog Posts</h2>
       <p>Long-form technical notes and research explainers.</p>
     </div>
-    <div class="grid three">
-      {recentPosts.map((post) => (
-        <article class="card glass post-card">
-          <p class="meta">{formatDate(post.data.date)}</p>
-          <h3>
-            <a href={`/blog/${post.slug}/`}>{post.data.title}</a>
-          </h3>
-          <p>{post.data.excerpt}</p>
-          <a class="text-link" href={`/blog/${post.slug}/`}>Read post</a>
-        </article>
-      ))}
+    <div class="stack">
+      <article class="card glass construction-card">
+        <p class="construction-tag">Under Construction</p>
+        <h3>New writing is in progress</h3>
+        <p>The blog section will return with full posts soon.</p>
+      </article>
     </div>
     <a class="btn btn-ghost" href="/blog">View all posts</a>
   </section>
@@ -191,16 +178,12 @@ const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim
       <h2>Side Projects and Demos</h2>
       <p>Interactive prototypes and research engineering experiments.</p>
     </div>
-    <div class="grid three">
-      {recentProjects.map((project) => (
-        <article class="card glass">
-          <p class="meta">{project.status}</p>
-          <h3>{project.title}</h3>
-          <p>{project.blurb}</p>
-          <p class="mono">{project.tech}</p>
-          <a class="text-link" href={project.link} target="_blank" rel="noreferrer">Open project</a>
-        </article>
-      ))}
+    <div class="stack">
+      <article class="card glass construction-card">
+        <p class="construction-tag">Under Construction</p>
+        <h3>Demos are being rebuilt</h3>
+        <p>This section will be updated with live prototypes and experiments soon.</p>
+      </article>
     </div>
     <a class="btn btn-ghost section-link" href="/demos">View all demos</a>
   </section>

@@ -523,6 +523,43 @@ h1 {
   gap: 1rem;
 }
 
+.construction-card {
+  display: grid;
+  gap: 0.7rem;
+  padding: clamp(1.15rem, 2vw, 1.6rem);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 9%, transparent), transparent 58%),
+    var(--surface);
+  border-style: dashed;
+}
+
+.construction-card > * {
+  margin: 0;
+}
+
+.construction-card h2,
+.construction-card h3 {
+  max-width: 22ch;
+}
+
+.construction-card p:not(.construction-tag) {
+  max-width: 58ch;
+}
+
+.construction-tag {
+  width: fit-content;
+  padding: 0.32rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  background: var(--chip);
+  color: color-mix(in srgb, var(--primary) 82%, var(--text));
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .blog-page h1 {
   font-size: clamp(1.8rem, 3.2vw, 2.7rem);
 }

@@ -5,7 +5,7 @@ date: 2026-02-23
 tags:
   - meta
   - website
-draft: false
+draft: true
 ---
 
 This is the first placeholder article for the modernized site.
