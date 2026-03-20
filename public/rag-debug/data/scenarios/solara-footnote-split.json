@@ -1,0 +1,466 @@
+{
+  "id": "solara-footnote-split",
+  "title": "Safety Footnote Falls Outside the Retrieved Window",
+  "family": "Chunk Split",
+  "summary": "The protocol table is retrieved, but the footnote naming the exact subgroup sits in the next chunk. The model answers with a plausible but broader subgroup than the protocol actually specifies.",
+  "query": "Which Solara trial participants needed weekly liver panels after week 8?",
+  "dataset": {
+    "name": "Solara phase II protocol packet",
+    "docCount": 5,
+    "chunkCount": 8,
+    "notes": "Synthetic medical-operations corpus with a protocol excerpt, an FAQ, an IRB note, a site memo, and a news brief."
+  },
+  "goldChunkIds": ["protocol-2", "protocol-3"],
+  "debugChecklist": [
+    "Inspect whether the answer depends on a footnote or exception attached to a retrieved table row.",
+    "If the table looks too broad, check the adjacent chunk for subgroup-specific qualifiers.",
+    "When the support spans are adjacent, a parent window or overlap often repairs the failure cleanly."
+  ],
+  "docs": [
+    {
+      "id": "protocol",
+      "title": "Solara Trial Monitoring Protocol",
+      "source": "Solara Operations Manual",
+      "metadata": {
+        "region": "trial-wide",
+        "type": "protocol",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "protocol-1",
+          "label": "Protocol chunk 1",
+          "text": "Dose reductions are considered after week 8 when ALT rises above grade 2 or the patient enters the rescue schedule."
+        },
+        {
+          "id": "protocol-2",
+          "label": "Protocol chunk 2",
+          "text": "Table 4 lists liver panel cadence by subgroup. Standard 100 mg participants move to biweekly panels after week 8."
+        },
+        {
+          "id": "protocol-3",
+          "label": "Protocol chunk 3",
+          "text": "Footnote c: participants switched to the 200 mg rescue schedule require weekly liver panels after week 8 even if ALT later stabilizes."
+        },
+        {
+          "id": "protocol-4",
+          "label": "Protocol chunk 4",
+          "text": "Investigators should document rescue-schedule status in the safety log before changing panel cadence."
+        }
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "Coordinator FAQ",
+      "source": "Solara Site FAQ",
+      "metadata": {
+        "region": "site ops",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "faq-1",
+          "label": "FAQ chunk 1",
+          "text": "After week 8, high-risk participants often remain on weekly labs. Standard participants usually move to biweekly monitoring."
+        }
+      ]
+    },
+    {
+      "id": "irb",
+      "title": "IRB Clarification Note",
+      "source": "Central IRB",
+      "metadata": {
+        "region": "trial-wide",
+        "type": "memo",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "irb-1",
+          "label": "IRB chunk 1",
+          "text": "The rescue schedule carries the highest monitoring burden because it continues weekly liver panels after week 8."
+        }
+      ]
+    },
+    {
+      "id": "site",
+      "title": "Site Launch Memo",
+      "source": "West Clinic",
+      "metadata": {
+        "region": "site ops",
+        "type": "memo",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "site-1",
+          "label": "Site memo chunk 1",
+          "text": "Most staff remember that weekly panels belong to the rescue schedule, but the table footnotes should be checked during chart review."
+        }
+      ]
+    },
+    {
+      "id": "news",
+      "title": "Trial Overview Brief",
+      "source": "Study Newsletter",
+      "metadata": {
+        "region": "public",
+        "type": "news brief",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "news-1",
+          "label": "News chunk 1",
+          "text": "The Solara study intensified monitoring for some participants after week 8 as dose adjustments increased."
+        }
+      ]
+    }
+  ],
+  "recommendedRunId": "parent-window",
+  "runs": [
+    {
+      "id": "baseline",
+      "kind": "baseline",
+      "label": "Baseline · narrow table chunks",
+      "config": {
+        "chunking": "220 chars, no overlap",
+        "filter": "none",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "First broken stage: ingestion",
+        "headline": "The table row was retrieved without the footnote that names the exact subgroup.",
+        "detail": "The answer broadened the subgroup because the packed context contained the table summary and FAQ language but not the footnote with the rescue-schedule qualifier.",
+        "severity": "fail"
+      },
+      "story": "The query matches the table and FAQ, while the decisive footnote is treated like a separate low-priority fragment.",
+      "outcome": "Synthesis says a broader class of high-risk participants need weekly panels, which is more vague than the protocol.",
+      "metrics": {
+        "oracleCoverage": "1 / 2 gold spans",
+        "firstSupportRank": "#2 table row only",
+        "packedSupport": "Partial schedule",
+        "grounding": "Weak",
+        "lostMiddle": "Medium"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "fail",
+          "note": "The table row and footnote were chunked apart even though the answer requires both."
+        },
+        {
+          "id": "retrieval",
+          "status": "warn",
+          "note": "Retrieval found the table and FAQ first, but the footnote looked less query-aligned."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No filters removed protocol evidence."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "The reranker preserved the same partial evidence it received."
+        },
+        {
+          "id": "packing",
+          "status": "warn",
+          "note": "The packed context contains the table row but not the footnote."
+        },
+        {
+          "id": "synthesis",
+          "status": "fail",
+          "note": "The answer broadens the subgroup to high-risk participants instead of the rescue schedule specifically."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.88,
+          "dense": 0.72,
+          "rerank": 0.86,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Directly mentions weekly labs after week 8.",
+          "note": "The FAQ captures the rough idea but not the exact protocol subgroup."
+        },
+        {
+          "chunkId": "protocol-2",
+          "bm25": 0.82,
+          "dense": 0.7,
+          "rerank": 0.79,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Contains the monitoring table row.",
+          "note": "This row says standard participants become biweekly, but it does not name who stays weekly."
+        },
+        {
+          "chunkId": "site-1",
+          "bm25": 0.66,
+          "dense": 0.64,
+          "rerank": 0.68,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Mentions the rescue schedule and weekly panels.",
+          "note": "Helpful operational memory, but not the governing evidence."
+        },
+        {
+          "chunkId": "news-1",
+          "bm25": 0.54,
+          "dense": 0.46,
+          "rerank": 0.48,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "Public summary about intensified monitoring.",
+          "note": "Very broad and not enough to answer precisely."
+        },
+        {
+          "chunkId": "protocol-3",
+          "bm25": 0.39,
+          "dense": 0.73,
+          "rerank": 0.41,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Footnote has strong semantic fit but fewer literal query terms.",
+          "note": "This is the decisive chunk because it names the 200 mg rescue schedule as the weekly-monitoring subgroup."
+        },
+        {
+          "chunkId": "irb-1",
+          "bm25": 0.51,
+          "dense": 0.68,
+          "rerank": 0.44,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Secondary support for the rescue schedule.",
+          "note": "The memo agrees with the footnote, but it was also dropped from the packed context."
+        },
+        {
+          "chunkId": "protocol-1",
+          "bm25": 0.32,
+          "dense": 0.38,
+          "rerank": 0.29,
+          "finalRank": 7,
+          "filtered": false,
+          "packed": false,
+          "why": "Dose reduction setup.",
+          "note": "Useful setup, not the answer."
+        },
+        {
+          "chunkId": "protocol-4",
+          "bm25": 0.24,
+          "dense": 0.35,
+          "rerank": 0.22,
+          "finalRank": 8,
+          "filtered": false,
+          "packed": false,
+          "why": "Logging instructions.",
+          "note": "Operational detail only."
+        }
+      ],
+      "answer": {
+        "text": "Weekly liver panels are needed after week 8 for high-risk Solara participants, while standard participants usually move to biweekly monitoring.",
+        "claims": [
+          {
+            "text": "Standard participants usually move to biweekly panels after week 8.",
+            "status": "supported",
+            "supportIds": ["protocol-2"],
+            "reason": "The packed table row directly states this schedule."
+          },
+          {
+            "text": "High-risk participants need weekly liver panels after week 8.",
+            "status": "weak",
+            "supportIds": ["faq-1", "site-1"],
+            "reason": "The packed evidence gestures toward weekly monitoring, but it does not define the subgroup precisely."
+          },
+          {
+            "text": "The protocol specifically names the rescue schedule as the weekly-monitoring subgroup.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The decisive footnote never made it into the packed context."
+          }
+        ]
+      }
+    },
+    {
+      "id": "parent-window",
+      "kind": "counterfactual",
+      "label": "Fix · add parent-window context",
+      "config": {
+        "chunking": "220 chars with parent window",
+        "filter": "none",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 windows"
+      },
+      "verdict": {
+        "stage": "Resolved: ingestion",
+        "headline": "The table row now carries its footnote into the retrieved window.",
+        "detail": "The counterfactual keeps the table and footnote together, so the answer can name the rescue schedule instead of a vague high-risk bucket.",
+        "severity": "pass"
+      },
+      "story": "Parent-window retrieval preserves the attachment between the table row and its footnote.",
+      "outcome": "The answer becomes precise, and both protocol-backed claims are grounded.",
+      "metrics": {
+        "oracleCoverage": "2 / 2 gold spans",
+        "firstSupportRank": "#1 table + footnote",
+        "packedSupport": "Complete subgroup rule",
+        "grounding": "Strong",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The parent window keeps the table row and its footnote together."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "The complete monitoring rule becomes the top retrieval hit."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No evidence is excluded."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "Reranking now rewards the full, exact subgroup answer."
+        },
+        {
+          "id": "packing",
+          "status": "pass",
+          "note": "The packed context includes both gold spans and the corroborating IRB note."
+        },
+        {
+          "id": "synthesis",
+          "status": "pass",
+          "note": "The answer names the 200 mg rescue schedule and distinguishes it from standard participants."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "protocol-2",
+          "bm25": 0.86,
+          "dense": 0.82,
+          "rerank": 0.93,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "The retrieved window now carries the table and the attached footnote.",
+          "note": "This chunk becomes decisive because the parent window restores the subgroup definition."
+        },
+        {
+          "chunkId": "protocol-3",
+          "bm25": 0.74,
+          "dense": 0.81,
+          "rerank": 0.91,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "The footnote is now strongly linked to the table row.",
+          "note": "The protocol explicitly names the 200 mg rescue schedule as the weekly-monitoring subgroup."
+        },
+        {
+          "chunkId": "irb-1",
+          "bm25": 0.58,
+          "dense": 0.76,
+          "rerank": 0.74,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Strong corroboration for the rescue schedule.",
+          "note": "The IRB note now reinforces the same subgroup without needing the FAQ to fill gaps."
+        },
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.75,
+          "dense": 0.66,
+          "rerank": 0.68,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "Still useful, but no longer the main support.",
+          "note": "The FAQ remains broad but now sits behind the actual protocol rule."
+        },
+        {
+          "chunkId": "site-1",
+          "bm25": 0.52,
+          "dense": 0.61,
+          "rerank": 0.49,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Operational reminder.",
+          "note": "Helpful but unnecessary once the protocol is intact."
+        },
+        {
+          "chunkId": "protocol-1",
+          "bm25": 0.31,
+          "dense": 0.37,
+          "rerank": 0.28,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Dose-reduction setup.",
+          "note": "Not the answer."
+        },
+        {
+          "chunkId": "news-1",
+          "bm25": 0.22,
+          "dense": 0.3,
+          "rerank": 0.21,
+          "finalRank": 7,
+          "filtered": false,
+          "packed": false,
+          "why": "Generic study summary.",
+          "note": "Not useful for precise subgroup attribution."
+        },
+        {
+          "chunkId": "protocol-4",
+          "bm25": 0.19,
+          "dense": 0.27,
+          "rerank": 0.17,
+          "finalRank": 8,
+          "filtered": false,
+          "packed": false,
+          "why": "Logging instructions.",
+          "note": "Operational only."
+        }
+      ],
+      "answer": {
+        "text": "The weekly liver panels after week 8 are required for participants moved onto the 200 mg rescue schedule. Standard 100 mg participants switch to biweekly monitoring instead.",
+        "claims": [
+          {
+            "text": "Standard 100 mg participants move to biweekly panels after week 8.",
+            "status": "supported",
+            "supportIds": ["protocol-2"],
+            "reason": "The packed table row states this directly."
+          },
+          {
+            "text": "Participants on the 200 mg rescue schedule require weekly liver panels after week 8.",
+            "status": "supported",
+            "supportIds": ["protocol-3", "irb-1"],
+            "reason": "Both the protocol footnote and the IRB note support the same subgroup."
+          },
+          {
+            "text": "The answer depends on reading the table together with its footnote.",
+            "status": "supported",
+            "supportIds": ["protocol-2", "protocol-3"],
+            "reason": "The parent-window fix restores the combined evidence."
+          }
+        ]
+      }
+    }
+  ]
+}

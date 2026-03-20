@@ -1,0 +1,412 @@
+{
+  "id": "shoreline-waiver-rerank",
+  "title": "Concise FAQ Snippet Demotes the Real Approval Path",
+  "family": "Rerank Regression",
+  "summary": "The retriever finds the full shoreline-waiver procedure, but the reranker promotes a short FAQ snippet and an outdated policy. The correct signer falls below the packing cutoff, so the answer attributes final approval to the wrong role.",
+  "query": "Who signs the final shoreline waiver after legal review?",
+  "dataset": {
+    "name": "Harbor permitting packet",
+    "docCount": 5,
+    "chunkCount": 6,
+    "notes": "Synthetic permitting corpus with a procedure memo, FAQ, old policy, checklist, and internal email."
+  },
+  "goldChunkIds": ["memo-2"],
+  "debugChecklist": [
+    "Inspect whether reranking promotes short snippets that repeat the question without carrying the final role assignment.",
+    "Compare packed context against outdated policy documents that may mention a different signer.",
+    "If the correct procedural memo is already in the candidate set, test a no-rerank or larger-pack counterfactual before changing retrieval."
+  ],
+  "docs": [
+    {
+      "id": "procedure",
+      "title": "2025 Shoreline Waiver Procedure",
+      "source": "Port Authority Permitting",
+      "metadata": {
+        "region": "harbor",
+        "type": "procedure",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "memo-1",
+          "label": "Procedure chunk 1",
+          "text": "The operations chief assembles the waiver packet and sends it to legal for review once environmental exhibits are complete."
+        },
+        {
+          "id": "memo-2",
+          "label": "Procedure chunk 2",
+          "text": "After legal review, the port director signs the final shoreline waiver. The operations chief signs only the routing sheet earlier in the process."
+        }
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "Shoreline Waiver FAQ",
+      "source": "Permitting Portal",
+      "metadata": {
+        "region": "harbor",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "faq-1",
+          "label": "FAQ chunk 1",
+          "text": "Legal review happens before final shoreline waiver approval, and operations prepares the packet for that review."
+        }
+      ]
+    },
+    {
+      "id": "old-policy",
+      "title": "2023 Waiver Policy",
+      "source": "Archived Port Policy",
+      "metadata": {
+        "region": "harbor",
+        "type": "policy",
+        "year": "2023"
+      },
+      "chunks": [
+        {
+          "id": "oldpolicy-1",
+          "label": "Archived policy chunk 1",
+          "text": "Under the 2023 rule, the operations chief signed the final shoreline waiver after legal review."
+        }
+      ]
+    },
+    {
+      "id": "checklist",
+      "title": "Waiver Checklist",
+      "source": "Permit Ops",
+      "metadata": {
+        "region": "harbor",
+        "type": "checklist",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "checklist-1",
+          "label": "Checklist chunk 1",
+          "text": "Confirm that legal comments are closed and the port director signature block is ready before publishing the final waiver."
+        }
+      ]
+    },
+    {
+      "id": "email",
+      "title": "Operations Email",
+      "source": "Operations Chief",
+      "metadata": {
+        "region": "harbor",
+        "type": "email",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "email-1",
+          "label": "Email chunk 1",
+          "text": "I only sign the routing sheet now; final waiver signatures moved to the port director when the 2025 procedure took effect."
+        }
+      ]
+    }
+  ],
+  "recommendedRunId": "no-rerank",
+  "runs": [
+    {
+      "id": "baseline",
+      "kind": "baseline",
+      "label": "Baseline · reranker on",
+      "config": {
+        "chunking": "default",
+        "filter": "none",
+        "reranker": "cross-encoder on",
+        "packing": "top 3 chunks"
+      },
+      "verdict": {
+        "stage": "First broken stage: rerank",
+        "headline": "The reranker favored a short FAQ and an outdated policy over the current procedure memo.",
+        "detail": "The top packed chunks mention legal review and operations, but the sentence assigning the final signature to the port director gets pushed below the context budget.",
+        "severity": "fail"
+      },
+      "story": "Phrase-heavy snippets and stale documents can beat the longer procedure even when retrieval already found the right evidence.",
+      "outcome": "The answer revives the old signer or attributes final approval to operations instead of the port director.",
+      "metrics": {
+        "oracleCoverage": "0 / 1 gold spans",
+        "firstSupportRank": "#4 after rerank",
+        "packedSupport": "Indirect only",
+        "grounding": "Weak",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The current procedure memo is indexed correctly."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "Initial retrieval surfaced the current procedure and checklist."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No filters removed the gold evidence."
+        },
+        {
+          "id": "rerank",
+          "status": "fail",
+          "note": "The reranker preferred shorter exact-match snippets about legal review and operations."
+        },
+        {
+          "id": "packing",
+          "status": "fail",
+          "note": "The top-3 pack budget excludes the current procedural sentence naming the port director."
+        },
+        {
+          "id": "synthesis",
+          "status": "fail",
+          "note": "The answer attributes final signing to the wrong role."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.92,
+          "dense": 0.63,
+          "rerank": 0.94,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Repeats legal review and final approval phrasing exactly.",
+          "note": "This chunk sounds answer-like but never states the final signer."
+        },
+        {
+          "chunkId": "oldpolicy-1",
+          "bm25": 0.76,
+          "dense": 0.61,
+          "rerank": 0.81,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Contains a signer assignment in a concise form.",
+          "note": "The reranker likes this because it directly answers the question, but it is outdated."
+        },
+        {
+          "chunkId": "memo-1",
+          "bm25": 0.67,
+          "dense": 0.72,
+          "rerank": 0.69,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Current process context mentioning operations and legal review.",
+          "note": "Helpful setup, but it does not name the final signer."
+        },
+        {
+          "chunkId": "memo-2",
+          "bm25": 0.71,
+          "dense": 0.84,
+          "rerank": 0.66,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": false,
+          "why": "Contains the current signer assignment but in a longer sentence.",
+          "note": "This is the gold procedural statement, but reranking demotes it below shorter snippets."
+        },
+        {
+          "chunkId": "checklist-1",
+          "bm25": 0.58,
+          "dense": 0.79,
+          "rerank": 0.62,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Mentions the port director signature block.",
+          "note": "Strong support for the current signer, but also pushed out."
+        },
+        {
+          "chunkId": "email-1",
+          "bm25": 0.54,
+          "dense": 0.77,
+          "rerank": 0.58,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Direct clarification from operations chief.",
+          "note": "Another accurate chunk lost to the reranker."
+        }
+      ],
+      "answer": {
+        "text": "After legal review, operations appears to handle final shoreline waiver approval, consistent with the older policy language.",
+        "claims": [
+          {
+            "text": "Legal review happens before final approval.",
+            "status": "supported",
+            "supportIds": ["faq-1"],
+            "reason": "The packed FAQ states this sequence directly."
+          },
+          {
+            "text": "Operations handles the final shoreline waiver signature.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The packed context lacks the current procedural sentence assigning final signature to the port director."
+          },
+          {
+            "text": "Older policy assigned final signature to operations.",
+            "status": "supported",
+            "supportIds": ["oldpolicy-1"],
+            "reason": "The packed archived policy states this, but it is outdated."
+          }
+        ]
+      }
+    },
+    {
+      "id": "no-rerank",
+      "kind": "counterfactual",
+      "label": "Fix · disable reranker",
+      "config": {
+        "chunking": "default",
+        "filter": "none",
+        "reranker": "off",
+        "packing": "top 3 chunks"
+      },
+      "verdict": {
+        "stage": "Resolved: rerank",
+        "headline": "Without the reranker, the current procedure and checklist stay above the outdated shortcut answers.",
+        "detail": "The packed context now contains the procedural sentence and supporting checklist that both point to the port director as the final signer.",
+        "severity": "pass"
+      },
+      "story": "The retriever already had the right answer. The fix is simply to stop phrase-biased reranking from overriding it.",
+      "outcome": "The answer names the port director and distinguishes the operations chief's earlier routing role.",
+      "metrics": {
+        "oracleCoverage": "1 / 1 gold spans",
+        "firstSupportRank": "#1 current procedure",
+        "packedSupport": "Direct signer evidence",
+        "grounding": "Strong",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "Same indexed corpus."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "Semantic retrieval already placed the current procedure high."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No filtering issue."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "Disabling reranking prevents the FAQ and archived policy from leapfrogging the current procedure."
+        },
+        {
+          "id": "packing",
+          "status": "pass",
+          "note": "The current procedure and checklist are now packed together."
+        },
+        {
+          "id": "synthesis",
+          "status": "pass",
+          "note": "The final answer names the port director and correctly scopes the operations chief's role."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "memo-2",
+          "bm25": 0.71,
+          "dense": 0.84,
+          "rerank": null,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Highest semantic fit for the final signer question.",
+          "note": "This is the current procedural rule naming the port director."
+        },
+        {
+          "chunkId": "checklist-1",
+          "bm25": 0.58,
+          "dense": 0.79,
+          "rerank": null,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Corroborates the port director signature block.",
+          "note": "This checklist reinforces the current signer assignment."
+        },
+        {
+          "chunkId": "email-1",
+          "bm25": 0.54,
+          "dense": 0.77,
+          "rerank": null,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Direct clarification from the operations chief.",
+          "note": "This supporting message says operations no longer signs the final waiver."
+        },
+        {
+          "chunkId": "memo-1",
+          "bm25": 0.67,
+          "dense": 0.72,
+          "rerank": null,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": false,
+          "why": "Current process setup.",
+          "note": "Useful context but not the signer answer."
+        },
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.92,
+          "dense": 0.63,
+          "rerank": null,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Sequence-only snippet.",
+          "note": "Without reranking, the FAQ drops behind the real procedural evidence."
+        },
+        {
+          "chunkId": "oldpolicy-1",
+          "bm25": 0.76,
+          "dense": 0.61,
+          "rerank": null,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Archived but outdated answer.",
+          "note": "Still retrievable, but safely below the current policy."
+        }
+      ],
+      "answer": {
+        "text": "After legal review, the port director signs the final shoreline waiver. The operations chief only signs the earlier routing sheet and prepares the packet for review.",
+        "claims": [
+          {
+            "text": "The port director signs the final shoreline waiver after legal review.",
+            "status": "supported",
+            "supportIds": ["memo-2", "checklist-1"],
+            "reason": "Both packed chunks support the current signer assignment."
+          },
+          {
+            "text": "The operations chief signs only the routing sheet earlier in the process.",
+            "status": "supported",
+            "supportIds": ["memo-2", "email-1"],
+            "reason": "The packed procedure and email both make this distinction."
+          },
+          {
+            "text": "The 2023 rule is no longer current.",
+            "status": "supported",
+            "supportIds": ["email-1"],
+            "reason": "The operations chief email states the 2025 procedure replaced the older signing rule."
+          }
+        ]
+      }
+    }
+  ]
+}

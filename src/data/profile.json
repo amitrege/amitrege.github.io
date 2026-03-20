@@ -1,9 +1,6 @@
 {
   "name": "Amit Kiran Rege",
-  "shortName": "AR",
   "headline": "PhD Student in Computer Science, CU Boulder",
-  "tagline": "Theoretical machine learning for AI safety, control, and reliable LLM post-training.",
-  "focus": "Theoretical ML, AI safety and control, RL for LLM post-training, and interpretability foundations.",
   "location": "Boulder, CO",
   "email": "amit.rege@colorado.edu",
   "photo": "/assets/img/headshot_prof.jpg",

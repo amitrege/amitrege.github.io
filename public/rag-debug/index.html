@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="RAGScope is a simple step-by-step demo for understanding where retrieval went wrong."
+    />
+    <title>RAGScope | Simple RAG Debugger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="paper-noise" aria-hidden="true"></div>
+    <div class="frame-lines" aria-hidden="true"></div>
+
+    <div class="shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Static demo</p>
+          <h1>RAGScope</h1>
+          <p class="lede">
+            Pick a case on the left. Then go step by step: what was asked, what broke, what the model
+            saw, and how the fix helped.
+          </p>
+          <div class="hero-actions">
+            <a class="action primary" href="../">Back to site</a>
+          </div>
+        </div>
+
+        <div class="hero-tip">
+          <p class="mini-label">How to use it</p>
+          <p>Start at step 1. You should never need to scan the whole page at once.</p>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside id="scenario-panel" class="panel sidebar">
+          <div class="panel-head">
+            <p class="panel-kicker">Cases</p>
+            <h2>Pick one</h2>
+            <p>Each case has one failure, one fix, and one short walkthrough.</p>
+          </div>
+          <div id="scenario-list" class="scenario-list" aria-live="polite"></div>
+        </aside>
+
+        <main class="main-column">
+          <section class="panel" id="scenario-overview"></section>
+          <section class="panel" id="stepper-panel"></section>
+          <section class="panel" id="step-content-panel"></section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

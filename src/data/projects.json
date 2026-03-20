@@ -1,23 +1,9 @@
 [
   {
-    "title": "Interactive Demo Placeholder",
-    "status": "Active",
-    "blurb": "Describe what users can try and why the demo is technically interesting.",
-    "tech": "PyTorch, Gradio, CUDA",
-    "link": "#"
-  },
-  {
-    "title": "Research Toolkit Placeholder",
-    "status": "In Progress",
-    "blurb": "Use this for libraries, benchmark suites, or evaluation tools.",
-    "tech": "Python, JAX, Docker",
-    "link": "#"
-  },
-  {
-    "title": "Side Project Placeholder",
-    "status": "Archived",
-    "blurb": "Older experiments can stay visible with clear status labels.",
-    "tech": "Rust, WebAssembly",
-    "link": "#"
+    "title": "RAGScope",
+    "status": "Live Demo",
+    "blurb": "Static retrieval debugger that shows where RAG failed: chunk split, metadata filter, or reranker regression. Each case includes gold support spans, counterfactual fixes, and answer claim audits.",
+    "tech": "JavaScript, GitHub Pages, Astro, JSON",
+    "link": "/rag-debug/"
   }
 ]

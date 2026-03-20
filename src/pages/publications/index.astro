@@ -1,24 +1,9 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
 import publications from "../../data/publications.json";
+import { formatVenue, getFavicon, isOralVenue } from "../../utils/site";
 
 const allPublications = [...publications].sort((a, b) => Number(b.year) - Number(a.year));
-
-const getDomain = (url: string) => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-};
-
-const getFavicon = (url: string) => {
-  const domain = getDomain(url);
-  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : "";
-};
-
-const isOralVenue = (venue: string) => /\boral\b/i.test(venue);
-const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim();
 ---
 
 <MainLayout title="Publications | Amit Kiran Rege" description="Full publication list." pageClass="blog-page">

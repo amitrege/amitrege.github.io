@@ -1,8 +1,10 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+import ProjectCard from "../../components/ProjectCard.astro";
+import projects from "../../data/projects.json";
 ---
 
-<MainLayout title="Demos | Amit Kiran Rege" description="Demo section currently under construction." pageClass="blog-page">
+<MainLayout title="Demos | Amit Kiran Rege" description="Interactive demos and research engineering experiments." pageClass="blog-page">
   <section class="section shell reveal">
     <div class="section-head">
       <h1>All Demos and Side Projects</h1>
@@ -10,11 +12,11 @@ import MainLayout from "../../layouts/MainLayout.astro";
     </div>
 
     <div class="stack">
-      <article class="card glass construction-card">
-        <p class="construction-tag">Under Construction</p>
-        <h2>Demos are under construction</h2>
-        <p>Placeholder projects have been removed. Live demos and experiments will appear here soon.</p>
-      </article>
+      {
+        projects.map((project) => (
+          <ProjectCard project={project} headingTag="h2" />
+        ))
+      }
     </div>
   </section>
 </MainLayout>

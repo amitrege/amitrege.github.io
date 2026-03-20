@@ -1,0 +1,412 @@
+{
+  "id": "north-harbor-rerank",
+  "title": "Reranker Prefers the Glossary Over the Security Standard",
+  "family": "Rerank Regression",
+  "summary": "Dense retrieval finds the right standard, but the cross-encoder loves an exact-phrase glossary entry and pushes the alias-heavy gold chunk below the packing cutoff.",
+  "query": "What security control does North Harbor use for break-glass access?",
+  "dataset": {
+    "name": "North Harbor security packet",
+    "docCount": 5,
+    "chunkCount": 6,
+    "notes": "Synthetic enterprise-security corpus with a standard, FAQ, audit note, architecture brief, and incident retro."
+  },
+  "goldChunkIds": ["standard-1", "standard-2"],
+  "debugChecklist": [
+    "Compare retrieval order before and after reranking to see whether the gold chunk is being demoted.",
+    "Watch for alias-heavy documents whose wording is semantically right but lacks the exact surface form from the query.",
+    "If reranking hurts recall, test a no-rerank counterfactual before touching chunking or synthesis."
+  ],
+  "docs": [
+    {
+      "id": "standard",
+      "title": "NH-SEC-17 Emergency Elevation Standard",
+      "source": "North Harbor Security",
+      "metadata": {
+        "region": "internal",
+        "type": "standard",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "standard-1",
+          "label": "Standard chunk 1",
+          "text": "Emergency elevation requests route through NH Vault, North Harbor's break-glass service, instead of going directly to an administrator."
+        },
+        {
+          "id": "standard-2",
+          "label": "Standard chunk 2",
+          "text": "NH Vault uses dual-approval escrow: one human approver and one hardware-key release must both sign before privileged access is granted."
+        }
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "Security Glossary FAQ",
+      "source": "Security Portal",
+      "metadata": {
+        "region": "internal",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "faq-1",
+          "label": "FAQ chunk 1",
+          "text": "Break-glass access is the emergency path used when normal privilege workflows are unavailable during an incident."
+        }
+      ]
+    },
+    {
+      "id": "audit",
+      "title": "Quarterly Privilege Audit",
+      "source": "Governance Office",
+      "metadata": {
+        "region": "internal",
+        "type": "audit note",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "audit-1",
+          "label": "Audit chunk 1",
+          "text": "Auditors verified that emergency elevation always leaves an escrow record and requires two approvals before secrets are released."
+        }
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "Privileged Access Architecture",
+      "source": "Identity Platform",
+      "metadata": {
+        "region": "internal",
+        "type": "architecture note",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "arch-1",
+          "label": "Architecture chunk 1",
+          "text": "North Harbor aliases its emergency broker as NH Vault in system diagrams, while internal tickets often call it the break-glass service."
+        }
+      ]
+    },
+    {
+      "id": "retro",
+      "title": "Incident 481 Retro",
+      "source": "Incident Review",
+      "metadata": {
+        "region": "internal",
+        "type": "retro",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "retro-1",
+          "label": "Retro chunk 1",
+          "text": "The on-call team recovered quickly because NH Vault released emergency credentials only after both approvers completed the escrow workflow."
+        }
+      ]
+    }
+  ],
+  "recommendedRunId": "no-rerank",
+  "runs": [
+    {
+      "id": "baseline",
+      "kind": "baseline",
+      "label": "Baseline · reranker on",
+      "config": {
+        "chunking": "default",
+        "filter": "none",
+        "reranker": "cross-encoder on",
+        "packing": "top 3 chunks"
+      },
+      "verdict": {
+        "stage": "First broken stage: rerank",
+        "headline": "The reranker boosted the glossary entry and demoted the standard that actually names the control.",
+        "detail": "Retrieval already found the right standard, but reranking liked the surface phrase 'break-glass access' in the FAQ and pushed the gold control below the packed cutoff.",
+        "severity": "fail"
+      },
+      "story": "This is a classic recall regression: reranking improves phrasing match but loses the substantive answer.",
+      "outcome": "The answer says break-glass is an emergency path, but never names the dual-approval escrow control.",
+      "metrics": {
+        "oracleCoverage": "1 / 2 gold spans",
+        "firstSupportRank": "#4 after rerank",
+        "packedSupport": "Only definition-level context",
+        "grounding": "Weak",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The standard and alias notes are indexed correctly."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "Dense retrieval surfaces NH Vault evidence before reranking."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No metadata filter removes the answer."
+        },
+        {
+          "id": "rerank",
+          "status": "fail",
+          "note": "The glossary FAQ wins because it repeats the exact query phrase while the standard uses the alias NH Vault."
+        },
+        {
+          "id": "packing",
+          "status": "fail",
+          "note": "The top-3 context budget drops the decisive control chunk."
+        },
+        {
+          "id": "synthesis",
+          "status": "fail",
+          "note": "The answer defines break-glass access but does not name the control that governs it."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.94,
+          "dense": 0.58,
+          "rerank": 0.95,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Exact phrase match for break-glass access.",
+          "note": "This chunk defines the term but does not answer what control North Harbor uses."
+        },
+        {
+          "chunkId": "arch-1",
+          "bm25": 0.63,
+          "dense": 0.79,
+          "rerank": 0.76,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Explains that NH Vault is the break-glass service alias.",
+          "note": "Helpful bridge, but still not the specific control."
+        },
+        {
+          "chunkId": "retro-1",
+          "bm25": 0.6,
+          "dense": 0.75,
+          "rerank": 0.71,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Mentions escrow workflow during an incident.",
+          "note": "This chunk hints at the answer but the stronger standard is still below the packing cutoff."
+        },
+        {
+          "chunkId": "standard-2",
+          "bm25": 0.56,
+          "dense": 0.84,
+          "rerank": 0.62,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": false,
+          "why": "Contains the exact dual-approval escrow control.",
+          "note": "This is the most direct answer, but reranking penalized it for using NH Vault terminology instead of the literal query phrase."
+        },
+        {
+          "chunkId": "audit-1",
+          "bm25": 0.49,
+          "dense": 0.74,
+          "rerank": 0.57,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Corroborates dual approvals and escrow.",
+          "note": "A useful supporting chunk that also fell below the packed cutoff."
+        },
+        {
+          "chunkId": "standard-1",
+          "bm25": 0.53,
+          "dense": 0.81,
+          "rerank": 0.54,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Connects break-glass access to NH Vault explicitly.",
+          "note": "This upstream chunk helps anchor the alias, but it was also demoted."
+        }
+      ],
+      "answer": {
+        "text": "North Harbor handles break-glass access through an emergency path used when normal privilege workflows are unavailable.",
+        "claims": [
+          {
+            "text": "Break-glass access is an emergency path.",
+            "status": "supported",
+            "supportIds": ["faq-1"],
+            "reason": "The packed FAQ states this directly."
+          },
+          {
+            "text": "North Harbor uses NH Vault for break-glass access.",
+            "status": "weak",
+            "supportIds": ["arch-1", "retro-1"],
+            "reason": "Packed context hints that NH Vault is involved, but the direct standard language was dropped."
+          },
+          {
+            "text": "The control is dual-approval escrow with human and hardware approval.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The decisive control chunk did not survive reranking and packing."
+          }
+        ]
+      }
+    },
+    {
+      "id": "no-rerank",
+      "kind": "counterfactual",
+      "label": "Fix · disable reranker",
+      "config": {
+        "chunking": "default",
+        "filter": "none",
+        "reranker": "off",
+        "packing": "top 3 chunks"
+      },
+      "verdict": {
+        "stage": "Resolved: rerank",
+        "headline": "Without the reranker, dense retrieval keeps the standard and audit note above the glossary.",
+        "detail": "The candidate set already contained the right answer. Removing the reranker is enough to recover recall and ground the answer in the security standard.",
+        "severity": "pass"
+      },
+      "story": "The simplest fix is to trust the retriever's semantic ranking instead of the phrase-heavy reranker.",
+      "outcome": "The answer now names dual-approval escrow as the controlling mechanism behind break-glass access.",
+      "metrics": {
+        "oracleCoverage": "2 / 2 gold spans",
+        "firstSupportRank": "#1 standard",
+        "packedSupport": "Direct control description",
+        "grounding": "Strong",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The same indexed content is used."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "Semantic retrieval already ranked the control-bearing chunks well."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No filtering issue exists."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "Removing reranking prevents the phrase-match regression."
+        },
+        {
+          "id": "packing",
+          "status": "pass",
+          "note": "The top-3 budget now includes both gold chunks."
+        },
+        {
+          "id": "synthesis",
+          "status": "pass",
+          "note": "The answer names the exact control and its two approval sources."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "standard-2",
+          "bm25": 0.56,
+          "dense": 0.84,
+          "rerank": null,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Highest semantic match for the actual control.",
+          "note": "Disabling reranking lets the dual-approval escrow chunk stay on top."
+        },
+        {
+          "chunkId": "standard-1",
+          "bm25": 0.53,
+          "dense": 0.81,
+          "rerank": null,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Connects the break-glass alias to NH Vault.",
+          "note": "This chunk explains that NH Vault is North Harbor's break-glass service."
+        },
+        {
+          "chunkId": "audit-1",
+          "bm25": 0.49,
+          "dense": 0.74,
+          "rerank": null,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Corroborates the dual-approval escrow behavior.",
+          "note": "The audit note reinforces the same control from an independent document."
+        },
+        {
+          "chunkId": "arch-1",
+          "bm25": 0.63,
+          "dense": 0.79,
+          "rerank": null,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": false,
+          "why": "Still useful alias bridge.",
+          "note": "Supportive but not needed once the standard is packed."
+        },
+        {
+          "chunkId": "retro-1",
+          "bm25": 0.6,
+          "dense": 0.75,
+          "rerank": null,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Incident corroboration.",
+          "note": "No longer required in the small pack budget."
+        },
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.94,
+          "dense": 0.58,
+          "rerank": null,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Definition-level text with little control detail.",
+          "note": "Without reranking, the glossary falls back to the bottom where it belongs."
+        }
+      ],
+      "answer": {
+        "text": "North Harbor uses NH Vault's dual-approval escrow for break-glass access. An emergency elevation is granted only after one human approver and one hardware-key release both sign the request.",
+        "claims": [
+          {
+            "text": "North Harbor routes break-glass access through NH Vault.",
+            "status": "supported",
+            "supportIds": ["standard-1"],
+            "reason": "The packed standard maps break-glass access to NH Vault explicitly."
+          },
+          {
+            "text": "The controlling mechanism is dual-approval escrow.",
+            "status": "supported",
+            "supportIds": ["standard-2", "audit-1"],
+            "reason": "Both packed chunks describe the dual-approval escrow control."
+          },
+          {
+            "text": "A human approver and a hardware-key release must both sign before access is granted.",
+            "status": "supported",
+            "supportIds": ["standard-2"],
+            "reason": "The standard states the two approval sources directly."
+          }
+        ]
+      }
+    }
+  ]
+}

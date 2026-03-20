@@ -1,8 +1,11 @@
 ---
 import MainLayout from "../layouts/MainLayout.astro";
+import ProjectCard from "../components/ProjectCard.astro";
 import profile from "../data/profile.json";
 import publications from "../data/publications.json";
+import projects from "../data/projects.json";
 import updates from "../data/updates.json";
+import { formatDate, formatVenue, getFavicon, isOralVenue } from "../utils/site";
 
 const recentUpdates = [...updates]
   .sort((a, b) => new Date(b.date).valueOf() - new Date(a.date).valueOf())
@@ -12,28 +15,7 @@ const recentPublications = [...publications]
   .sort((a, b) => Number(b.year) - Number(a.year))
   .slice(0, 3);
 
-const formatDate = (value: string | Date) =>
-  new Date(value).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
-
-const getDomain = (url: string) => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-};
-
-const getFavicon = (url: string) => {
-  const domain = getDomain(url);
-  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : "";
-};
-
-const isOralVenue = (venue: string) => /\boral\b/i.test(venue);
-const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim();
+const featuredProjects = [...projects].slice(0, 3);
 ---
 
 <MainLayout>
@@ -179,11 +161,11 @@ const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim
       <p>Interactive prototypes and research engineering experiments.</p>
     </div>
     <div class="stack">
-      <article class="card glass construction-card">
-        <p class="construction-tag">Under Construction</p>
-        <h3>Demos are being rebuilt</h3>
-        <p>Coming soon!</p>
-      </article>
+      {
+        featuredProjects.map((project) => (
+          <ProjectCard project={project} />
+        ))
+      }
     </div>
     <a class="btn btn-ghost section-link" href="/demos">View all demos</a>
   </section>

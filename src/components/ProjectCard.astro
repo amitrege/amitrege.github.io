@@ -1,0 +1,32 @@
+---
+interface Project {
+  title: string;
+  status: string;
+  blurb: string;
+  tech: string;
+  link: string;
+}
+
+interface Props {
+  project: Project;
+  headingTag?: "h2" | "h3";
+}
+
+const { project, headingTag = "h3" } = Astro.props;
+const Heading = headingTag;
+---
+
+<article class="card glass project-card">
+  <div>
+    <p class="meta">{project.status}</p>
+    <Heading>{project.title}</Heading>
+    <p>{project.blurb}</p>
+  </div>
+
+  <div class="project-foot">
+    <div class="chip-list project-chip-list">
+      {project.tech.split(",").map((item) => <span class="chip">{item.trim()}</span>)}
+    </div>
+    <a class="btn btn-primary" href={project.link}>Open Demo</a>
+  </div>
+</article>

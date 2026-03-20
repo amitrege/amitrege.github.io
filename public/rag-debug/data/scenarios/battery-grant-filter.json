@@ -1,0 +1,424 @@
+{
+  "id": "battery-grant-filter",
+  "title": "Regional Filter Excludes the Only Multi-State Policy Memo",
+  "family": "Metadata Filter",
+  "summary": "A school transit query is run with a West-only metadata filter. The corpus contains the correct multi-state program memo, but it is tagged national and disappears before ranking or packing can recover it.",
+  "query": "Which Clean Transit program lets school districts pool battery grants across states?",
+  "dataset": {
+    "name": "Clean Transit incentive packet",
+    "docCount": 6,
+    "chunkCount": 6,
+    "notes": "Synthetic policy corpus with one national memo, regional FAQs, board notes, and a vendor explainer."
+  },
+  "goldChunkIds": ["national-1"],
+  "debugChecklist": [
+    "Compare pre-filter retrieval hits against post-filter survivors to see whether the gold document vanished.",
+    "If the gold document exists but is tagged more broadly than the query scope, inspect the metadata policy before touching ranking.",
+    "When the failure is filter-induced, the nearest fix is often relaxing or broadening the metadata constraint."
+  ],
+  "docs": [
+    {
+      "id": "national-program",
+      "title": "Interstate Battery Pooling Memo",
+      "source": "Clean Transit Secretariat",
+      "metadata": {
+        "region": "national",
+        "type": "policy memo",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "national-1",
+          "label": "Memo chunk 1",
+          "text": "The GridShare Reserve program lets member school districts pool battery grants across state lines when they procure through a joint transit authority."
+        }
+      ]
+    },
+    {
+      "id": "west-faq",
+      "title": "Western Region Grant FAQ",
+      "source": "Western Clean Transit",
+      "metadata": {
+        "region": "west",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "west-1",
+          "label": "West FAQ chunk 1",
+          "text": "California and Nevada districts may file separate battery grant applications through the Western reserve track."
+        }
+      ]
+    },
+    {
+      "id": "east-faq",
+      "title": "Eastern Region Grant FAQ",
+      "source": "Eastern Clean Transit",
+      "metadata": {
+        "region": "east",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "east-1",
+          "label": "East FAQ chunk 1",
+          "text": "Eastern districts can stack battery grants with depot upgrades, but the application remains state-specific."
+        }
+      ]
+    },
+    {
+      "id": "board-note",
+      "title": "Transit Board Note",
+      "source": "National Transit Board",
+      "metadata": {
+        "region": "west",
+        "type": "meeting note",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "board-1",
+          "label": "Board note chunk 1",
+          "text": "Board members contrasted state-specific reserve tracks with the joint-authority program used by multi-state districts."
+        }
+      ]
+    },
+    {
+      "id": "vendor",
+      "title": "Vendor Program Explainer",
+      "source": "FleetSpark",
+      "metadata": {
+        "region": "west",
+        "type": "vendor note",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "vendor-1",
+          "label": "Vendor chunk 1",
+          "text": "Vendors often call GridShare a pooled reserve, but districts still need the official joint-authority memo to qualify."
+        }
+      ]
+    },
+    {
+      "id": "operations",
+      "title": "District Operations Email",
+      "source": "Mesa Schools",
+      "metadata": {
+        "region": "west",
+        "type": "email",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "ops-1",
+          "label": "Email chunk 1",
+          "text": "Mesa Schools asked whether pooling was possible, but staff were told to check the joint-authority documentation before applying."
+        }
+      ]
+    }
+  ],
+  "recommendedRunId": "widen-filter",
+  "runs": [
+    {
+      "id": "baseline",
+      "kind": "baseline",
+      "label": "Baseline · region = west",
+      "config": {
+        "chunking": "default",
+        "filter": "region = west",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "First broken stage: metadata filter",
+        "headline": "The correct policy memo was retrieved before filtering, then removed because it was tagged national.",
+        "detail": "The filter preserved only West-tagged material. That left FAQs and notes that discuss state-specific applications, so the answer drifted toward the wrong program.",
+        "severity": "fail"
+      },
+      "story": "The system had the right document in the corpus, but the region policy excluded it before ranking could help.",
+      "outcome": "The answer names a Western reserve track even though only GridShare allows multi-state pooling.",
+      "metrics": {
+        "oracleCoverage": "0 / 1 gold spans",
+        "firstSupportRank": "filtered out",
+        "packedSupport": "No gold evidence",
+        "grounding": "Weak",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The GridShare memo was ingested correctly."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "Pre-filter retrieval still surfaced the GridShare memo because it matched pooling language."
+        },
+        {
+          "id": "filter",
+          "status": "fail",
+          "note": "The region = west filter removed the only document tagged national."
+        },
+        {
+          "id": "rerank",
+          "status": "blocked",
+          "note": "Reranking never saw the gold memo."
+        },
+        {
+          "id": "packing",
+          "status": "blocked",
+          "note": "Only region-surviving distractors were packed."
+        },
+        {
+          "id": "synthesis",
+          "status": "fail",
+          "note": "The answer guessed from the surviving Western FAQs."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "west-1",
+          "bm25": 0.87,
+          "dense": 0.65,
+          "rerank": 0.84,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Strong lexical match for battery grant applications.",
+          "note": "This chunk is still wrong because it describes separate state applications, not pooled interstate grants."
+        },
+        {
+          "chunkId": "vendor-1",
+          "bm25": 0.8,
+          "dense": 0.67,
+          "rerank": 0.78,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Mentions GridShare and joint-authority documentation.",
+          "note": "The vendor note points toward the right program but cannot prove the eligibility rule by itself."
+        },
+        {
+          "chunkId": "board-1",
+          "bm25": 0.69,
+          "dense": 0.61,
+          "rerank": 0.66,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Discusses state-specific versus joint-authority programs.",
+          "note": "This note hints a broader policy exists, but the actual program name was filtered out."
+        },
+        {
+          "chunkId": "ops-1",
+          "bm25": 0.63,
+          "dense": 0.57,
+          "rerank": 0.59,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "Operational email about pooling.",
+          "note": "Another hint that a joint-authority rule exists, but not enough to answer confidently."
+        },
+        {
+          "chunkId": "national-1",
+          "bm25": 0.9,
+          "dense": 0.82,
+          "rerank": 0.92,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Best actual support for multi-state pooling.",
+          "note": "This is the gold policy memo, but it was removed solely by the region filter."
+        },
+        {
+          "chunkId": "east-1",
+          "bm25": 0.39,
+          "dense": 0.36,
+          "rerank": 0.31,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Excluded by region.",
+          "note": "Not directly relevant, but filtered alongside the national memo."
+        }
+      ],
+      "answer": {
+        "text": "The Western reserve track appears to be the program that lets districts coordinate battery grants, especially for California and Nevada applications.",
+        "claims": [
+          {
+            "text": "Western reserve track lets districts coordinate applications.",
+            "status": "weak",
+            "supportIds": ["west-1", "board-1"],
+            "reason": "The packed context shows coordination talk, but not interstate pooling rights."
+          },
+          {
+            "text": "The program supports pooling grants across state lines.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The only document that states interstate pooling was filtered out."
+          },
+          {
+            "text": "A joint-authority rule exists outside the surviving FAQ.",
+            "status": "weak",
+            "supportIds": ["vendor-1", "ops-1"],
+            "reason": "The surviving evidence hints at a broader policy but cannot identify it conclusively."
+          }
+        ]
+      }
+    },
+    {
+      "id": "widen-filter",
+      "kind": "counterfactual",
+      "label": "Fix · include national policy docs",
+      "config": {
+        "chunking": "default",
+        "filter": "region in {west, national}",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "Resolved: metadata filter",
+        "headline": "Broadening the filter restores the GridShare policy memo.",
+        "detail": "Once the national memo is allowed through, ranking and packing behave normally and the answer names the correct program.",
+        "severity": "pass"
+      },
+      "story": "The smallest effective fix is not reranking; it is admitting the national memo into the candidate set.",
+      "outcome": "The answer now identifies GridShare Reserve as the only multi-state pooling program.",
+      "metrics": {
+        "oracleCoverage": "1 / 1 gold spans",
+        "firstSupportRank": "#1 GridShare memo",
+        "packedSupport": "Direct policy support",
+        "grounding": "Strong",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The gold memo remains indexed."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "The GridShare memo matches the pooling query strongly."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "The broadened filter keeps national policy documents in play."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "Reranking now sees the strongest exact support and promotes it."
+        },
+        {
+          "id": "packing",
+          "status": "pass",
+          "note": "The packed context contains the policy memo and the best supporting note."
+        },
+        {
+          "id": "synthesis",
+          "status": "pass",
+          "note": "The final answer names the correct program and its joint-authority condition."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "national-1",
+          "bm25": 0.9,
+          "dense": 0.82,
+          "rerank": 0.95,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Directly names GridShare Reserve and the interstate pooling rule.",
+          "note": "This memo contains the exact policy answer that was previously filtered out."
+        },
+        {
+          "chunkId": "vendor-1",
+          "bm25": 0.8,
+          "dense": 0.67,
+          "rerank": 0.76,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Corroborates the GridShare naming convention.",
+          "note": "Useful secondary evidence that connects common terminology to the official memo."
+        },
+        {
+          "chunkId": "board-1",
+          "bm25": 0.69,
+          "dense": 0.61,
+          "rerank": 0.63,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Adds comparison against state-specific tracks.",
+          "note": "This note helps distinguish GridShare from the regional reserve programs."
+        },
+        {
+          "chunkId": "west-1",
+          "bm25": 0.87,
+          "dense": 0.65,
+          "rerank": 0.6,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "Still relevant, but clearly a state-specific alternative.",
+          "note": "The answer now keeps this chunk in the right supporting role."
+        },
+        {
+          "chunkId": "ops-1",
+          "bm25": 0.63,
+          "dense": 0.57,
+          "rerank": 0.52,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Operational question from a district.",
+          "note": "No longer required once the policy memo is present."
+        },
+        {
+          "chunkId": "east-1",
+          "bm25": 0.39,
+          "dense": 0.36,
+          "rerank": 0.28,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "State-specific eastern alternative.",
+          "note": "Useful contrast, not the answer."
+        }
+      ],
+      "answer": {
+        "text": "The program is GridShare Reserve. Its policy memo says member school districts can pool battery grants across state lines when they buy through a joint transit authority.",
+        "claims": [
+          {
+            "text": "GridShare Reserve is the relevant Clean Transit program.",
+            "status": "supported",
+            "supportIds": ["national-1"],
+            "reason": "The packed memo names the program directly."
+          },
+          {
+            "text": "Pooling is allowed across state lines for member districts.",
+            "status": "supported",
+            "supportIds": ["national-1"],
+            "reason": "The memo states the interstate pooling rule explicitly."
+          },
+          {
+            "text": "The rule depends on procuring through a joint transit authority.",
+            "status": "supported",
+            "supportIds": ["national-1", "vendor-1"],
+            "reason": "Both packed chunks mention the joint-authority requirement."
+          }
+        ]
+      }
+    }
+  ]
+}

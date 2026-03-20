@@ -5,7 +5,6 @@ This repo now uses **Astro + Node** instead of legacy Jekyll/Ruby.
 ## Stack
 
 - Astro (static site generator)
-- Markdown content for blog posts
 - JSON data files for profile, updates, publications, projects
 - GitHub Actions deployment to GitHub Pages
 
@@ -41,7 +40,6 @@ npm run build
 - Update cards: `src/data/updates.json`
 - Publications: `src/data/publications.json`
 - Side projects/demos: `src/data/projects.json`
-- Blog posts: `src/content/blog/*.md`
 
 ## Add Photo, CV, Resume
 

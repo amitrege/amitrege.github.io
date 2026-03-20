@@ -1,15 +1,9 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
 import updates from "../../data/updates.json";
+import { formatDate } from "../../utils/site";
 
 const allUpdates = [...updates].sort((a, b) => new Date(b.date).valueOf() - new Date(a.date).valueOf());
-
-const formatDate = (value: string | Date) =>
-  new Date(value).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
 ---
 
 <MainLayout title="Updates | Amit Kiran Rege" description="All updates, milestones, talks, and release notes." pageClass="blog-page">

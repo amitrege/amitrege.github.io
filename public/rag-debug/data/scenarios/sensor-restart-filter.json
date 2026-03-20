@@ -1,0 +1,412 @@
+{
+  "id": "sensor-restart-filter",
+  "title": "Doc-Type Filter Hides the Recovery Bulletin",
+  "family": "Metadata Filter",
+  "summary": "An operator asks how to restart a sensor array after a coolant fault. The right procedure exists in the corpus, but a doc-type filter only allows FAQs, so the recovery bulletin never enters the packed context.",
+  "query": "What must operators do before restarting the ArcLight sensor array after a coolant fault?",
+  "dataset": {
+    "name": "ArcLight incident-response packet",
+    "docCount": 5,
+    "chunkCount": 6,
+    "notes": "Synthetic engineering-operations corpus with a recovery bulletin, FAQ, incident digest, checklist, and maintenance memo."
+  },
+  "goldChunkIds": ["bulletin-1", "bulletin-2"],
+  "debugChecklist": [
+    "If the surviving answer sounds operationally thin, inspect whether the system filtered to lightweight document classes like FAQs.",
+    "Check whether the excluded documents contain prescriptive language such as must, required, or before restart.",
+    "When the issue is doc-type filtering, fix the candidate policy before tweaking ranking or prompts."
+  ],
+  "docs": [
+    {
+      "id": "bulletin",
+      "title": "ArcLight Coolant Fault Recovery Bulletin",
+      "source": "Core Systems Reliability",
+      "metadata": {
+        "region": "global",
+        "type": "procedure",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "bulletin-1",
+          "label": "Bulletin chunk 1",
+          "text": "Before any restart after a coolant fault, operators must complete a dry-spin validation of the turbine cage and record the resulting vibration trace."
+        },
+        {
+          "id": "bulletin-2",
+          "label": "Bulletin chunk 2",
+          "text": "The restart request also requires a thermal lead sign-off confirming that coolant pressure has stabilized and the dry-spin trace stayed within tolerance."
+        }
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "ArcLight Operator FAQ",
+      "source": "Operations Portal",
+      "metadata": {
+        "region": "global",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "faq-1",
+          "label": "FAQ chunk 1",
+          "text": "After a coolant fault, inspect the loop, clear the controller warning, and restart once the dashboard returns to normal."
+        }
+      ]
+    },
+    {
+      "id": "digest",
+      "title": "Incident Digest",
+      "source": "Reliability Weekly",
+      "metadata": {
+        "region": "global",
+        "type": "digest",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "digest-1",
+          "label": "Digest chunk 1",
+          "text": "Recent ArcLight faults were traced to insufficient verification of the turbine cage after coolant loss."
+        }
+      ]
+    },
+    {
+      "id": "checklist",
+      "title": "Shift Checklist",
+      "source": "Night Ops",
+      "metadata": {
+        "region": "global",
+        "type": "checklist",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "checklist-1",
+          "label": "Checklist chunk 1",
+          "text": "Do not restart any array with an unresolved coolant alarm. Escalate to the thermal lead when vibration behavior looks unusual."
+        }
+      ]
+    },
+    {
+      "id": "memo",
+      "title": "Maintenance Memo",
+      "source": "Platform Maintenance",
+      "metadata": {
+        "region": "global",
+        "type": "memo",
+        "year": "2024"
+      },
+      "chunks": [
+        {
+          "id": "memo-1",
+          "label": "Memo chunk 1",
+          "text": "Older practice allowed restart after dashboard normalization alone, but the 2025 bulletin added dry-spin verification and thermal sign-off."
+        }
+      ]
+    }
+  ],
+  "recommendedRunId": "allow-procedures",
+  "runs": [
+    {
+      "id": "baseline",
+      "kind": "baseline",
+      "label": "Baseline · doc_type = faq",
+      "config": {
+        "chunking": "default",
+        "filter": "doc_type = faq",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "First broken stage: metadata filter",
+        "headline": "The filter preserved the FAQ and excluded the actual restart procedure.",
+        "detail": "The system answered from a user-friendly FAQ that omits the dry-spin validation and thermal sign-off required by the recovery bulletin.",
+        "severity": "fail"
+      },
+      "story": "The gold evidence is not hard to retrieve; it is simply not admitted because the pipeline only trusts FAQ documents.",
+      "outcome": "The answer restarts too early and misses the two mandatory safeguards.",
+      "metrics": {
+        "oracleCoverage": "0 / 2 gold spans",
+        "firstSupportRank": "filtered out",
+        "packedSupport": "FAQ only",
+        "grounding": "Weak",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The recovery bulletin is indexed correctly."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "The bulletin matches strongly on restart and coolant fault language before filtering."
+        },
+        {
+          "id": "filter",
+          "status": "fail",
+          "note": "Only FAQ documents survive, so both procedural gold chunks disappear."
+        },
+        {
+          "id": "rerank",
+          "status": "blocked",
+          "note": "Reranking only sees the FAQ-style candidates."
+        },
+        {
+          "id": "packing",
+          "status": "blocked",
+          "note": "The packed context contains no procedural source of truth."
+        },
+        {
+          "id": "synthesis",
+          "status": "fail",
+          "note": "The answer repeats the FAQ and omits mandatory validation steps."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.91,
+          "dense": 0.72,
+          "rerank": 0.89,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Matches restart, coolant fault, and operator language.",
+          "note": "The FAQ is easy to retrieve, but it is operationally incomplete."
+        },
+        {
+          "chunkId": "checklist-1",
+          "bm25": 0.61,
+          "dense": 0.59,
+          "rerank": 0.58,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Filtered because it is a checklist, not an FAQ.",
+          "note": "Even this supporting checklist is excluded by the doc-type policy."
+        },
+        {
+          "chunkId": "bulletin-1",
+          "bm25": 0.87,
+          "dense": 0.81,
+          "rerank": 0.93,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Best direct evidence for the pre-restart dry-spin requirement.",
+          "note": "This gold chunk never reaches ranking because the filter removes procedures."
+        },
+        {
+          "chunkId": "bulletin-2",
+          "bm25": 0.8,
+          "dense": 0.79,
+          "rerank": 0.9,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Contains the thermal lead sign-off requirement.",
+          "note": "This is the second missing procedural requirement."
+        },
+        {
+          "chunkId": "digest-1",
+          "bm25": 0.48,
+          "dense": 0.52,
+          "rerank": 0.46,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Filtered because it is an incident digest.",
+          "note": "Supportive background, also filtered."
+        },
+        {
+          "chunkId": "memo-1",
+          "bm25": 0.58,
+          "dense": 0.67,
+          "rerank": 0.54,
+          "finalRank": null,
+          "filtered": true,
+          "packed": false,
+          "why": "Explains the policy change from dashboard-only restart.",
+          "note": "The memo would have contradicted the FAQ if it were allowed through."
+        }
+      ],
+      "answer": {
+        "text": "Operators should inspect the coolant loop, clear the warning, and restart once the dashboard returns to normal.",
+        "claims": [
+          {
+            "text": "Operators should inspect the coolant loop first.",
+            "status": "supported",
+            "supportIds": ["faq-1"],
+            "reason": "The packed FAQ says this directly."
+          },
+          {
+            "text": "A normal dashboard is sufficient to restart the array.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The packed context lacks the procedure bulletin that added mandatory dry-spin validation and thermal sign-off."
+          },
+          {
+            "text": "No separate procedural sign-off is required.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The sign-off rule lives only in the filtered bulletin."
+          }
+        ]
+      }
+    },
+    {
+      "id": "allow-procedures",
+      "kind": "counterfactual",
+      "label": "Fix · allow procedure and checklist docs",
+      "config": {
+        "chunking": "default",
+        "filter": "doc_type in {faq, procedure, checklist}",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "Resolved: metadata filter",
+        "headline": "The procedural bulletin now enters the candidate set and becomes the top evidence.",
+        "detail": "Admitting procedure documents is enough to surface both mandatory pre-restart steps without changing retrieval or prompting.",
+        "severity": "pass"
+      },
+      "story": "The fix is not more generation logic; it is giving the system access to the right document class.",
+      "outcome": "The answer now names both the dry-spin validation and the thermal lead sign-off.",
+      "metrics": {
+        "oracleCoverage": "2 / 2 gold spans",
+        "firstSupportRank": "#1 procedure",
+        "packedSupport": "Full restart checklist",
+        "grounding": "Strong",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "The gold bulletin remains indexed."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "The procedure chunks match strongly once they are eligible."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "Allowing procedure and checklist docs restores the missing recovery path."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "Reranking now prefers the prescriptive bulletin over the FAQ."
+        },
+        {
+          "id": "packing",
+          "status": "pass",
+          "note": "Both gold chunks enter the packed context."
+        },
+        {
+          "id": "synthesis",
+          "status": "pass",
+          "note": "The answer now states the required validation steps before restart."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "bulletin-1",
+          "bm25": 0.87,
+          "dense": 0.81,
+          "rerank": 0.95,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Directly states the pre-restart dry-spin requirement.",
+          "note": "This is the primary procedural answer once procedure docs are allowed."
+        },
+        {
+          "chunkId": "bulletin-2",
+          "bm25": 0.8,
+          "dense": 0.79,
+          "rerank": 0.92,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Adds the thermal lead sign-off requirement.",
+          "note": "The second gold chunk completes the restart gating condition."
+        },
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.91,
+          "dense": 0.72,
+          "rerank": 0.66,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Still useful as a friendly summary.",
+          "note": "The FAQ is now supporting evidence rather than the source of truth."
+        },
+        {
+          "chunkId": "checklist-1",
+          "bm25": 0.61,
+          "dense": 0.59,
+          "rerank": 0.62,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "Reinforces the no-restart-before-escalation rule.",
+          "note": "This checklist corroborates the procedural caution."
+        },
+        {
+          "chunkId": "memo-1",
+          "bm25": 0.58,
+          "dense": 0.67,
+          "rerank": 0.55,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Historical note about the policy change.",
+          "note": "Useful contrast, not required for the answer."
+        },
+        {
+          "chunkId": "digest-1",
+          "bm25": 0.48,
+          "dense": 0.52,
+          "rerank": 0.41,
+          "finalRank": 6,
+          "filtered": true,
+          "packed": false,
+          "why": "Still excluded because digest documents remain out of scope.",
+          "note": "That is acceptable because the gold procedure is now present."
+        }
+      ],
+      "answer": {
+        "text": "Before restarting the ArcLight array after a coolant fault, operators must run a dry-spin validation of the turbine cage and obtain thermal lead sign-off confirming pressure stability and an in-tolerance vibration trace.",
+        "claims": [
+          {
+            "text": "A dry-spin validation is required before restart.",
+            "status": "supported",
+            "supportIds": ["bulletin-1"],
+            "reason": "The packed bulletin states this as a mandatory pre-restart step."
+          },
+          {
+            "text": "Thermal lead sign-off is required before restart.",
+            "status": "supported",
+            "supportIds": ["bulletin-2"],
+            "reason": "The second packed bulletin chunk states this directly."
+          },
+          {
+            "text": "Dashboard normalization alone is not enough.",
+            "status": "supported",
+            "supportIds": ["memo-1", "checklist-1"],
+            "reason": "Supporting packed evidence shows the dashboard-only rule was superseded."
+          }
+        ]
+      }
+    }
+  ]
+}

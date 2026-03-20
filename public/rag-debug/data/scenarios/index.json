@@ -1,0 +1,50 @@
+[
+  {
+    "id": "harbor-rebate-split",
+    "shortLabel": "C01",
+    "title": "Heat Pump Rebate Caveat Vanishes Across Chunks",
+    "family": "Chunk Split",
+    "hook": "The retriever sees the rebate trigger but drops the audit qualifier that lives in the next chunk.",
+    "path": "./data/scenarios/harbor-rebate-split.json"
+  },
+  {
+    "id": "solara-footnote-split",
+    "shortLabel": "C02",
+    "title": "Safety Footnote Falls Outside the Retrieved Window",
+    "family": "Chunk Split",
+    "hook": "A table row is retrieved without the footnote that actually names the monitored subgroup.",
+    "path": "./data/scenarios/solara-footnote-split.json"
+  },
+  {
+    "id": "battery-grant-filter",
+    "shortLabel": "F01",
+    "title": "Regional Filter Excludes the Only Multi-State Policy Memo",
+    "family": "Metadata Filter",
+    "hook": "The correct program is in the corpus, but a region filter drops it before ranking can help.",
+    "path": "./data/scenarios/battery-grant-filter.json"
+  },
+  {
+    "id": "sensor-restart-filter",
+    "shortLabel": "F02",
+    "title": "Doc-Type Filter Hides the Recovery Bulletin",
+    "family": "Metadata Filter",
+    "hook": "The live FAQ is visible, but the required restart procedure lives in a bulletin outside the filter.",
+    "path": "./data/scenarios/sensor-restart-filter.json"
+  },
+  {
+    "id": "north-harbor-rerank",
+    "shortLabel": "R01",
+    "title": "Reranker Prefers the Glossary Over the Security Standard",
+    "family": "Rerank Regression",
+    "hook": "An exact-phrase FAQ beats the alias-heavy standard and the gold evidence falls below the packing cutoff.",
+    "path": "./data/scenarios/north-harbor-rerank.json"
+  },
+  {
+    "id": "shoreline-waiver-rerank",
+    "shortLabel": "R02",
+    "title": "Concise FAQ Snippet Demotes the Real Approval Path",
+    "family": "Rerank Regression",
+    "hook": "The reranker likes a short snippet, while the longer procedural memo with the signer gets pushed out.",
+    "path": "./data/scenarios/shoreline-waiver-rerank.json"
+  }
+]

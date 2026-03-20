@@ -1,0 +1,466 @@
+{
+  "id": "harbor-rebate-split",
+  "title": "Heat Pump Rebate Caveat Vanishes Across Chunks",
+  "family": "Chunk Split",
+  "summary": "A county memo contains the real rule, but the trigger sentence and the audit qualifier are split into adjacent chunks. The system retrieves the trigger, misses the qualifier, and answers with an over-broad policy claim.",
+  "query": "Can a homeowner claim the Harbor County heat pump rebate without an energy audit?",
+  "dataset": {
+    "name": "Harbor County climate packet",
+    "docCount": 5,
+    "chunkCount": 8,
+    "notes": "Synthetic mini-corpus with one policy memo, one public FAQ, one installer guide, one board note, and one press release."
+  },
+  "goldChunkIds": ["memo-2", "memo-3"],
+  "debugChecklist": [
+    "Check whether the supporting concept requires adjacent clauses that small chunks separated.",
+    "Look for a nearby chunk with a qualifier, exception, or footnote that reverses the first chunk.",
+    "If the missing clause sits next to the retrieved one, rerun with overlap or a larger parent window."
+  ],
+  "docs": [
+    {
+      "id": "policy-memo",
+      "title": "2025 Heat Pump Rebate Memo",
+      "source": "Harbor County Energy Office",
+      "metadata": {
+        "region": "national",
+        "type": "policy memo",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "memo-1",
+          "label": "Memo chunk 1",
+          "text": "Section 2 says homeowners reserve a rebate slot by filing Form 14 with a contractor estimate and the project budget."
+        },
+        {
+          "id": "memo-2",
+          "label": "Memo chunk 2",
+          "text": "Projects above $5,000 may begin a Harbor County heat pump rebate request after Form 14 is filed."
+        },
+        {
+          "id": "memo-3",
+          "label": "Memo chunk 3",
+          "text": "Eligibility is not final until an energy audit is attached to the same filing; without the audit, the request remains pending and the rebate cannot be claimed."
+        },
+        {
+          "id": "memo-4",
+          "label": "Memo chunk 4",
+          "text": "Coastal pilot homes below $5,000 may reserve funding before the audit, but the audit is still required before any payout."
+        }
+      ]
+    },
+    {
+      "id": "faq",
+      "title": "Resident Rebate FAQ",
+      "source": "Harbor County FAQ",
+      "metadata": {
+        "region": "coastal pilot",
+        "type": "faq",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "faq-1",
+          "label": "FAQ chunk 1",
+          "text": "Form 14 starts a rebate request. Coastal pilot homes under $5,000 may upload the audit later if they are only reserving funds."
+        }
+      ]
+    },
+    {
+      "id": "installer",
+      "title": "Installer Submission Guide",
+      "source": "Harbor Heat Alliance",
+      "metadata": {
+        "region": "regional",
+        "type": "guide",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "installer-1",
+          "label": "Guide chunk 1",
+          "text": "Most contractors schedule the audit before paperwork so rebate files do not stall in the county queue."
+        }
+      ]
+    },
+    {
+      "id": "board-note",
+      "title": "Energy Board Transition Note",
+      "source": "Harbor County Board",
+      "metadata": {
+        "region": "national",
+        "type": "meeting note",
+        "year": "2024"
+      },
+      "chunks": [
+        {
+          "id": "board-1",
+          "label": "Board note chunk 1",
+          "text": "The 2024 rule let all applicants hold a place before the audit. Board members voted to tighten that rule for larger 2025 projects."
+        }
+      ]
+    },
+    {
+      "id": "press",
+      "title": "County Launches Expanded Rebate Program",
+      "source": "Harbor Daily",
+      "metadata": {
+        "region": "national",
+        "type": "press release",
+        "year": "2025"
+      },
+      "chunks": [
+        {
+          "id": "press-1",
+          "label": "Press chunk 1",
+          "text": "The county expanded its heat pump incentive ceiling and highlighted faster review times for residents filing digital applications."
+        }
+      ]
+    }
+  ],
+  "recommendedRunId": "chunk-overlap",
+  "runs": [
+    {
+      "id": "baseline",
+      "kind": "baseline",
+      "label": "Baseline · 256-char chunks",
+      "config": {
+        "chunking": "256 chars, no overlap",
+        "filter": "none",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "First broken stage: ingestion",
+        "headline": "The policy trigger and the audit qualifier were split into separate chunks.",
+        "detail": "Retrieval found the trigger sentence, but the next chunk contained the clause that changed the answer. The packed context never reunited them.",
+        "severity": "fail"
+      },
+      "story": "Small chunks preserved the easy lexical match and discarded the neighboring caveat.",
+      "outcome": "Synthesis answered from a partial rule and overstated when the rebate can be claimed.",
+      "metrics": {
+        "oracleCoverage": "1 / 2 gold spans",
+        "firstSupportRank": "#2 trigger only",
+        "packedSupport": "Partial rule only",
+        "grounding": "Weak",
+        "lostMiddle": "Medium"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "fail",
+          "note": "The rule was broken into adjacent chunks: one for the trigger and one for the audit qualifier."
+        },
+        {
+          "id": "retrieval",
+          "status": "warn",
+          "note": "Retrieval found the trigger clause but not the adjacent qualifier with enough priority."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No metadata filter removed relevant material."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "The reranker preserved the lexical matches it saw; the problem was already upstream."
+        },
+        {
+          "id": "packing",
+          "status": "warn",
+          "note": "Only the trigger chunk entered the top-4 context budget."
+        },
+        {
+          "id": "synthesis",
+          "status": "fail",
+          "note": "The answer generalized from the trigger sentence and omitted the audit requirement."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.93,
+          "dense": 0.78,
+          "rerank": 0.89,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "Exact match for Form 14 and upload-later language.",
+          "note": "This FAQ looks highly relevant because it mentions the audit arriving later, but only for the pilot reservation pathway."
+        },
+        {
+          "chunkId": "memo-2",
+          "bm25": 0.89,
+          "dense": 0.74,
+          "rerank": 0.82,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "Contains the policy trigger for beginning a rebate request.",
+          "note": "The retrieved chunk states when the request starts, not when the rebate may actually be claimed."
+        },
+        {
+          "chunkId": "installer-1",
+          "bm25": 0.61,
+          "dense": 0.58,
+          "rerank": 0.63,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Mentions audits and county paperwork delays.",
+          "note": "Useful operational advice, but not the governing rule."
+        },
+        {
+          "chunkId": "board-1",
+          "bm25": 0.57,
+          "dense": 0.55,
+          "rerank": 0.59,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "References the policy change from the prior year.",
+          "note": "This chunk hints that a stricter rule exists, but it does not spell out the audit condition."
+        },
+        {
+          "chunkId": "memo-3",
+          "bm25": 0.49,
+          "dense": 0.67,
+          "rerank": 0.46,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Semantic match for eligibility, but fewer exact query terms.",
+          "note": "This is the missing qualifier. It says the rebate cannot be claimed until the audit is attached."
+        },
+        {
+          "chunkId": "memo-1",
+          "bm25": 0.38,
+          "dense": 0.44,
+          "rerank": 0.39,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "General filing procedure.",
+          "note": "Useful context about Form 14, but not the answer."
+        },
+        {
+          "chunkId": "memo-4",
+          "bm25": 0.41,
+          "dense": 0.43,
+          "rerank": 0.36,
+          "finalRank": 7,
+          "filtered": false,
+          "packed": false,
+          "why": "Mentions the pilot exception without the main rule.",
+          "note": "The pilot carve-out further confused the answer because it resembles a general policy."
+        },
+        {
+          "chunkId": "press-1",
+          "bm25": 0.23,
+          "dense": 0.32,
+          "rerank": 0.21,
+          "finalRank": 8,
+          "filtered": false,
+          "packed": false,
+          "why": "Broad program announcement.",
+          "note": "Not useful beyond confirming that the program exists."
+        }
+      ],
+      "answer": {
+        "text": "Yes. Harbor County lets a homeowner start claiming the rebate once Form 14 is filed, and the audit can be added later if needed.",
+        "claims": [
+          {
+            "text": "Form 14 starts the rebate request.",
+            "status": "supported",
+            "supportIds": ["faq-1", "memo-2"],
+            "reason": "Both packed chunks state that Form 14 begins the filing process."
+          },
+          {
+            "text": "The audit can always be added later without affecting claim eligibility.",
+            "status": "unsupported",
+            "supportIds": [],
+            "reason": "The packed context never includes the adjacent memo chunk that says the rebate cannot be claimed until the audit is attached."
+          },
+          {
+            "text": "There is a special lower-cost pilot path that delays the audit upload.",
+            "status": "weak",
+            "supportIds": ["faq-1"],
+            "reason": "The packed FAQ supports a pilot exception, but the full policy boundaries are missing."
+          }
+        ]
+      }
+    },
+    {
+      "id": "chunk-overlap",
+      "kind": "counterfactual",
+      "label": "Fix · 512-char windows with overlap",
+      "config": {
+        "chunking": "512 chars, 96 overlap",
+        "filter": "none",
+        "reranker": "cross-encoder on",
+        "packing": "top 4 chunks"
+      },
+      "verdict": {
+        "stage": "Resolved: ingestion",
+        "headline": "A wider window keeps the trigger and the qualifier together.",
+        "detail": "The gold evidence now survives as one coherent rule, so the packed context contains both the filing trigger and the audit dependency.",
+        "severity": "pass"
+      },
+      "story": "The counterfactual reunites the qualifying clause with the sentence the retriever already liked.",
+      "outcome": "Both gold spans enter context and the unsupported policy claim disappears.",
+      "metrics": {
+        "oracleCoverage": "2 / 2 gold spans",
+        "firstSupportRank": "#1 merged rule",
+        "packedSupport": "Complete rule",
+        "grounding": "Strong",
+        "lostMiddle": "Low"
+      },
+      "stageBoard": [
+        {
+          "id": "ingestion",
+          "status": "pass",
+          "note": "Chunk overlap preserves the trigger and its qualifier inside the same retrieval window."
+        },
+        {
+          "id": "retrieval",
+          "status": "pass",
+          "note": "The complete rule becomes the strongest retrieval hit."
+        },
+        {
+          "id": "filter",
+          "status": "pass",
+          "note": "No relevant evidence is removed."
+        },
+        {
+          "id": "rerank",
+          "status": "pass",
+          "note": "The reranker now sees the full policy statement and rewards it."
+        },
+        {
+          "id": "packing",
+          "status": "pass",
+          "note": "Both policy spans stay inside the packed context budget."
+        },
+        {
+          "id": "synthesis",
+          "status": "pass",
+          "note": "The answer now preserves the audit condition and the pilot exception separately."
+        }
+      ],
+      "rankings": [
+        {
+          "chunkId": "memo-2",
+          "bm25": 0.91,
+          "dense": 0.84,
+          "rerank": 0.94,
+          "finalRank": 1,
+          "filtered": false,
+          "packed": true,
+          "why": "The wider window now carries the trigger together with the audit dependency.",
+          "note": "This chunk becomes the anchor because the retrieval window now contains the qualifying clause that was previously split out."
+        },
+        {
+          "chunkId": "memo-3",
+          "bm25": 0.83,
+          "dense": 0.82,
+          "rerank": 0.9,
+          "finalRank": 2,
+          "filtered": false,
+          "packed": true,
+          "why": "The qualifier is promoted because its neighboring context is now attached.",
+          "note": "Even as a separate displayed span, this text now survives because the upstream window carries both clauses."
+        },
+        {
+          "chunkId": "faq-1",
+          "bm25": 0.85,
+          "dense": 0.73,
+          "rerank": 0.76,
+          "finalRank": 3,
+          "filtered": false,
+          "packed": true,
+          "why": "Still relevant for the pilot exception.",
+          "note": "The FAQ now plays a supporting role instead of defining the whole answer."
+        },
+        {
+          "chunkId": "memo-4",
+          "bm25": 0.58,
+          "dense": 0.62,
+          "rerank": 0.65,
+          "finalRank": 4,
+          "filtered": false,
+          "packed": true,
+          "why": "Adds the lower-cost pilot carve-out.",
+          "note": "This chunk rounds out the exception without replacing the main rule."
+        },
+        {
+          "chunkId": "board-1",
+          "bm25": 0.45,
+          "dense": 0.51,
+          "rerank": 0.48,
+          "finalRank": 5,
+          "filtered": false,
+          "packed": false,
+          "why": "Historical policy context only.",
+          "note": "Good background, not required for the answer."
+        },
+        {
+          "chunkId": "installer-1",
+          "bm25": 0.42,
+          "dense": 0.46,
+          "rerank": 0.41,
+          "finalRank": 6,
+          "filtered": false,
+          "packed": false,
+          "why": "Operational guidance.",
+          "note": "Still not governing evidence."
+        },
+        {
+          "chunkId": "memo-1",
+          "bm25": 0.37,
+          "dense": 0.39,
+          "rerank": 0.34,
+          "finalRank": 7,
+          "filtered": false,
+          "packed": false,
+          "why": "General filing procedure.",
+          "note": "Peripheral setup text."
+        },
+        {
+          "chunkId": "press-1",
+          "bm25": 0.19,
+          "dense": 0.28,
+          "rerank": 0.18,
+          "finalRank": 8,
+          "filtered": false,
+          "packed": false,
+          "why": "Broad announcement.",
+          "note": "No policy detail."
+        }
+      ],
+      "answer": {
+        "text": "Not for standard projects above $5,000. Harbor County lets applicants file Form 14 to start the request, but the rebate cannot be claimed until the energy audit is attached. Only lower-cost coastal pilot homes can delay the audit while reserving funds.",
+        "claims": [
+          {
+            "text": "Form 14 starts the request but does not finalize eligibility.",
+            "status": "supported",
+            "supportIds": ["memo-2", "memo-3"],
+            "reason": "The packed policy memo now includes both the trigger and the qualifying clause."
+          },
+          {
+            "text": "Projects above $5,000 cannot claim the rebate until the audit is attached.",
+            "status": "supported",
+            "supportIds": ["memo-3"],
+            "reason": "The missing gold chunk is now inside the packed context."
+          },
+          {
+            "text": "Lower-cost coastal pilot homes may delay the audit while reserving funds.",
+            "status": "supported",
+            "supportIds": ["faq-1", "memo-4"],
+            "reason": "Both the FAQ and the memo now support the pilot exception."
+          }
+        ]
+      }
+    }
+  ]
+}
