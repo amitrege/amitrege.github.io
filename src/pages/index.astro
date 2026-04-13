@@ -26,7 +26,6 @@ const featuredProjects = [...projects].slice(0, 3);
       <div class="hero-bio">
         {profile.bioParagraphs.map((paragraph) => <p set:html={paragraph}></p>)}
       </div>
-      <p class="job-market">{profile.jobMarketNotice}</p>
 
       <div class="hero-actions">
         <a class="btn btn-primary" href="#publications">View Publications</a>

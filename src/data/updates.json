@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-03-30",
+    "title": "Lightning talk at Frontiers of Online Reinforcement Learning Workshop, IMSI",
+    "detail": "Talk title: \"An Oracle Taxonomy for LM Post Training\".",
+    "link": ""
+  },
+  {
+    "date": "2026-03-27",
+    "title": "Defended PhD Thesis",
+    "detail": "Thesis title: \"Structure and Reliability in Interactive Decision Making\".",
+    "link": ""
+  },
+  {
     "date": "2026-02-15",
     "title": "Attended ITA Workshop in San Diego",
     "detail": "Presented our ongoing work on LLM reasoning.",
