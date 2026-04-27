@@ -1,5 +1,17 @@
 [
   {
+    "date": "2026-04-17",
+    "title": "Semi-finalist at National Ethics Case Competition (NECC) in DC",
+    "detail": "Our team won the \"Most Innovative Solutions\" award for our essay.",
+    "link": "https://www.colorado.edu/law/2026/04/27/cu-boulder-team-competes-2026-national-ethics-case-competition"
+  },
+  {
+    "date": "2026-04-03",
+    "title": "Outstanding Paper Award",
+    "detail": "Won CS Department's Outstanding Research Paper award!",
+    "link": ""
+  },
+  {
     "date": "2026-03-30",
     "title": "Lightning talk at Frontiers of Online Reinforcement Learning Workshop, IMSI",
     "detail": "Talk title: \"An Oracle Taxonomy for LM Post Training\".",
