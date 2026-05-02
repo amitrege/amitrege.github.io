@@ -553,6 +553,24 @@ h1 {
   font-size: 1.3rem;
 }
 
+.blog-page .site-shell > .meta:first-child {
+  margin-top: 2.5rem;
+}
+
+.blog-page .site-shell > h1,
+.blog-page .site-shell > h2,
+.blog-page .site-shell > p {
+  max-width: 760px;
+}
+
+.blog-page .site-shell > h2 {
+  margin-top: 2rem;
+}
+
+.blog-page .site-shell > p {
+  line-height: 1.72;
+}
+
 .article-body {
   display: grid;
   gap: 0.8rem;
