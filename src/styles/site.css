@@ -553,6 +553,18 @@ h1 {
   font-size: 1.3rem;
 }
 
+.article-body {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 760px;
+  font-size: 1.02rem;
+  line-height: 1.7;
+}
+
+.article-body p {
+  margin: 0;
+}
+
 .footer {
   margin: 2.8rem auto 2rem;
   border-radius: 12px;

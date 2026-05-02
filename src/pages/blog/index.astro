@@ -1,8 +1,17 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
+
+const posts = [
+  {
+    title: "Dummy Blog Post",
+    href: "/blog/dummy-post/",
+    date: "Draft placeholder",
+    description: "A temporary placeholder article that can be replaced with the final title and post content."
+  }
+];
 ---
 
-<MainLayout title="Blog | Amit Kiran Rege" description="Blog section currently under construction." pageClass="blog-page">
+<MainLayout title="Blog | Amit Kiran Rege" description="Technical notes, paper deep-dives, and experiments." pageClass="blog-page">
   <section class="section shell reveal">
     <div class="section-head">
       <h1>Blog</h1>
@@ -10,11 +19,16 @@ import MainLayout from "../../layouts/MainLayout.astro";
     </div>
 
     <div class="stack">
-      <article class="card glass construction-card">
-        <p class="construction-tag">Under Construction</p>
-        <h2>Blog is under construction</h2>
-        <p>Placeholder posts have been removed. New articles will be published here soon.</p>
-      </article>
+      {
+        posts.map((post) => (
+          <article class="card glass">
+            <p class="meta">{post.date}</p>
+            <h2>{post.title}</h2>
+            <p>{post.description}</p>
+            <a class="text-link" href={post.href}>Read post</a>
+          </article>
+        ))
+      }
     </div>
   </section>
 </MainLayout>
