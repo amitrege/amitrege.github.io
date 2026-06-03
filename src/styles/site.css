@@ -313,6 +313,32 @@ h1 {
   color: var(--muted);
 }
 
+.hero-actions-with-badge {
+  align-items: center;
+}
+
+.hero-actions-with-badge .review-badge {
+  margin-left: 0.5rem;
+}
+
+.review-badge {
+  display: block;
+  width: 96px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.review-badge:hover {
+  transform: scale(1.05);
+}
+
+.review-badge img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+}
+
 .education-list {
   list-style: none;
   padding-left: 0;

@@ -27,9 +27,18 @@ const featuredProjects = [...projects].slice(0, 3);
         {profile.bioParagraphs.map((paragraph) => <p set:html={paragraph}></p>)}
       </div>
 
-      <div class="hero-actions">
+      <div class="hero-actions hero-actions-with-badge">
         <a class="btn btn-primary" href="#publications">View Publications</a>
         <a class="btn btn-primary" href="#cv">CV and Resume</a>
+        <a
+          class="review-badge"
+          href="https://www.jmlr.org/"
+          target="_blank"
+          rel="noreferrer"
+          title="I review for JMLR"
+        >
+          <img src="/assets/img/I_review_JMLR.png" alt="I review for JMLR" loading="lazy" />
+        </a>
       </div>
 
       <ul class="hero-meta" aria-label="Research profile">
@@ -80,6 +89,7 @@ const featuredProjects = [...projects].slice(0, 3);
           ))}
         </ul>
       </div>
+
     </aside>
   </section>
 
