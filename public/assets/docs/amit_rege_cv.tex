@@ -1,257 +1,191 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Medium Length Professional CV
-% LaTeX Template
-% Version 2.0 (8/5/13)
-%
-% This template has been downloaded from:
-% http://www.LaTeXTemplates.com
-%
-% Original author:
-% Rishi Shah 
-%
-% Important note:
-% This template requires the resume.cls file to be in the same directory as the
-% .tex file. The resume.cls file provides the resume style used for structuring the
-% document.
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ========== CLASSIC · CHARTER look (Georgia) — left header, academic CV ==========
+\documentclass[10.5pt]{article}
+\usepackage[letterpaper, margin=0.7in, includefoot, footskip=20pt]{geometry}
+\usepackage{fontspec}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
 
-%----------------------------------------------------------------------------------------
-%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
-%----------------------------------------------------------------------------------------
+\setmainfont{Georgia}[Scale=0.92]   % Charter's sibling (same designer); clean .ttf, renders correctly in macOS Preview
+\linespread{1.02}
+\setlength{\parindent}{0pt}
+\urlstyle{same}
 
-\documentclass{resume} % Use the custom resume.cls style
+\definecolor{navy}{HTML}{1A2A45}
+\definecolor{accent}{HTML}{8A1A2B}
+\definecolor{muted}{HTML}{606060}
+\definecolor{rule}{HTML}{C2C2C2}
 
-\usepackage[left=0.75in,top=0.6in,right=0.75in,bottom=0.6in]{geometry} % Document margins
-\usepackage{comment}
-\usepackage{url}\urlstyle{same}   % \url is used in the address below; package was missing so the URL silently failed. 'same' keeps body font (matches the published CV).
-\newcommand{\tab}[1]{\hspace{.2667\textwidth}\rlap{#1}}
-\newcommand{\itab}[1]{\hspace{0em}\rlap{#1}}
-\name{Amit Kiran Rege} % Your name
-\address{PhD Student in CS \\ CU Boulder} % Your address
-%\address{123 Pleasant Lane \\ City, State 12345} % Your secondary addess (optional)
-\address{+1 (303) 960 4240 \\ amit.rege@colorado.edu \\ \url{amitrege.github.io}
-}  
+\pagestyle{fancy}\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[L]{\footnotesize\itshape\color{muted}Amit Kiran Rege}
+\fancyfoot[R]{\footnotesize\color{muted}\thepage}
+
+\newcommand{\me}{\textbf{Amit Kiran Rege}}
+\newcommand{\tag}[1]{\ {\small\itshape\color{accent}[#1]}}        % awards: burgundy
+\newcommand{\link}[1]{\,{\small\color{navy}\href{#1}{[Link]}}}    % links: navy (distinct from awards)
+
+% keep at least #1 lines together, else break to next page (prevents orphaned section headings)
+\newlength{\nsreq}\newlength{\nsrem}
+\newcommand{\needlines}[1]{\par
+  \setlength{\nsreq}{#1\baselineskip}%
+  \ifdim\pagegoal=\maxdimen\else
+    \setlength{\nsrem}{\pagegoal}\addtolength{\nsrem}{-\pagetotal}%
+    \ifdim\nsrem<\nsreq \newpage \fi\fi}
+
+\newcommand{\cvheader}[5]{%
+  {\color{navy}\fontsize{26}{30}\selectfont\bfseries #1}\par
+  \vspace{2pt}{\color{muted}\large\itshape #2}\par
+  \vspace{3pt}{\small #3 \,\textbullet\, \href{mailto:#4}{\color{accent}#4} \,\textbullet\, \href{https://#5}{\color{accent}#5}}\par
+  \vspace{4pt}{\color{accent}\rule{\linewidth}{1.3pt}}\par\vspace{1pt}
+}
+
+\newcommand{\cvsection}[1]{%
+  \vspace{12pt}\par
+  \needlines{5}%
+  {\color{navy}\bfseries\normalsize\addfontfeature{LetterSpace=14.0}\MakeUppercase{#1}}\par
+  \vspace{3pt}{\color{rule}\rule{\linewidth}{0.5pt}}\par\vspace{5pt}
+}
+
+\newcommand{\subhead}[1]{\par\vspace{5pt}{\itshape\color{muted}#1}\par\vspace{2pt}}
+\newcommand{\rowentry}[2]{\par\vspace{4pt}\noindent\textbf{#1}\hfill{\color{muted}\small #2}\par}
+\newcommand{\subline}[1]{\noindent{\color{muted}\itshape #1}\par}
+\newcommand{\para}[1]{\par\noindent #1\par}
+
+\newcommand{\pub}[5]{%
+  \par\vspace{3.5pt}\noindent
+  \hangindent=1.3em\hangafter=1
+  {\color{accent}\small$\bullet$}~\textbf{#1}.\ {\color{muted}#2.}\ \textit{#3}, #4.#5\par
+}
+
+\newlist{bullets}{itemize}{1}
+\setlist[bullets]{leftmargin=1.3em, label={\color{accent}\small$\bullet$}, nosep, topsep=2pt, itemsep=2.5pt, parsep=0pt}
 
 \begin{document}
+% ============================================================================
+%  SHARED CV CONTENT — pure content, rendered via macros each style defines:
+%   \cvheader{name}{role line}{phone}{email}{web}
+%   \cvsection{Title}   \subhead{Label}   \rowentry{bold left}{muted right}
+%   \subline{text}      \para{text}       \pub{title}{authors}{venue}{year}{tags}
+%   \me  (author self-highlight)          \tag{...}   bullets environment
+% ============================================================================
 
-%----------------------------------------------------------------------------------------
-%	EDUCATION SECTION
-%----------------------------------------------------------------------------------------
+\cvheader{Amit Kiran Rege}
+         {Ph.D. Candidate in Computer Science \,\textbullet\, University of Colorado Boulder}
+         {+1 (303) 960 4240}{amit.rege@colorado.edu}{amitrege.github.io}
 
-\begin{rSection}{Education}
+% ---------------------------------------------------------------- Education
+\cvsection{Education}
+\rowentry{University of Colorado Boulder}{Aug 2020 -- May 2026}
+\subline{Ph.D. in Computer Science \quad\textbullet\quad Advisor: Claire Monteleoni}
+\rowentry{University of Colorado Boulder}{Aug 2018 -- 2020}
+\subline{M.S. in Computer Science \quad\textbullet\quad GPA 4.0/4.0}
+\rowentry{Birla Institute of Technology and Science (BITS), Pilani -- Goa}{Aug 2014 -- Feb 2018}
+\subline{B.E. (Hons.) Computer Science \quad\textbullet\quad GPA 8.28/10}
 
-{\bf University of Colorado Boulder} \hfill {\em August 2020 - May 2026} 
-\\ PhD in Computer Science  \emph{\textbf{Advisor: Claire Monteleoni}}\\
-{\bf University of Colorado Boulder} \hfill {\em August 2018 - 2020} 
-\\ Masters in Computer Science \emph{GPA : 4.0/4.0} \\
-{\bf Birla Institute of Technology and Science (BITS), Pilani - Goa} \hfill {\em August 2014 - Feb 2018} 
-\\ BE (Hons.) Computer Science \emph { GPA : 8.28/10 }
-%Minor in Linguistics \smallskip \\
-%Member of Eta Kappa Nu \\
-%Member of Upsilon Pi Epsilon \\
+% ------------------------------------------------------- Research Interests
+\cvsection{Research Interests}
+\para{Theoretical machine learning with a focus on sequential decision-making and generative models:}
+\begin{bullets}
+\item Reinforcement Learning Theory
+\item Theoretical Foundations of Interpretability
+\item Machine Learning for Quantum Systems
+\end{bullets}
 
+% ------------------------------------------------------------- Publications
+\cvsection{Publications}
+\pub{Multi-Agent Lipschitz Bandits}{\me*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen}{AISTATS}{2026}{\link{https://arxiv.org/abs/2602.16965}}
+\pub{Flickering Multi-Armed Bandits}{\me*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen}{L4DC}{2026}{\tag{Best Paper Finalist}\tag{Oral}\link{https://arxiv.org/abs/2602.17315}}
+\pub{A Unified Framework for Locality in Scalable MARL}{\me*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen}{L4DC}{2026}{\link{https://arxiv.org/abs/2602.16966}}
+\pub{Incentivized Lipschitz Bandits}{\me*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen}{IEEE Conference on Decision and Control (CDC)}{2025}{\link{https://arxiv.org/abs/2508.19466}}
+\pub{Where Did Your Model Learn That? Label-free Influence for Self-Supervised Learning}{\me*, Nidhin Harilal*, Reza Akbarian Bafghi, Maziar Raissi, Claire Monteleoni}{Preprint}{2024}{\link{https://arxiv.org/abs/2412.17170}}
+\pub{Influence Estimation in Self-Supervised Learning}{\me*, Nidhin Harilal*, Reza Akbarian Bafghi*, Maziar Raissi, Claire Monteleoni}{SSL: Theory and Practice Workshop, NeurIPS}{2024}{\link{https://openreview.net/forum?id=JcEizOYIGI}}
+\pub{The Probe Paradigm: A Theoretical Foundation for Explaining Generative Models}{\me}{SafeGenAI Workshop, NeurIPS}{2024}{\link{https://openreview.net/forum?id=s6P4W7QTD4}}
+\pub{Hamiltonian Learning using ML Models Trained with Continuous Measurements}{\me, Kris Tucker, Conor Smith, Claire Monteleoni}{ML for Physical Sciences Workshop, NeurIPS}{2024}{\link{https://arxiv.org/abs/2404.05526}}
+\pub{Hamiltonian Learning using ML Models Trained with Continuous Measurements}{Kris Tucker, \me, Conor Smith, Claire Monteleoni, Tameem Albash}{Physical Review Applied}{2024}{\link{https://arxiv.org/abs/2404.05526}}
+\pub{Evaluating the Distribution Learning Capabilities of GANs}{\me, Claire Monteleoni}{Preprint}{2019}{\link{https://arxiv.org/abs/1907.02662}}
 
-\end{rSection}
+% ------------------------------------------------------------- Presentations
+\cvsection{Presentations}
+\subhead{Invited \& Industry Talks}
+\begin{bullets}
+\item \textbf{The Role of Generator Access in Autoregressive Post-Training} --- Lightning Talk, Frontiers of Online RL Workshop, IMSI \hfill {\color{muted}Mar 2026}
+\item \textbf{Training Local LLMs} --- Spencer Fane (Industry Talk) \hfill {\color{muted}Mar 2026}
+\item \textbf{Frontiers of Generative AI} --- Ensemble Innovation Ventures (Industry Talk) \hfill {\color{muted}Jan 2026}
+\item \textbf{LLMs from Scratch} --- Spencer Fane (Industry Talk) \hfill {\color{muted}Nov 2025}
+\item \textbf{Theoretical Machine Learning} --- ``Ross Kaminsky on the News,'' KOA 94.1 FM iHeartRadio \hfill {\color{muted}Jan 2025}
+\item \textbf{Deep Learning for Crosstalk Detection in Quantum Systems} --- NSF Q-SEnSE Annual Meeting \hfill {\color{muted}Jun 2022}
+\end{bullets}
+\subhead{Posters}
+\begin{bullets}
+\item \textbf{An Oracle Taxonomy for LM Post-Training} --- Information Theory \& Applications (ITA) Workshop, San Diego \hfill {\color{muted}Feb 2026}
+\item \textbf{Replicable Learning in Quantum Systems} --- Quantum Information Processing (QIP) \hfill {\color{muted}2025}
+\item \textbf{Theoretical Foundations and Novel Metrics for Comprehensive Evaluation of Multimodal Generative Models} --- Multimodal AI Workshop, TTIC \hfill {\color{muted}2024}
+\end{bullets}
+\subhead{Guest Lectures}
+\begin{bullets}
+\item \textbf{Practical Aspects of ML} --- CSCI 4622 Machine Learning (Prof. Velasquez) \hfill {\color{muted}Spring 2026}
+\item \textbf{Tutorial \& Survey on GANs} --- CSCI 5802 Data Science (Prof. Frongillo) \hfill {\color{muted}Spring 2022}
+\item \textbf{Tutorial \& Survey on GANs} --- CSCI 7000 Advanced ML (Prof. Monteleoni) \hfill {\color{muted}Fall 2021}
+\end{bullets}
 
+% --------------------------------------------------------------- Experience
+\cvsection{Experience}
+\rowentry{Investment Associate, Deming Center Venture Fund}{Apr 2025 -- Present}
+\begin{bullets}
+\item Source companies, meet founders, and evaluate investments for CU Boulder's student venture fund.
+\item Led the investment into Great Sky, an AI-chip company --- the highest valuation in the fund's history (\$50M).
+\end{bullets}
+\rowentry{Student Engineer, Team MARBLE --- DARPA Subterranean Challenge}{May 2019 -- Aug 2019}
+\subline{Advised by Prof. Christoffer Heckman}
+\begin{bullets}
+\item Designed and implemented the object detection and localization pipeline for robots exploring mines in total darkness.
+\item Placed 4th of 11 teams worldwide for objects localized (field included NASA JPL, CMU, UPenn).
+\end{bullets}
+\rowentry{Research Intern, \'Ecole Normale Sup\'erieure}{Feb 2018 -- Jul 2018}
+\subline{Advised by Prof. Cezara Dragoi}
+\begin{bullets}
+\item Studied verification of state-machine replication protocols (Raft, Viewstamped Replication).
+\item Implemented and formally verified the round-based synchronicity of these asynchronous protocols.
+\end{bullets}
+\rowentry{Research Intern, Chennai Mathematical Institute}{Aug 2017 -- Dec 2017}
+\subline{Advised by Prof. Narayan Kumar}
+\begin{bullets}
+\item Surveyed program analysis: abstract interpretation, separation logic, and concurrency analysis.
+\end{bullets}
 
+% ----------------------------------------------------------------- Teaching
+\cvsection{Teaching}
+\subhead{Instructor}
+\begin{bullets}
+\item CSCI 1300 --- Computer Science 1: Starting Computing \hfill {\color{muted}Summer 2022, 2024}
+\item CSCI 3104 --- Algorithms \hfill {\color{muted}Summer 2023}
+\end{bullets}
+\subhead{Teaching Assistant}
+\para{CSCI 4622 Machine Learning, CSCI 2400 Computer Systems, CSCI 2270 Data Structures,
+CSCI 5922 Neural Networks \& Deep Learning, CSCI 1300 Intro Computing, CS F111 Intro to C
+\quad(2015--2026).}
 
-\begin{comment}
-    
-%--------------------------------------------------------------------------------
-%    Projects And Seminars
-%-----------------------------------------------------------------------------------------------
-\begin{rSection}{Projects } 
-(see website for links and other projects)
+% ------------------------------------------------------------------ Service
+\cvsection{Service}
+\subhead{Reviewing}
+\para{ICLR (2019 Emergency, 2020, 2022--2025), NeurIPS (2021--2024), ICML (2022, 2024),
+AAAI 2025, JMLR 2026.}
+\begin{bullets}
+\item Founder \& Organizer, ML Tea, CS Department.
+\item Student Representative, CS Graduate Committee (2020--21) and Council for Q-SEnSE (NSF QLCI).
+\item Student Coordinator, CLIMB group (2020--22); Student Volunteer, COLT 2021.
+\end{bullets}
 
-\\
-{\bf NSF funded project on Quantum Sensing}\\
-Ongoing project to apply Machine Learning to problems in Quantum Sensing, more specifically, the project aims to detect and characterize "cross-talk" errors in quantum computing systems\\
-
-{\bf Generalization in GANs}\\
-Evaluate Generative Adversarial Networks on a multitude of synthetic datasets to test
-generalization properties related to counting objects in a scene as well as their shape. \\
-
-\\{\bf Autonomous RC Car}\\
-Built a self Driving RC car capable of completing a closed loop circuit at high speeds\\
-
-\\{\bf Neural Program Analysis}\\
-Created a system to learn embeddings invariant to loop unrolling for C programs\\
-
-\\{\bf 3D Modelling and Painting in VR using Leap Motion}\\
-Implemented a 3D prototyping software for Google Cardboard using a Leap motion sensor which allows
-users to create, combine, paint and interact with virtual object models.\\
-
-
-\end{rSection}
-\end{comment}
-
-%----------------------------------------------------------------------------------------
-%	TECHNICAL STRENGTHS SECTION
-%----------------------------------------------------------------------------------------
-
-\begin{rSection}{Research Interests}
-\item Theoretical Machine Learning with a focus on Sequential Decision-making and Generative Models:
-\begin{itemize}
-    \item Reinforcement Learning Theory
-    \item Theoretical Foundations of Interpretability.
-    \item Machine Learning for Quantum Systems.
-\end{itemize}
-
-\end{rSection}
-
-
-
-\begin{rSection}{Papers and Preprints}
-
-\item \textbf{Evaluating the distribution learning capabilities of GANs}. \\ Amit Kiran Rege, Claire Monteleoni. 2019. https://arxiv.org/abs/1907.02662
-
-\item \textbf{Hamiltonian Learning using Machine Learning Models Trained with Continuous Measurements}. \\ Kris Tucker, Amit Kiran Rege, Conor Smith, Claire Monteleoni, Tameem Albash. Physical Review Applied, 2024.
-
-\item \textbf{Theoretical Foundations and Novel Metrics for Comprehensive Evaluation of Multimodal Generative Models}. \\ Amit Kiran Rege. Multimodal Artificial Intelligence TTIC Workshop 2024.
-
-\item \textbf{Hamiltonian Learning using Machine Learning Models Trained with Continuous Measurements}. \\ Amit Kiran Rege, Kris Tucker, Conor Smith, Claire Monteleoni. Machine Learning for Physical Sciences Workshop, NeurIPS, 2024.
-
-\item \textbf{Influence Estimation in Self-Supervised Learning}. \\ Amit Kiran Rege*, Nidhin Harilal*, Reza Akbarian Bafghi*, Maziar Raissi, Claire Monteleoni. Self-Supervised Learning - Theory and Practice Workshop, NeurIPS, 2024.
-
-\item \textbf{The Probe Paradigm: A Theoretical Foundation for Explaining Generative Models}. \\ Amit Kiran Rege. SafeGenAI Workshop, NeurIPS, 2024.
-
-\item \textbf{Where Did Your Model Learn That? Label-free Influence for Self-supervised Learning}. \\ Amit Kiran Rege*, Nidhin Harilal*, Reza Akbarian Bafghi, Maziar Raissi, Claire Monteleoni. Preprint (arXiv:2412.17170), 2024.
-
-\item \textbf{Replicable Learning in Quantum Systems}. \\ Amit Kiran Rege. Quantum Information Processing (QIP) Poster, 2025.
-
-\item \textbf{Incentivized Lipschitz Bandits}. \\ Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen. 64th IEEE Conference on Decision and Control (CDC), 2025.
-
-\item \textbf{Multi-Agent Lipschitz Bandits}. \\ Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen. Twenty-Ninth Annual Conference on Artificial Intelligence and Statistics (AISTATS), 2026.
-
-\item \textbf{Flickering Multi-Armed Bandits}. \\ Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen. 8th Annual Learning for Dynamics \& Control Conference (L4DC) \textbf{Best Paper Award Finalist}, 2026.
-
-\item \textbf{A Unified Framework for Locality in Scalable MARL}. \\ Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen. 8th Annual Learning for Dynamics \& Control Conference (L4DC), 2026.
-
-%\item \textbf{Learning from Local Walks on Dynamic Graphs with Bandit Feedback}. \\ Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen. Under Submission, 2026
-
-%\item \textbf{Decentralized Learning in Continuous Multi-Agent Bandits}. \\ Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen. Under Submission, 2026
-
-%\item \textbf{Theoretical Foundations of Data Attribution in Interactive Decision Making}. \\ Amit Kiran Rege. Under Submission, 2026
-
-%\item \textbf{Oracle Separations for Reinforcement Learning with Verified Rewards}. \\ Amit Kiran Rege. Under Submission, 2026
-
-%\item \textbf{Auditability of Local Explanations}. \\ Amit Kiran Rege. Under Submission, 2026
-
-%\item \textbf{Monitorability and Obfuscation in KL-Regularized Agents}. \\ Amit Kiran Rege. Under Submission, 2026
-
-
-
-
-
-.
-
-\end{rSection}
-
-%	EXAMPLE SECTION
-%----------------------------------------------------------------------------------------
-\begin{rSection}{Talks and Lectures} \itemsep -3pt
-\item \textbf{Guest Lectures:}
-\item \textbf{Tutorial and Survey on GANs:} CSCI 7000 - Advanced Machine Learning by Prof. Claire Monteleoni (Fall 2021)
-\item \textbf{Tutorial and Survey on GANs:} CSCI 5802 - Data Science Companion by Prof. Rafael Frongillo (Spring 2022)
-\item \textbf{Practical Aspects of ML:} CSCI 4622 - Machine Learning by Prof. Alvaro Velasquez (Spring 2026)
-\\
-\item \textbf{Talks:}
-\item \textbf{Deep Learning for Crosstalk Detection in Quantum Systems:} NSF Q-SEnSE Annual Meeting (June 29 2022 )
-\item \textbf{Theoretical Machine Learning} - "Ross Kaminsky on the news", KOA 94.1 FM iheart radio (Jan 2025)
-\item \textbf{LLMs from scratch} - Spencer Fane (Industry Talk) (Nov 2025)
-\item \textbf{Frontiers of Generative AI} - Ensemble Innovation Ventures (Industry Talk) (Jan 2026)
-\item \textbf{Training Local LLMs} - Spencer Fane (Industry Talk) (March 2026)
-\item \textbf{An Oracle Taxonomy for LM Post Training} - Lightning Talk, Frontiers of Online Reinforcement Learning Workshop, IMSI (March 2026)
-\end{rSection}
-
-
-\begin{rSection}{Past Experience}
-
-{\bf Investment Associate, Deming Center Venture Fund } \hfill {\em April 2025 - Present}
-\begin{itemize}
-    \item Source companies, meet founders and evaluate companies for investment by CU Boulder's Student Venture Fund.
-    \item Led the investment into Great Sky, an AI chip company, executed at the highest valuation in the fund's history (\$50M).
-\end{itemize}
-
-{\bf Team MARBLE, DARPA Subterranean Challenge} \hfill {\em May 2019 - August 2019}
-\\ Student Engineer - advised by Prof. Christoffer Heckman
-\begin{itemize}
-    \item Designed and Implemented the object detection and localization pipeline for robots exploring mines in total darkness
-    \item Placed 4th among 11 teams worldwide for objects localized (teams incl. NASA JPL, CMU, UPenn)
-\end{itemize}
-
-{\bf Ecole Normale Supérieure} \hfill {\em Feb 2018 - July 2018}
-\\ Research Intern - advised by Prof Cezara Dragoi
-\begin{itemize}
-    \item Studied the verification of common state machine replication protocols (Raft, Viewstamp)
-    \item Implemented and formally verified the round based synchronicity of the above asynchronous
-protocols
-\end{itemize}
-
-{\bf Chennai Mathematical Institute} \hfill {\em Aug 2017 - Dec 2017}
-\\ Research Intern - advised by Prof. Narayan Kumar
-\begin{itemize}
-    \item Conducted a literature survey of the area of Program Analysis studying areas such as Abstract
-Interpretation, Separation Logic and Concurrency analysis techniques
-protocols
-\end{itemize}
-
-{\bf Zero AI} \hfill {\em May 2016 - July 2016}
-\\ Software Engineering Intern
-\begin{itemize}
-    \item Built a minimal version of a GPU accelerated matrix library using OpenGL ES 2.0 and used the
-Qt library for Unit Testing
-\end{itemize}
-
-\end{rSection}
-
-%----------------------------------------------------------------------------------------
-% Extra Curricular
-%----------------------------------------------------------------------------------------
-\begin{rSection}{Teaching} \itemsep -3pt
-\item \textbf{INSTRUCTOR:}
-\item \textbf{CSCI 1300 - Computer Science 1: Starting Computing} (Summer 2022)
-\item \textbf{CSCI 3104 - Algorithms} (Summer 2023)
-\item \textbf{CSCI 1300 - Computer Science 1: Starting Computing} (Summer 2024)
-\\
-\item \textbf{TA:}
-\item \textbf{CS F111 - Introduction to C programming} (Fall 2015)
-\item \textbf{CSCI 5922 - Neural Networks and Deep Learning} (Spring 2019)
-\item \textbf{CSCI 2270 - Data Structures} (Fall 2019)
-\item \textbf{CSCI 2400 - Computer Systems} (Spring 2020)
-\item \textbf{CSCI 1300 - Introduction to C++} (Summer 2020)
-\item \textbf{CSCI 4622 - Machine Learning} (Fall 2020)
-\item \textbf{CSCI 2400 - Computer Systems} (Summer 2021)
-\item \textbf{CSCI 1300 - Computer Science 1: Starting Computing} (Fall 2025)
-\item \textbf{CSCI 4622 - Machine Learning} (Spring 2026)
-
-%\item Trained and disciplined in National Cadet Corps (NCC), IIT Kanpur for a year.
- %\item  Participated in Vijyoshi Camp 2012 organized at Indian Institute of Science, Bangalore.
- %\item Won 2nd position in Kho-Kho in Intramurals conducted by Physical Education Section, IIT Kanpur.
- %\item Pursued French as second language during secondary school from Grade 6 to Grade 10. Also participated in French Song Competition and French G.K. Quiz in Class 10th. %
-
-\end{rSection}
-
-\begin{rSection}{Other Responsibilities} \itemsep -3pt
-\item \textbf{Reviewing :} ICLR 2019 (Emergency Reviewing), ICLR 2020, Neurips 2021, ICLR 2022, ICML 2022, Neurips 2022, ICLR 2023, Neurips 2023, ICLR 2024, ICML 2024, NeurIPS 2024, AAAI 2025, ICLR 2025, JMLR 2026
-\item Student Representative on the Graduate Committee for the CS department for the 20-21 academic year
-\item Student Representative on Council for Q-SEnSe (NSF QLCI)
-\item Student Volunteer COLT '21
-\item Student Co-ordinator for CLIMB group 20-21, 21-22 academic years.
-\item Founder and Organizer of ML Tea in the CS department
-\end{rSection}
-
-\begin{rSection}{Other Academic Achievements} 
- Engineering Entrance rank of 2432 out of approximately 1.3 million students \\
- Top 1\% in state level high school exams
- \\
- Finalist Interdisciplinary Ethics Tech Competition 2025
- \\
- CS Department Outstanding Research Paper Award, 2026
- \\
- Semi-finalist, National Ethics Case Competition (NECC), Washington DC --- ``Most Innovative Solutions'' Award, 2026
-\end{rSection}
-
-
+% -------------------------------------------------------------- Achievements
+\cvsection{Honors \& Achievements}
+\begin{bullets}
+\item \textbf{CS Department Outstanding Research Paper Award}, University of Colorado Boulder \hfill {\color{muted}2026}
+\item \textbf{Semi-finalist}, National Ethics Case Competition (NECC), Washington DC --- ``Most Innovative Solutions'' Award \hfill {\color{muted}2026}
+\item \textbf{Finalist}, Interdisciplinary Ethics \& Technology Competition \hfill {\color{muted}2025}
+\item Engineering entrance rank 2432 of $\sim$1.3 million students; top 1\% in state-level high-school exams.
+\end{bullets}
 \end{document}
