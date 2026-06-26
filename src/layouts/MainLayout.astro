@@ -1,17 +1,24 @@
 ---
 import "../styles/site.css";
 
-interface Props {
+interface LayoutContent {
   title?: string;
   description?: string;
   pageClass?: string;
 }
 
+interface Props extends LayoutContent {
+  frontmatter?: LayoutContent;
+}
+
+// Markdown pages pass these fields under `Astro.props.frontmatter`;
+// `.astro` pages pass them directly. Support both shapes.
+const content = Astro.props.frontmatter ?? Astro.props;
 const {
   title = "Amit Kiran Rege | AI/ML Research",
   description = "Machine learning research, publications, blog posts, and demos.",
   pageClass = ""
-} = Astro.props;
+} = content;
 
 const currentYear = new Date().getFullYear();
 ---

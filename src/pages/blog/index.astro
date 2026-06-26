@@ -1,14 +1,16 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
 
-const posts = [
-  {
-    title: "The case for a bug bounty in ML",
-    href: "/blog/the-case-for-a-bug-bounty-in-ml/",
-    date: "Essay",
-    description: "A proposal for paying careful, adversarial checks of machine learning papers."
-  }
-];
+interface Post {
+  title: string;
+  href: string;
+  date: string;
+  description: string;
+}
+
+// Hidden for now. To publish a post, add it here and remove the leading
+// underscore from its Markdown file in src/pages/blog/.
+const posts: Post[] = [];
 ---
 
 <MainLayout title="Blog | Amit Kiran Rege" description="Technical notes, paper deep-dives, and experiments." pageClass="blog-page">
@@ -19,7 +21,13 @@ const posts = [
     </div>
 
     <div class="stack">
-      {
+      {posts.length === 0 ? (
+        <article class="card glass construction-card">
+          <p class="construction-tag">Under Construction</p>
+          <h2>New writing is in progress</h2>
+          <p>Coming soon!</p>
+        </article>
+      ) : (
         posts.map((post) => (
           <article class="card glass">
             <p class="meta">{post.date}</p>
@@ -28,7 +36,7 @@ const posts = [
             <a class="text-link" href={post.href}>Read post</a>
           </article>
         ))
-      }
+      )}
     </div>
   </section>
 </MainLayout>
