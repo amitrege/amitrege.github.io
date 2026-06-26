@@ -21,3 +21,5 @@ export const getFavicon = (url: string) => {
 export const isOralVenue = (venue: string) => /\boral\b/i.test(venue);
 
 export const formatVenue = (venue: string) => venue.replace(/\s*\(oral\)\s*/i, "").trim();
+
+export const getAwards = (publication: { awards?: string[] }) => publication.awards ?? [];

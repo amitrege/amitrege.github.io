@@ -5,7 +5,7 @@ import profile from "../data/profile.json";
 import publications from "../data/publications.json";
 import projects from "../data/projects.json";
 import updates from "../data/updates.json";
-import { formatDate, formatVenue, getFavicon, isOralVenue } from "../utils/site";
+import { formatDate, formatVenue, getAwards, getFavicon, isOralVenue } from "../utils/site";
 
 const recentUpdates = [...updates]
   .sort((a, b) => new Date(b.date).valueOf() - new Date(a.date).valueOf())
@@ -125,6 +125,7 @@ const featuredProjects = [...projects].slice(0, 3);
             <p class="meta">
               {formatVenue(publication.venue)} - {publication.year}
               {isOralVenue(publication.venue) && <span class="oral-badge">ORAL</span>}
+              {getAwards(publication).map((award) => <span class="award-badge">{award}</span>)}
             </p>
             <h3>{publication.title}</h3>
             <p class="authors">{publication.authors}</p>

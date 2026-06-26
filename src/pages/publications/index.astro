@@ -1,7 +1,7 @@
 ---
 import MainLayout from "../../layouts/MainLayout.astro";
 import publications from "../../data/publications.json";
-import { formatVenue, getFavicon, isOralVenue } from "../../utils/site";
+import { formatVenue, getAwards, getFavicon, isOralVenue } from "../../utils/site";
 
 const allPublications = [...publications].sort((a, b) => Number(b.year) - Number(a.year));
 ---
@@ -21,6 +21,7 @@ const allPublications = [...publications].sort((a, b) => Number(b.year) - Number
               <p class="meta">
                 {formatVenue(publication.venue)} - {publication.year}
                 {isOralVenue(publication.venue) && <span class="oral-badge">ORAL</span>}
+                {getAwards(publication).map((award) => <span class="award-badge">{award}</span>)}
               </p>
               <h2>{publication.title}</h2>
               <p class="authors">{publication.authors}</p>
