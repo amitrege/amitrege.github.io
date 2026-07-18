@@ -9,7 +9,7 @@ import { formatDate, formatVenue, getAwards, getFavicon, isOralVenue } from "../
 
 const recentUpdates = [...updates]
   .sort((a, b) => new Date(b.date).valueOf() - new Date(a.date).valueOf())
-  .slice(0, 3);
+  .slice(0, 4);
 
 const recentPublications = [...publications]
   .sort((a, b) => Number(b.year) - Number(a.year))
