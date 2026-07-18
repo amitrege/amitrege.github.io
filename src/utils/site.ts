@@ -2,7 +2,8 @@ export const formatDate = (value: string | Date) =>
   new Date(value).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
-    day: "numeric"
+    day: "numeric",
+    timeZone: "UTC"
   });
 
 const getDomain = (url: string) => {

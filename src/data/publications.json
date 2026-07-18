@@ -1,5 +1,18 @@
 [
   {
+    "title": "Learning from Local Walks on Dynamic Graphs with Bandit Feedback",
+    "authors": "Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen",
+    "venue": "IEEE CDC",
+    "year": 2026,
+    "summary": "Accepted at the 2026 IEEE Conference on Decision and Control.",
+    "links": [
+      {
+        "label": "arXiv",
+        "url": "https://arxiv.org/abs/2607.10571"
+      }
+    ]
+  },
+  {
     "title": "Multi-Agent Lipschitz Bandits",
     "authors": "Amit Kiran Rege*, Sourav Chakraborty*, Claire Monteleoni, Lijun Chen",
     "venue": "AISTATS",

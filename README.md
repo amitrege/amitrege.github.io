@@ -44,7 +44,16 @@ npm run build
 ## Add Photo, CV, Resume
 
 - Put your photo in `public/assets/img/` and set `photo` in `src/data/profile.json`
-- Put PDFs in `public/assets/docs/` and set `cvUrl` / `resumeUrl` in `src/data/profile.json`
+- Set `cvUrl` / `resumeUrl` in `src/data/profile.json`
+
+The CV and résumé TeX sources live only in the sibling `../cv/` directory. The
+PDFs in `public/assets/docs/` are deliberately committed copies for GitHub
+Pages; do not edit them or add TeX source here. Build, copy, and byte-verify both
+PDFs from the source directory:
+
+```bash
+make -C ../cv deploy
+```
 
 ## Deploy Live
 
