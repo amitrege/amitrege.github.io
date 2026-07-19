@@ -5,6 +5,7 @@ interface Project {
   blurb: string;
   tech: string;
   link: string;
+  repo?: string;
 }
 
 interface Props {
@@ -27,6 +28,11 @@ const Heading = headingTag;
     <div class="chip-list project-chip-list">
       {project.tech.split(",").map((item) => <span class="chip">{item.trim()}</span>)}
     </div>
-    <a class="btn btn-primary" href={project.link}>Open Demo</a>
+    <div class="chip-list">
+      {project.repo && (
+        <a class="btn btn-ghost" href={project.repo}>GitHub</a>
+      )}
+      <a class="btn btn-primary" href={project.link}>Open Demo</a>
+    </div>
   </div>
 </article>
