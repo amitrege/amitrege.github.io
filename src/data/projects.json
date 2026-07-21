@@ -1,5 +1,12 @@
 [
   {
+    "title": "HEARSAY",
+    "status": "Live Demo",
+    "blurb": "A voice agent's safety guardrail checks what the speech recognizer wrote down, not what the caller said. HEARSAY reads the guard code, finds the handful of sounds its promise depends on, and tests the hearing exactly there with generated phone audio whose truth is known. Play the clips: the caller says fifteen, the line says fifty, and the guard approves the wrong transfer. It ships the promise with an honest envelope, certified on these lines, broken on those, untested elsewhere.",
+    "tech": "Whisper, faster-whisper, Claude, Python, GitHub Pages",
+    "link": "/hearsay/"
+  },
+  {
     "title": "GLASSBOX",
     "status": "Live Demo",
     "blurb": "An AI agent is dropped into a game it has never seen and recovers the rules as runnable code, tested cell by cell against every recorded observation. Includes invented rule variants that exist in no training data. Every reconstruction is decompiled back to code and playable.",
