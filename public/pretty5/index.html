@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  ─────────────────────────────────────────────────────────────────────────
+  STARDUST — a ~20s kinetic-typography particle film. Canvas 2D only.
+
+  DEBUG / SCREENSHOT HOOKS
+    ?s=0   line 1 formed            ("hi")
+    ?s=1   line 3 formed            ("but it kept coming out as the same three words")
+    ?s=2   the whirlpool beat       (dense vortex, held)
+    ?s=3   THE PAYOFF fully formed  ("you are soooo beautiful", hot + glowing)
+    ?s=4   the closing line + outro ("that's it. that's the whole message.")
+    Any ?s=N jumps INSTANTLY: particles are snapped to their targets, the sim
+    is warmed headlessly, and the timeline is FROZEN on that beat (tap to resume).
+
+    ?still=1   freezes ambient drift/twinkle at a fixed, good-looking frame.
+               Layout & composition are identical with or without it.
+
+    Combine:  ?s=3&still=1   ← the money shot.
+
+  LEGIBILITY — the sampler is unforgiving; two traps cost a lot of time.
+    · TYPEFACE: a glyph is only as readable as the parts of it that survive
+      being redrawn as ~8px points of light. Cormorant italic's 't' has an
+      ascender barely taller than its own crossbar and read as "beauciful".
+      EB Garamond italic was chosen over Playfair / Lora / Spectral / Cormorant
+      upright: unambiguous 't', and it still fits one line on desktop.
+    · PLACEMENT MUST BE STRATIFIED, not random. Random subsampling leaves
+      Poisson gaps, so the same code read "beautiful" on one load and
+      "beausiful" on the next. One mote per ~g px cell, with g solved by
+      iteration, makes it identical every time. Do not "simplify" it back to a
+      shuffle-and-take, and do not trim an oversized pool at random.
+    · 'hi' is two letters and its h counter is small; if set too small the glow
+      bridges it into a 'b'. That is why line 1 gets a generous size.
+
+  LIGHT BUDGET — read before touching brightness.
+  Three things multiply: per-particle alpha (al[]), the motion-blur trail
+  (1/FADE ≈ 1.6x accumulation) and the additive bloom. Each is individually
+  reasonable; stacked carelessly they clip every pixel to white and the
+  letterforms vanish into a molten smear. The rules that keep it readable:
+    · motes stay SMALL (SPR_CSS ≈ MIND/52). fat motes merge into solid mass.
+    · sparser coverage is compensated with BRIGHTNESS (wordGain), never size.
+    · the bloom downsample is squared (b0→b1 'multiply') so it soft-thresholds:
+      only bright letterform cores bloom, dim dust does not smear into haze.
+    · sprites carry NO baked white core. a lone mote is gold; white-hot cores
+      emerge from additive overlap, which is what makes the payoff read hot.
+  Target: individual motes visible as discrete points with dark space between.
+  ─────────────────────────────────────────────────────────────────────────
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#06050e">
+<title>a small thing i made</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="i made you a small thing">
+<meta property="og:description" content="about twenty seconds long. it's mostly dust. best held in one hand.">
+<meta name="description" content="about twenty seconds long. it's mostly dust. best held in one hand.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.92em%22 font-size=%2292%22>✨</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@1,500;1,600;1,700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: #06050e;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    min-height: 100dvh;
+    color: #f6e9d6;
+    font-family: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-user-select: none; user-select: none;
+  }
+
+  #dust {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+    touch-action: none;
+    z-index: 1;
+  }
+
+  /* ── chrome ─────────────────────────────────────────────── */
+  #ui { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+
+  .chrome {
+    font-size: 10px;
+    letter-spacing: .26em;
+    text-transform: lowercase;
+    font-weight: 500;
+    color: rgba(255, 233, 202, .40);
+    text-align: center;
+    line-height: 1.9;
+  }
+
+  #hint {
+    position: absolute; left: 0; right: 0;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    opacity: 0;
+    transition: opacity 1.4s ease;
+  }
+  body.hinted #hint { opacity: 1; }
+  body.hint-out #hint { opacity: 0; transition: opacity .5s ease; }
+
+  #outro {
+    position: absolute; left: 0; right: 0;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+    opacity: 0; transform: translateY(10px);
+    transition: opacity 1.8s ease, transform 1.8s cubic-bezier(.2,.8,.3,1);
+  }
+  body.outro #outro { opacity: 1; transform: none; }
+
+  #again {
+    pointer-events: auto;
+    font: inherit;
+    font-size: 10.5px;
+    letter-spacing: .3em;
+    color: rgba(255, 226, 186, .78);
+    background: transparent;
+    border: 1px solid rgba(255, 206, 142, .22);
+    border-radius: 999px;
+    padding: .85em 1.9em .8em;
+    cursor: pointer;
+    text-transform: lowercase;
+    transition: color .4s ease, border-color .4s ease, box-shadow .5s ease, transform .3s ease;
+  }
+  #again:hover, #again:focus-visible {
+    color: #fff3e0;
+    border-color: rgba(255, 210, 150, .55);
+    box-shadow: 0 0 34px rgba(255, 186, 110, .22), inset 0 0 22px rgba(255, 190, 120, .07);
+    transform: translateY(-1px);
+    outline: none;
+  }
+  #again:active { transform: translateY(0) scale(.98); }
+
+  #sig {
+    font-family: 'EB Garamond', 'Iowan Old Style', Georgia, serif;
+    font-style: italic; font-weight: 500;
+    font-size: 14px; letter-spacing: .1em;
+    color: rgba(255, 224, 182, .34);
+  }
+
+  #play { opacity: .74; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #hint, #outro { transition-duration: .45s; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="dust"></canvas>
+
+  <div id="ui">
+    <div id="hint" class="chrome">tap anywhere to skip ahead</div>
+    <div id="outro">
+      <button id="again" type="button">watch it again</button>
+      <div id="play" class="chrome">the dust still follows your finger</div>
+      <div id="sig">&mdash;&nbsp;<span id="sigName">amit</span></div>
+    </div>
+  </div>
+
+  <p class="sr-only" id="srText"></p>
+
+<script>
+/* eslint-disable */
+(function () {
+"use strict";
+
+// ══ customise me ═══════════════════════════════════════════════════════════
+const CONFIG = { herName: "", myName: "Amit" };
+// herName: "" → the film opens on "hi". Set it and line 1 becomes her name.
+// (the whole piece speaks in lowercase; names are lowercased to match. remove
+//  the .toLowerCase() calls below if you'd rather keep the capital.)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── url flags ─────────────────────────────────────────────────────────────
+const Q = new URLSearchParams(location.search);
+const STILL = Q.get('still') === '1';
+const rawStage = Q.get('s');
+const STAGE = (rawStage !== null && /^[0-4]$/.test(rawStage.trim())) ? parseInt(rawStage, 10) : -1;
+const RM = (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || false;
+
+// ── tiny helpers ──────────────────────────────────────────────────────────
+const TAU = Math.PI * 2;
+const rnd = Math.random;
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const sstep = u => (u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u));
+
+const LUTN = 4096, LUTM = LUTN - 1, LUTK = LUTN / TAU, LUTQ = LUTN >> 2;
+const LUT = new Float32Array(LUTN);
+for (let i = 0; i < LUTN; i++) LUT[i] = Math.sin(i / LUTN * TAU);
+const fsin = a => LUT[((a * LUTK) | 0) & LUTM];
+const fcos = a => LUT[(((a * LUTK) | 0) + LUTQ) & LUTM];
+
+// ── canvases ──────────────────────────────────────────────────────────────
+const cv    = document.getElementById('dust');
+const ctx   = cv.getContext('2d', { alpha: false });
+const sceneC = document.createElement('canvas');           // particles + motion-blur trail
+const sctx   = sceneC.getContext('2d');
+const bgC    = document.createElement('canvas');           // pre-rendered ground
+const bgx    = bgC.getContext('2d');
+const b0C    = document.createElement('canvas'); const b0x = b0C.getContext('2d'); // bloom 1/4 linear
+const b1C    = document.createElement('canvas'); const b1x = b1C.getContext('2d'); // bloom 1/4 squared
+const b2C    = document.createElement('canvas'); const b2x = b2C.getContext('2d'); // bloom 1/12
+const rasC   = document.createElement('canvas');           // text rasteriser
+const rctx   = rasC.getContext('2d', { willReadFrequently: true });
+const mesC   = document.createElement('canvas'); mesC.width = mesC.height = 8;
+const mctx   = mesC.getContext('2d');
+
+let W = 0, H = 0, CX = 0, CY = 0, MIND = 0, DPR = 1;
+
+// ── typeface ──────────────────────────────────────────────────────────────
+// Glyphs are sampled to a bitmap and redrawn as ~8px points of light, so the
+// only thing that matters is which letters survive that. EB Garamond italic,
+// not Cormorant: Cormorant's 't' has an ascender barely taller than its own
+// crossbar, and once the motes bloom it reads as a 'c' — "beauciful". Tested
+// against Playfair / Lora / Spectral / Cormorant upright; EB Garamond is the
+// only one with an unambiguous 't' that also stays on one line on desktop.
+// 500 not 600: EB Garamond is sturdier than Cormorant, and heavier strokes
+// spread the same particle budget thinner and clog the counters.
+const SERIF = '"EB Garamond", "Iowan Old Style", "Palatino Linotype", Georgia, "Times New Roman", serif';
+const FONT = px => 'italic 500 ' + px + 'px ' + SERIF;
+const emW = t => { mctx.font = FONT(100); return mctx.measureText(t).width / 100; };
+
+// ── palette ───────────────────────────────────────────────────────────────
+const PAL = [
+  [255, 214, 141],  // gold
+  [255, 191,  84],  // deep gold
+  [255, 245, 228],  // warm white
+  [255, 246, 236],  // warm white 2
+  [255, 163, 191],  // rose
+  [255, 200, 176],  // peach
+  [146, 226, 255],  // cyan sparkle
+  [206, 187, 255]   // pale violet
+];
+const PAL_CUM = (() => {
+  const wgt = [38, 22, 13, 9, 8, 6, 2, 2];
+  let s = 0; const out = [];
+  for (const w of wgt) { s += w; out.push(s); }
+  return out.map(v => v / s);
+})();
+function pickCol() { const r = rnd(); for (let i = 0; i < PAL_CUM.length; i++) if (r <= PAL_CUM[i]) return i; return 0; }
+
+const SPR_PX = 24;                  // sprite bitmap reference size (css px)
+let SPR_CSS = 20;                   // draw footprint at scale 1 — scales with viewport
+let SPR = [], HOT = [], BLOB = null, BLOB2 = null;
+
+function makeSprite(rgb, hot) {
+  const S = Math.max(10, Math.round(SPR_PX * DPR));
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  const m = hot ? 0.36 : 0;
+  const r = Math.round(rgb[0] + (255 - rgb[0]) * m);
+  const gg = Math.round(rgb[1] + (247 - rgb[1]) * m);
+  const b = Math.round(rgb[2] + (214 - rgb[2]) * m);
+  // tight core + a small soft halo — must read as a discrete point of light
+  const rad = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  rad.addColorStop(0.00, 'rgba(' + r + ',' + gg + ',' + b + ',1)');
+  rad.addColorStop(0.18, 'rgba(' + r + ',' + gg + ',' + b + ',0.66)');
+  rad.addColorStop(0.38, 'rgba(' + r + ',' + gg + ',' + b + ',0.17)');
+  rad.addColorStop(0.64, 'rgba(' + r + ',' + gg + ',' + b + ',0.030)');
+  rad.addColorStop(1.00, 'rgba(' + r + ',' + gg + ',' + b + ',0)');
+  g.fillStyle = rad; g.fillRect(0, 0, S, S);
+  return c;
+}
+function makeBlob(rgb, a) {
+  const S = 256;
+  const c = document.createElement('canvas'); c.width = c.height = S;
+  const g = c.getContext('2d');
+  const rad = g.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  rad.addColorStop(0, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + a + ')');
+  rad.addColorStop(0.45, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',' + (a * 0.28) + ')');
+  rad.addColorStop(1, 'rgba(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ',0)');
+  g.fillStyle = rad; g.fillRect(0, 0, S, S);
+  return c;
+}
+function buildSprites() {
+  SPR = PAL.map(c => makeSprite(c, false));
+  HOT = PAL.map(c => makeSprite(c, true));
+  BLOB  = makeBlob([132, 92, 226], 0.30);
+  BLOB2 = makeBlob([255, 138, 74], 0.22);
+}
+
+// ── particle storage ──────────────────────────────────────────────────────
+const MAXN = 4200;
+const px = new Float32Array(MAXN), py = new Float32Array(MAXN);
+const vx = new Float32Array(MAXN), vy = new Float32Array(MAXN);
+const hx = new Float32Array(MAXN), hy = new Float32Array(MAXN);
+const mixA = new Float32Array(MAXN);
+const dl   = new Float32Array(MAXN);   // formation delay 0..1
+const ph   = new Float32Array(MAXN);   // shimmer phase
+const kv   = new Float32Array(MAXN);   // spring variation
+const sz   = new Float32Array(MAXN);   // size scale
+const al   = new Float32Array(MAXN);   // base alpha
+const br   = new Float32Array(MAXN);   // breathe amplitude px
+const pulse= new Float32Array(MAXN);
+const vr   = new Float32Array(MAXN);   // per-particle vortex orbit radius 0..1
+const ag   = new Float32Array(MAXN);   // per-particle ambient-dust gain
+const part = new Uint8Array(MAXN);     // participates in the current word
+const col  = new Uint8Array(MAXN);
+const pOrder = new Int32Array(MAXN);
+
+let N = 1200, active = 1200;
+
+function seedParticles() {
+  for (let i = 0; i < MAXN; i++) {
+    px[i] = rnd() * (W || 400); py[i] = rnd() * (H || 800);
+    vx[i] = 0; vy[i] = 0; mixA[i] = 0; pulse[i] = 0; part[i] = 0;
+    ph[i] = rnd() * TAU;
+    kv[i] = 0.78 + rnd() * 0.5;
+    sz[i] = 0.55 + Math.pow(rnd(), 1.6) * 0.85;
+    al[i] = 0.060 + rnd() * 0.066;
+    ag[i] = Math.pow(rnd(), 3.0);        // ambient dust: a few sparkle, most whisper
+    br[i] = 0.4 + rnd() * 1.1;
+    vr[i] = Math.pow(rnd(), 1.30);
+    col[i] = pickCol();
+    dl[i] = rnd();
+    pOrder[i] = i;
+  }
+}
+
+// ── stars ─────────────────────────────────────────────────────────────────
+let SN = 0;
+const SMAX = 260;
+const stx = new Float32Array(SMAX), sty = new Float32Array(SMAX),
+      str = new Float32Array(SMAX), stp = new Float32Array(SMAX),
+      sts = new Float32Array(SMAX), std = new Float32Array(SMAX);
+const STAR_COL = ['rgb(255,248,236)', 'rgb(214,226,255)', 'rgb(255,224,236)', 'rgb(200,244,255)'];
+const stc = new Uint8Array(SMAX);
+function seedStars() {
+  SN = Math.min(SMAX, Math.round(W * H / 5200));
+  for (let i = 0; i < SN; i++) {
+    const d = 0.25 + Math.pow(rnd(), 1.6) * 0.75;
+    stx[i] = rnd() * W; sty[i] = rnd() * H;
+    std[i] = d; str[i] = d * (0.45 + rnd() * 1.15);
+    stp[i] = rnd() * TAU; sts[i] = 0.35 + rnd() * 1.2;
+    stc[i] = (rnd() * 4) | 0;
+  }
+}
+
+// ── flow field (curl of an animated scalar potential) ─────────────────────
+const CELL = 40;
+let fgw = 0, fgh = 0;
+let pot = new Float32Array(1), fgx = new Float32Array(1), fgy = new Float32Array(1);
+function buildFlow() {
+  fgw = Math.ceil(W / CELL) + 3; fgh = Math.ceil(H / CELL) + 3;
+  const n = fgw * fgh;
+  pot = new Float32Array(n); fgx = new Float32Array(n); fgy = new Float32Array(n);
+}
+function updateFlow(t) {
+  const s = 0.0170;                    // finer swirls — the far field should whisper
+  for (let j = 0; j < fgh; j++) {
+    const y = (j - 1) * CELL;
+    for (let i = 0; i < fgw; i++) {
+      const x = (i - 1) * CELL;
+      pot[j * fgw + i] = Math.sin(x * s + t * 0.33) * Math.cos(y * s * 1.12 - t * 0.24)
+                       + 0.62 * Math.sin((x * 0.7 + y * 0.92) * s + t * 0.19);
+    }
+  }
+  for (let j = 0; j < fgh; j++) {
+    const jm = (j > 0 ? j - 1 : j) * fgw, jp = (j < fgh - 1 ? j + 1 : j) * fgw, jr = j * fgw;
+    for (let i = 0; i < fgw; i++) {
+      const im = i > 0 ? i - 1 : i, ip = i < fgw - 1 ? i + 1 : i;
+      fgx[jr + i] =  (pot[jp + i] - pot[jm + i]);
+      fgy[jr + i] = -(pot[jr + ip] - pot[jr + im]);
+    }
+  }
+}
+let FX = 0, FY = 0;
+function flowAt(x, y) {
+  let gx = x / CELL + 1, gy = y / CELL + 1;
+  if (gx < 0) gx = 0; else if (gx > fgw - 1.001) gx = fgw - 1.001;
+  if (gy < 0) gy = 0; else if (gy > fgh - 1.001) gy = fgh - 1.001;
+  const i0 = gx | 0, j0 = gy | 0, fx = gx - i0, fy = gy - j0;
+  const a = j0 * fgw + i0, b = a + 1, c = a + fgw, d = c + 1;
+  const w0 = (1 - fx) * (1 - fy), w1 = fx * (1 - fy), w2 = (1 - fx) * fy, w3 = fx * fy;
+  FX = fgx[a] * w0 + fgx[b] * w1 + fgx[c] * w2 + fgx[d] * w3;
+  FY = fgy[a] * w0 + fgy[b] * w1 + fgy[c] * w2 + fgy[d] * w3;
+}
+
+// ══ TEXT → POINTS ═════════════════════════════════════════════════════════
+// Balanced wrap (DP: minimise the widest row) then pick the row-count that
+// yields the largest legal font size. Everything is derived from the live
+// canvas width — never a hard-coded px size.
+
+function partitionWords(n, seg, r) {
+  const INF = 1e9;
+  const dp = [], ch = [];
+  for (let k = 0; k <= r; k++) { dp.push(new Float64Array(n + 1).fill(INF)); ch.push(new Int32Array(n + 1).fill(-1)); }
+  dp[0][n] = 0;
+  for (let k = 1; k <= r; k++) {
+    for (let i = n - 1; i >= 0; i--) {
+      let bv = INF, bj = -1;
+      for (let j = i; j < n; j++) {
+        const rest = dp[k - 1][j + 1];
+        if (rest >= INF) continue;
+        const sw = seg[i][j];
+        const v = sw > rest ? sw : rest;
+        if (v <= bv) { bv = v; bj = j; }   // tie → fill the earlier row
+      }
+      dp[k][i] = bv; ch[k][i] = bj;
+    }
+  }
+  if (dp[r][0] >= INF) return null;
+  const out = []; let i = 0, k = r;
+  while (k > 0) { const j = ch[k][i]; out.push([i, j]); i = j + 1; k--; }
+  return out;
+}
+
+function layoutText(text, maxW, maxH, maxFs, maxRows, lh) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const n = words.length;
+  const seg = [];
+  for (let i = 0; i < n; i++) { seg[i] = []; for (let j = i; j < n; j++) seg[i][j] = emW(words.slice(i, j + 1).join(' ')); }
+  let best = null;
+  const rmax = Math.min(maxRows, n);
+  for (let r = 1; r <= rmax; r++) {
+    const groups = partitionWords(n, seg, r);
+    if (!groups) continue;
+    let widest = 0;
+    for (const g of groups) { const w = seg[g[0]][g[1]]; if (w > widest) widest = w; }
+    if (widest <= 0) continue;
+    let fs = Math.min(maxW / widest, maxFs, maxH / (r * lh));
+    if (!best || fs > best.fs * 1.015) {
+      best = { fs: fs, lh: lh, em: widest, rows: groups.map(g => words.slice(g[0], g[1] + 1).join(' ')) };
+    }
+  }
+  if (!best) best = { fs: Math.min(maxFs, maxH / lh), lh: lh, em: 1, rows: [text] };
+  best.fs = Math.max(9, best.fs);
+  return best;
+}
+
+// point buffers
+const PCAP = 26000;
+const ptx = new Float32Array(PCAP), pty = new Float32Array(PCAP);
+const ptw = new Float32Array(PCAP);        // thin-stroke weight per ink point
+const pIdx = new Int32Array(PCAP);
+const selBuf = [];
+let cellBuf = new Int32Array(1);
+let pCount = 0, pInk = 0;
+
+function rasterise(lay, cx, cy) {
+  const rows = lay.rows, fs = lay.fs, lineH = fs * lay.lh;
+  const blockH = rows.length * lineH;
+  let widest = 0;
+  rctx.setTransform(1, 0, 0, 1, 0, 0);
+  rctx.font = FONT(fs);
+  const rowW = rows.map(r => { const w = rctx.measureText(r).width; if (w > widest) widest = w; return w; });
+
+  // generous pad: italic swashes overhang, and the ascenders are tall
+  const padX = Math.max(10, fs * 0.42), padY = Math.max(10, fs * 0.75);
+  let x0 = Math.floor(cx - widest / 2 - padX), y0 = Math.floor(cy - blockH / 2 - padY);
+  let x1 = Math.ceil(cx + widest / 2 + padX), y1 = Math.ceil(cy + blockH / 2 + padY);
+  x0 = clamp(x0, 0, W - 2); y0 = clamp(y0, 0, H - 2);
+  x1 = clamp(x1, x0 + 2, W); y1 = clamp(y1, y0 + 2, H);
+  const rw = Math.max(2, x1 - x0), rh = Math.max(2, y1 - y0);
+
+  rasC.width = rw; rasC.height = rh;
+  rctx.setTransform(1, 0, 0, 1, 0, 0);
+  rctx.clearRect(0, 0, rw, rh);
+  rctx.font = FONT(fs);
+  rctx.textAlign = 'center';
+  rctx.textBaseline = 'middle';
+  rctx.fillStyle = '#fff';
+  for (let i = 0; i < rows.length; i++) {
+    rctx.fillText(rows[i], cx - x0, cy - y0 + (i + 0.5) * lineH - blockH / 2);
+  }
+
+  const img = rctx.getImageData(0, 0, rw, rh).data;
+
+  // Integral image of the ink mask, so we can ask "how solid is this
+  // neighbourhood?" in O(1). A 't' crossbar and ascender are a few px of ink
+  // sitting next to a fat bowl; sampled uniformly they get starved and the
+  // letter reads as a 'c'. Weighting thin neighbourhoods up fixes that, and
+  // opens up the counters of o/e/a as a bonus.
+  const iw = rw + 1;
+  const integ = new Int32Array(iw * (rh + 1));
+  for (let y = 0; y < rh; y++) {
+    let run = 0;
+    const o = (y + 1) * iw, po = y * iw;
+    for (let x = 0; x < rw; x++) {
+      if (img[(y * rw + x) * 4 + 3] > 96) run++;
+      integ[o + x + 1] = integ[po + x + 1] + run;
+    }
+  }
+  const BR = clamp(Math.round(fs / 13), 1, 6);
+  const thinAt = (x, y) => {
+    const ax = clamp(x - BR, 0, rw), bx = clamp(x + BR + 1, 0, rw);
+    const ay = clamp(y - BR, 0, rh), by = clamp(y + BR + 1, 0, rh);
+    const n = integ[by * iw + bx] - integ[ay * iw + bx] - integ[by * iw + ax] + integ[ay * iw + ax];
+    const frac = n / Math.max(1, (bx - ax) * (by - ay));
+    return clamp(0.80 / (0.30 + frac), 1, 1.9);
+  };
+
+  const area = rw * rh;
+  let step = area > 260000 ? 2 : 1;
+  let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
+
+  for (;;) {
+    pCount = 0; minX = 1e9; minY = 1e9; maxX = -1e9; maxY = -1e9;
+    let over = false;
+    for (let y = 0; y < rh; y += step) {
+      const row = y * rw;
+      for (let x = 0; x < rw; x += step) {
+        // NB: do not lower this threshold to "capture more AA edge". It inflates
+        // pInk, and since useN is capped by the particle count that *lowers*
+        // coverage density and makes thin strokes worse, not better. Measured.
+        if (img[(row + x) * 4 + 3] > 96) {
+          if (pCount >= PCAP) { over = true; break; }
+          ptx[pCount] = x0 + x; pty[pCount] = y0 + y; ptw[pCount] = thinAt(x, y); pCount++;
+          if (x < minX) minX = x; if (x > maxX) maxX = x;
+          if (y < minY) minY = y; if (y > maxY) maxY = y;
+        }
+      }
+      if (over) break;
+    }
+    if (!over || step >= 4) break;
+    step++;
+  }
+  pInk = pCount * step * step;
+
+  // optical re-centre on the real ink bbox
+  if (pCount > 0) {
+    const ox = cx - (x0 + (minX + maxX) / 2);
+    const oy = cy - (y0 + (minY + maxY) / 2);
+    if (ox || oy) for (let i = 0; i < pCount; i++) { ptx[i] += ox; pty[i] += oy; }
+    lay.offX = ox; lay.offY = oy;
+  } else { lay.offX = 0; lay.offY = 0; }
+
+  lay.rowW = rowW; lay.lineH = lineH; lay.blockH = blockH; lay.step = step;
+  return lay;
+}
+
+// centres of every 'o' in a line, for the heartbeat pulse
+function oCentres(lay, cx, cy, out) {
+  let n = 0;
+  const fs = lay.fs, lineH = lay.lineH, blockH = lay.blockH;
+  mctx.font = FONT(fs);
+  for (let r = 0; r < lay.rows.length; r++) {
+    const s = lay.rows[r];
+    const left = cx - lay.rowW[r] / 2 + (lay.offX || 0);
+    const yc = cy + (r + 0.5) * lineH - blockH / 2 + (lay.offY || 0) + fs * 0.06;
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] !== 'o') continue;
+      const a = mctx.measureText(s.slice(0, i)).width;
+      const w = mctx.measureText(s[i]).width;
+      out.x[n] = left + a + w / 2; out.y[n] = yc; n++;
+      if (n >= out.x.length) return n;
+    }
+  }
+  return n;
+}
+
+// ══ THE SCRIPT ════════════════════════════════════════════════════════════
+const HER = (CONFIG.herName || '').trim();
+const L_OPEN = HER ? HER.toLowerCase() : 'hi';
+
+const LINES = [
+  // 'hi' is only two letters, and the glow will bridge the h's counter into a
+  // 'b' if it is set too small. It gets generous size for that reason.
+  { t: L_OPEN,                                            wf: .80, hf: .46, k: [.260, .125], rows: 1, lh: 1.02 },
+  { t: 'i was going to write you a whole thing',           wf: .86, hf: .62, k: [.132, .066], rows: 4, lh: 1.22 },
+  { t: 'but it kept coming out as the same three words',   wf: .86, hf: .62, k: [.132, .066], rows: 4, lh: 1.22 },
+  { t: 'you are soooo beautiful',                          wf: .88, hf: .62, k: [.260, .145], rows: 3, lh: 1.05 },
+  { t: 'that’s it. that’s the whole message.',   wf: .84, hf: .46, k: [.135, .072], rows: 2, lh: 1.26 }
+];
+
+const SCATd = RM ? 240 : 560;
+const FORM  = RM ? 520 : 980;
+const HS    = RM ? 0.72 : 1;
+
+// ≈21s to the closing line
+const BEATS = [
+  { t: 'text',  k: 0, hold: 1700 * HS, first: true },
+  { t: 'text',  k: 1, hold: 2500 * HS },
+  { t: 'text',  k: 2, hold: 2700 * HS },
+  { t: 'vortex',       hold: 1900 * HS },
+  { t: 'text',  k: 3, hold: 5400 * HS, hero: true },
+  { t: 'snow',         hold: 1700 * HS },
+  { t: 'text',  k: 4, hold: 1e9, closing: true, nokick: true }
+];
+const STAGE_BEAT = [0, 2, 3, 4, 6];
+
+function scatterLen(b) { return (b.t === 'text' && !b.first && !b.nokick) ? SCATd : 0; }
+function beatDur(b) { return (b.t === 'text' ? scatterLen(b) + FORM : 0) + b.hold; }
+
+// ══ STATE ═════════════════════════════════════════════════════════════════
+let beatI = 0, bt = 0, curBeat = BEATS[0];
+let scatD = SCATd;                       // scatter length for the current beat
+let heroT = 0, pulseClock = 0, pulseOn = false;
+let ambFloor = 1.50, ambTarget = 1.50;   // ambient-dust brightness gain (× per-particle ag)
+let bootFade = 0;
+let frozen = false;                      // ?s=N holds the beat
+let warming = false;
+let tSim = STILL ? 12.7 : 0;
+let vortexR = 0;
+
+const PMAX = 10;
+const PC = { x: new Float32Array(PMAX), y: new Float32Array(PMAX) };
+const PW = new Float32Array(PMAX);
+let PN = 0, PRAD = 40;
+
+// ══ ASSIGN A LINE TO THE PARTICLES ════════════════════════════════════════
+let curLay = null, curSpec = null;
+// sparser coverage → brighter motes (NOT fatter: fat motes merge into a solid mass).
+let wordGain = 1;
+const sortBuf = [], tgtBuf = [];
+
+function applyText(spec) {
+  curSpec = spec;
+  const maxW = W * spec.wf, maxH = H * spec.hf;
+  // height cap uses a floor tied to width so landscape phones don't shrink to nothing
+  const maxFs = Math.min(W * spec.k[0], Math.max(H, W * 0.62) * spec.k[1]);
+  const cx = CX, cy = CY - H * (spec === LINES[3] ? 0.015 : 0.02);
+  const lay = layoutText(spec.t, maxW, maxH, maxFs, spec.rows, spec.lh);
+  rasterise(lay, cx, cy);
+  curLay = lay;
+
+  if (pCount === 0) { for (let i = 0; i < active; i++) part[i] = 0; return; }
+
+  // how many particles this line deserves — constant ink density
+  let useN = Math.round(pInk * 0.62);    // ~1.3px mote spacing: strokes read smooth
+  if (useN < 340) useN = 340;            // tiny words need an absolute dot count
+  const capN = Math.round(active * 0.92);      // keep ~8% adrift so the field stays alive
+  if (useN > capN) useN = capN;
+
+  // STRATIFIED target selection. Purely random subsampling leaves Poisson gaps,
+  // and at these densities that made the payoff legible on one load and mangled
+  // on the next — unacceptable for the one word this whole page exists to say.
+  // Instead: lay a grid of ~g px over the ink and take exactly one mote per
+  // occupied cell, so every stroke gets even coverage every time. Within a cell
+  // the winner is a weighted draw (exponential race) biased toward thin
+  // neighbourhoods, so ascenders and crossbars still win over fat bowls.
+  const key = new Float32Array(pCount);
+  for (let i = 0; i < pCount; i++) key[i] = -Math.log(rnd() + 1e-9) / ptw[i];
+
+  let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
+  for (let i = 0; i < pCount; i++) {
+    const x = ptx[i], y = pty[i];
+    if (x < mnx) mnx = x; if (x > mxx) mxx = x;
+    if (y < mny) mny = y; if (y > mxy) mxy = y;
+  }
+  // Solve for the cell size that yields ~useN occupied cells. It is NOT simply
+  // sqrt(ink/useN): once g exceeds the stroke width a stroke contributes
+  // length/g cells rather than area/g², so iterate. Trimming a too-large pool
+  // at random instead would put the Poisson gaps straight back ('hi' → 'bi').
+  let g = Math.max(0.85, Math.sqrt(pInk / Math.max(1, useN)));
+  let cw = 1, ch = 1;
+  selBuf.length = 0;
+  for (let it = 0; it < 8; it++) {
+    cw = Math.max(1, (((mxx - mnx) / g) | 0) + 2);
+    ch = Math.max(1, (((mxy - mny) / g) | 0) + 2);
+    if (cw * ch > 1200000) { g *= 1.6; continue; }
+    if (cellBuf.length < cw * ch) cellBuf = new Int32Array(cw * ch);
+    cellBuf.fill(-1, 0, cw * ch);
+    for (let i = 0; i < pCount; i++) {
+      const c = (((pty[i] - mny) / g) | 0) * cw + (((ptx[i] - mnx) / g) | 0);
+      const prev = cellBuf[c];
+      if (prev < 0 || key[i] < key[prev]) cellBuf[c] = i;
+    }
+    selBuf.length = 0;
+    for (let c = 0, n = cw * ch; c < n; c++) if (cellBuf[c] >= 0) selBuf.push(cellBuf[c]);
+    if (selBuf.length <= useN * 1.06 || g > 60) break;
+    g *= Math.max(1.06, Math.sqrt(selBuf.length / useN));
+  }
+  const poolN = selBuf.length;
+  if (poolN === 0) return;
+  for (let i = 0; i < poolN; i++) pIdx[i] = selBuf[i];
+
+  // choose which particles take part
+  for (let i = 0; i < MAXN; i++) part[i] = 0;
+  for (let i = active - 1; i > 0; i--) { const j = (rnd() * (i + 1)) | 0; const t = pOrder[i]; pOrder[i] = pOrder[j]; pOrder[j] = t; }
+  sortBuf.length = 0;
+  for (let i = 0; i < MAXN && sortBuf.length < useN; i++) {
+    const p = pOrder[i];
+    if (p >= active) continue;
+    part[p] = 1; sortBuf.push(p);
+  }
+  useN = sortBuf.length;
+  if (useN === 0) return;
+
+  // pair by x-rank: short, tidy, legible travel
+  sortBuf.sort((a, b) => px[a] - px[b]);
+  tgtBuf.length = 0;
+  for (let i = 0; i < useN; i++) tgtBuf.push(pIdx[i % poolN]);
+  tgtBuf.sort((a, b) => ptx[a] - ptx[b]);
+
+  // a light organic shuffle so it doesn't look mechanical
+  const span = Math.max(2, (useN * 0.012) | 0);
+  for (let i = 0; i < useN; i++) {
+    if (rnd() < 0.22) {
+      const j = clamp(i + ((rnd() * span * 2) | 0) - span, 0, useN - 1);
+      const t = tgtBuf[i]; tgtBuf[i] = tgtBuf[j]; tgtBuf[j] = t;
+    }
+  }
+
+  const jit = poolN < useN ? g * 0.5 : lay.step * 0.45;
+  const invW = 1 / Math.max(1, W);
+  for (let i = 0; i < useN; i++) {
+    const p = sortBuf[i], q = tgtBuf[i];
+    hx[p] = ptx[q] + (rnd() - 0.5) * jit;
+    hy[p] = pty[q] + (rnd() - 0.5) * jit;
+    dl[p] = clamp(0.58 * (hx[p] * invW) + 0.42 * rnd(), 0, 1);
+  }
+
+  // hold perceived brightness roughly constant however dense the assignment came out
+  const dens = useN / Math.max(1, pInk);          // particles per ink px²
+  wordGain = clamp(Math.pow(0.40 / Math.max(0.02, dens), 0.8), 0.72, 3.2);
+
+  // pulse centres — only the payoff gets a heartbeat
+  PN = 0;
+  if (spec === LINES[3]) {
+    PN = oCentres(lay, cx, cy, PC);
+    PRAD = lay.fs * 0.62;
+  }
+}
+
+// ══ BEAT MACHINE ══════════════════════════════════════════════════════════
+function releaseAll(kick) {
+  for (let i = 0; i < active; i++) {
+    mixA[i] = 0;
+    if (kick > 0) {
+      const dx = px[i] - CX, dy = py[i] - CY;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.001;
+      const ux = dx / d, uy = dy / d;
+      const s = kick * (0.55 + rnd() * 0.9);
+      vx[i] += ux * s - uy * s * 0.85 + (rnd() - 0.5) * 1.1;
+      vy[i] += uy * s + ux * s * 0.85 + (rnd() - 0.5) * 1.1;
+    }
+  }
+}
+
+function enterBeat(i, instant) {
+  beatI = i; bt = 0;
+  const b = curBeat = BEATS[i];
+  scatD = scatterLen(b);
+
+  if (b.t === 'text') {
+    releaseAll((b.first || b.nokick || instant) ? 0 : (RM ? 1.4 : 2.6));
+    applyText(LINES[b.k]);
+  } else {
+    for (let k = 0; k < active; k++) part[k] = 0;
+    releaseAll(b.t === 'vortex' ? (RM ? 1.0 : 2.0) : 0.5);
+    PN = 0; wordGain = 1;
+  }
+
+  ambTarget = b.t === 'vortex' ? 7.0 : (b.t === 'snow' ? 3.6 : 1.50);
+  if (b.hero) { pulseClock = 0; pulseOn = false; }
+
+  if (i >= 3) document.body.classList.add('hint-out');
+  if (!b.closing) document.body.classList.remove('outro');
+
+  if (instant) snapBeat(b);
+}
+
+function snapBeat(b) {
+  if (b.t === 'text') {
+    bt = scatD + FORM + Math.min(b.hold, 4000) * 0.45;
+    for (let k = 0; k < active; k++) {
+      vx[k] = 0; vy[k] = 0;
+      if (part[k]) { px[k] = hx[k] + (rnd() - 0.5) * 1.4; py[k] = hy[k] + (rnd() - 0.5) * 1.4; mixA[k] = 1; }
+      else { px[k] = rnd() * W; py[k] = rnd() * H; mixA[k] = 0; }
+    }
+    if (b.hero) { heroT = 1; pulseOn = true; pulseClock = 640; }
+    if (b.closing) document.body.classList.add('outro');
+  } else if (b.t === 'vortex') {
+    bt = b.hold * 0.62;
+    const Rv = MIND * 0.40, arms = 3;
+    for (let k = 0; k < active; k++) {
+      const u = (k + 0.5) / active;
+      const r = Rv * (0.06 + 1.06 * vr[k]) * (0.90 + rnd() * 0.20);
+      const th = (k % arms) * TAU / arms + 2.9 * Math.log(1 + r / (Rv * 0.28)) + (rnd() - 0.5) * 0.55;
+      px[k] = CX + Math.cos(th) * r; py[k] = CY + Math.sin(th) * r;
+      const tg = 0.050 / (0.42 + r / (Rv * 0.9)) * r;
+      vx[k] = -Math.sin(th) * tg; vy[k] = Math.cos(th) * tg;
+      mixA[k] = 0;
+    }
+  } else {
+    bt = b.hold * 0.5;
+    for (let k = 0; k < active; k++) { px[k] = rnd() * W; py[k] = rnd() * H; vx[k] = 0; vy[k] = rnd() * 1.2; mixA[k] = 0; }
+  }
+  ambFloor = ambTarget;
+  bootFade = 1;
+}
+
+function nextBeat() {
+  if (beatI >= BEATS.length - 1) return false;
+  enterBeat(beatI + 1, false);
+  return true;
+}
+
+// ══ POINTER FIELD + SHOCKWAVES ════════════════════════════════════════════
+let mx = -1e5, my = -1e5, pvx = 0, pvy = 0, pSpd = 0, pOn = false;
+let lastPX = 0, lastPY = 0;
+let parX = 0, parY = 0;                 // parallax offset (smoothed)
+
+const WMAX = 4;
+const wvX = new Float32Array(WMAX), wvY = new Float32Array(WMAX),
+      wvR = new Float32Array(WMAX), wvL = new Float32Array(WMAX);
+let wvN = 0;
+
+function shock(x, y) {
+  if (RM) return;
+  if (wvN >= WMAX) { for (let i = 0; i < WMAX - 1; i++) { wvX[i] = wvX[i + 1]; wvY[i] = wvY[i + 1]; wvR[i] = wvR[i + 1]; wvL[i] = wvL[i + 1]; } wvN = WMAX - 1; }
+  wvX[wvN] = x; wvY[wvN] = y; wvR[wvN] = 6; wvL[wvN] = 1; wvN++;
+}
+
+// ══ PHYSICS ═══════════════════════════════════════════════════════════════
+const DT = 1000 / 60;
+const DAMP = 0.893, KBASE = 0.062;
+
+// narrative clock — driven by real elapsed ms, independent of physics substeps
+function advanceClock(ms) {
+  if (frozen || warming) return;
+  bt += ms;
+  if (pulseOn && !STILL) pulseClock += ms;
+  if (bt >= beatDur(curBeat) && beatI < BEATS.length - 1) enterBeat(beatI + 1, false);
+}
+
+function step() {
+  if (!STILL) tSim += 1 / 60;
+  updateFlow(tSim);
+
+  const b = curBeat;
+
+  // ── macro envelopes ───────────────────────────────────────────────
+  bootFade += (1 - bootFade) * 0.022;
+  ambFloor += (ambTarget - ambFloor) * 0.055;
+
+  const formedAt = scatD + FORM;
+  const heroTarget = (b.hero && bt > scatD * 0.6) ? 1 : 0;
+  heroT += (heroTarget - heroT) * (heroTarget > heroT ? 0.030 : 0.016);
+
+  if (b.hero && bt > formedAt * 0.92) pulseOn = true;
+  if (!b.hero) pulseOn = false;
+
+  // travelling heartbeat through the o's
+  let anyPulse = false;
+  if (pulseOn && PN > 0) {
+    const period = RM ? 1500 : 1750;
+    const u = (pulseClock % period) / period;
+    for (let j = 0; j < PN; j++) {
+      const c = 0.06 + j * (0.62 / Math.max(1, PN - 1 + 0.6));
+      let d = (u - c) / 0.115;
+      if (d < -1 || d > 1) { PW[j] = 0; continue; }
+      d = 1 - d * d; PW[j] = d * d * (0.72 + 0.28 * (j / Math.max(1, PN - 1)));
+      anyPulse = true;
+    }
+  } else { for (let j = 0; j < PN; j++) PW[j] = 0; }
+
+  // ── scatter puff ─────────────────────────────────────────────────
+  const scatterAmt = (b.t === 'text' && scatD > 0 && bt < scatD) ? (1 - bt / scatD) : 0;
+
+  // ── vortex geometry ──────────────────────────────────────────────
+  let vortA = 0;
+  if (b.t === 'vortex') {
+    const p = clamp(bt / b.hold, 0, 1);
+    vortA = clamp(p * 5, 0, 1) * clamp((1 - p) * 5, 0, 1) * 0.35 + 0.65;
+    vortexR = MIND * (0.60 - 0.26 * sstep(clamp(p * 1.25, 0, 1)));
+  }
+  const snowOn = b.t === 'snow';
+
+  const drift = 0.055 * (RM ? 0.6 : 1);
+  const PRr = clamp(MIND * 0.27, 78, 230), PR2 = PRr * PRr;
+  const pushF = pOn ? (2.10 + Math.min(2.6, pSpd * 0.12)) : 0;
+  const swirlF = pOn ? (0.80 + Math.min(1.5, pSpd * 0.08)) : 0;
+
+  const wobT = tSim * 0.85;
+  const PRAD2 = PRAD * PRAD;
+
+  for (let i = 0; i < active; i++) {
+    let x = px[i], y = py[i], ux = vx[i], uy = vy[i];
+
+    // formation ramp
+    let m = 0;
+    if (b.t === 'text' && part[i]) {
+      m = sstep((bt - scatD - dl[i] * FORM * 0.55) / (FORM * 0.45));
+    }
+    mixA[i] = m;
+
+    // curl drift — the shimmer / breathing
+    flowAt(x, y);
+    const dscale = drift * (0.9 + 0.75 * (1 - m));
+    ux += FX * dscale; uy += FY * dscale;
+
+    // spring home (with a slow per-particle breath)
+    if (m > 0.002) {
+      const k = KBASE * kv[i] * m;
+      const bx = fsin(wobT + ph[i] * 6.283) * br[i];
+      const by = fcos(wobT * 0.87 + ph[i] * 4.771) * br[i];
+      ux += (hx[i] + bx - x) * k;
+      uy += (hy[i] + by - y) * k;
+    }
+
+    // heartbeat displacement + brightness
+    let pu = 0;
+    if (anyPulse) {
+      for (let j = 0; j < PN; j++) {
+        const w = PW[j]; if (w <= 0.01) continue;
+        const dx = x - PC.x[j], dy = y - PC.y[j];
+        const d2 = dx * dx + dy * dy;
+        if (d2 < PRAD2) {
+          const d = Math.sqrt(d2);
+          const q = 1 - d / PRAD;
+          const e = w * q * q;
+          pu += e;
+          const inv = 1 / (d + 0.001);
+          ux += dx * inv * e * 0.55; uy += dy * inv * e * 0.55;
+        }
+      }
+      if (pu > 1) pu = 1;
+    }
+    pulse[i] = pu;
+
+    // mode forces
+    if (scatterAmt > 0) {
+      const dx = x - CX, dy = y - CY;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.001;
+      const nx = dx / d, ny = dy / d;
+      const s = scatterAmt * 0.58;
+      ux += nx * s - ny * s * 1.25;
+      uy += ny * s + nx * s * 1.25;
+    } else if (b.t === 'vortex') {
+      const dx = x - CX, dy = y - CY;
+      const d = Math.sqrt(dx * dx + dy * dy) + 0.001;
+      const nx = dx / d, ny = dy / d;
+      const tR = vortexR * (0.06 + 1.06 * vr[i]);
+      ux += -nx * (d - tR) * 0.011;
+      uy += -ny * (d - tR) * 0.011;
+      const om = 0.050 * vortA / (0.42 + d / (vortexR * 0.9));   // rad/frame, inner faster
+      const tg = om * d * 0.107;                                  // sustain v=om·d vs damping
+      ux += -ny * tg; uy += nx * tg;
+    } else if (snowOn) {
+      uy += 0.20;                                     // ≈2px/frame terminal — slow snow
+      ux += fsin(y * 0.021 + ph[i]) * 0.05;
+    } else if (m < 0.35) {
+      // gentle containment for ambient dust
+      if (x < -24) ux += 0.09; else if (x > W + 24) ux -= 0.09;
+      if (y < -24) uy += 0.09; else if (y > H + 24) uy -= 0.09;
+    }
+
+    // her finger
+    if (pushF > 0) {
+      const dx = x - mx, dy = y - my;
+      const d2 = dx * dx + dy * dy;
+      if (d2 < PR2) {
+        const d = Math.sqrt(d2) + 0.001;
+        const f = sstep(1 - d / PRr);
+        const inv = 1 / d;
+        const nx = dx * inv, ny = dy * inv;
+        ux += nx * f * pushF - ny * f * swirlF;
+        uy += ny * f * pushF + nx * f * swirlF;
+      }
+    }
+
+    // shockwaves
+    for (let w = 0; w < wvN; w++) {
+      const R = wvR[w], band = 54;
+      const dx = x - wvX[w], dy = y - wvY[w];
+      const d2 = dx * dx + dy * dy;
+      const lo = R - band, hi = R + band;
+      if (d2 > hi * hi || (lo > 0 && d2 < lo * lo)) continue;
+      const d = Math.sqrt(d2) + 0.001;
+      const q = 1 - Math.abs(d - R) / band;
+      const e = q * q * wvL[w] * 1.8;
+      ux += dx / d * e; uy += dy / d * e;
+    }
+
+    ux *= DAMP; uy *= DAMP;
+    x += ux; y += uy;
+
+    if (snowOn && y > H + 24) { y = -20; x = rnd() * W; uy = rnd() * 0.6; }
+
+    px[i] = x; py[i] = y; vx[i] = ux; vy[i] = uy;
+  }
+
+  // advance waves
+  for (let w = wvN - 1; w >= 0; w--) {
+    wvR[w] += 11; wvL[w] -= 0.016;
+    if (wvL[w] <= 0 || wvR[w] > MIND * 1.9) {
+      for (let i = w; i < wvN - 1; i++) { wvX[i] = wvX[i + 1]; wvY[i] = wvY[i + 1]; wvR[i] = wvR[i + 1]; wvL[i] = wvL[i + 1]; }
+      wvN--;
+    }
+  }
+
+  // pointer speed decay + parallax
+  pSpd *= 0.86;
+  const tpx = pOn ? (mx / Math.max(1, W) - 0.5) : 0;
+  const tpy = pOn ? (my / Math.max(1, H) - 0.5) : 0;
+  parX += (tpx - parX) * 0.03; parY += (tpy - parY) * 0.03;
+
+  // outro reveal
+  if (curBeat.closing && bt > formedAt + (RM ? 500 : 1100)) document.body.classList.add('outro');
+}
+
+// ══ RENDER ════════════════════════════════════════════════════════════════
+let quality = 2;          // 2 full · 1 no mid-bloom · 0 no aurora
+const FADE = RM ? 0.70 : 0.62;      // short comet tail, NOT a light integrator
+
+function buildBG() {
+  bgC.width = cv.width; bgC.height = cv.height;
+  bgx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  let g = bgx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#030209'); g.addColorStop(.40, '#070517');
+  g.addColorStop(.76, '#0b0720'); g.addColorStop(1, '#110925');
+  bgx.fillStyle = g; bgx.fillRect(0, 0, W, H);
+
+  const big = Math.max(W, H);
+  g = bgx.createRadialGradient(W * .5, H * 1.04, 0, W * .5, H * 1.04, big * .86);
+  g.addColorStop(0, 'rgba(255,140,66,.17)'); g.addColorStop(.34, 'rgba(178,70,86,.065)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  bgx.fillStyle = g; bgx.fillRect(0, 0, W, H);
+
+  g = bgx.createRadialGradient(W * .80, -H * .10, 0, W * .80, -H * .10, big * .9);
+  g.addColorStop(0, 'rgba(84,56,178,.15)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  bgx.fillStyle = g; bgx.fillRect(0, 0, W, H);
+
+  g = bgx.createRadialGradient(W * .5, H * .47, MIND * .22, W * .5, H * .47, big * .80);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.74)');
+  bgx.fillStyle = g; bgx.fillRect(0, 0, W, H);
+}
+
+function drawAurora(dim) {
+  const big = Math.max(W, H);
+  const s1 = big * 1.05, s2 = big * 0.85;
+  ctx.globalAlpha = 0.30 * dim;
+  ctx.drawImage(BLOB,
+    W * 0.74 - s1 / 2 + fsin(tSim * 0.11) * W * 0.07,
+    H * 0.10 - s1 / 2 + fcos(tSim * 0.09) * H * 0.05, s1, s1);
+  ctx.globalAlpha = 0.26 * dim;
+  ctx.drawImage(BLOB2,
+    W * 0.28 - s2 / 2 + fcos(tSim * 0.08) * W * 0.08,
+    H * 0.94 - s2 / 2 + fsin(tSim * 0.12) * H * 0.04, s2, s2);
+  ctx.globalAlpha = 1;
+}
+
+function drawStars(dim) {
+  const t = tSim;
+  for (let i = 0; i < SN; i++) {
+    const d = std[i];
+    const tw = 0.34 + 0.66 * (0.5 + 0.5 * fsin(t * sts[i] + stp[i]));
+    const x = stx[i] + parX * 26 * d + fsin(t * 0.05 * d + stp[i]) * 4 * d;
+    const span = H + 40;
+    let y = sty[i] + parY * 22 * d - (STILL ? 0 : t * 1.6 * d);
+    y = ((y + 20) % span + span) % span - 20;
+    const a = tw * (0.16 + 0.5 * d) * dim;
+    if (a < 0.012) continue;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = STAR_COL[stc[i]];
+    const r = str[i];
+    ctx.fillRect(x - r * .5, y - r * .5, r, r);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawParticles() {
+  sctx.setTransform(1, 0, 0, 1, 0, 0);
+  sctx.globalCompositeOperation = 'destination-out';
+  sctx.globalAlpha = FADE;
+  sctx.fillStyle = '#000';
+  sctx.fillRect(0, 0, sceneC.width, sceneC.height);
+
+  sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  sctx.globalCompositeOperation = 'lighter';
+
+  const heroA = 1 + heroT * 0.5;
+  const shT = tSim * 2.15;
+  const amb = ambFloor, wg = wordGain;
+  const boot = bootFade;
+  const wide = W + 40, tall = H + 40;
+
+  for (let i = 0; i < active; i++) {
+    const x = px[i], y = py[i];
+    if (x < -30 || x > wide || y < -30 || y > tall) continue;
+    const m = mixA[i], pu = pulse[i];
+    const sh = 1 + 0.24 * fsin(shT + ph[i] * 7.3);
+    let a = al[i] * (amb * ag[i] * (1 - m) + wg * m) * sh * boot;
+    if (m > 0.02) a *= (1 + heroT * heroA * m * 0.62);
+    a *= (1 + pu * 1.3);
+    if (a <= 0.004) continue;
+    if (a > 0.92) a = 0.92;
+    const heat = (heroT * 1.45 - dl[i] * 0.45) * m;
+    const img = (heat > 0.45 || pu > 0.30) ? HOT[col[i]] : SPR[col[i]];
+    const s = SPR_CSS * sz[i] * (0.86 + 0.22 * sh) * (1 + pu * 0.6) * (1 + heroT * m * 0.14);
+    sctx.globalAlpha = a;
+    sctx.drawImage(img, x - s * 0.5, y - s * 0.5, s, s);
+  }
+  sctx.globalAlpha = 1;
+}
+
+function render() {
+  const dim = 1 - heroT * 0.55;
+
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'copy';
+  ctx.globalAlpha = 1;
+  ctx.drawImage(bgC, 0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  if (quality >= 1) drawAurora(dim * bootFade);
+  drawStars(dim * bootFade);
+
+  drawParticles();
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 1;
+  ctx.drawImage(sceneC, 0, 0);
+
+  // cheap layered bloom. b1 = downsample², which soft-thresholds: dim dust is
+  // crushed away and only bright letterform cores bloom. then one more box step.
+  b0x.globalCompositeOperation = 'copy';
+  b0x.globalAlpha = 1;
+  b0x.drawImage(sceneC, 0, 0, b0C.width, b0C.height);
+  b1x.globalCompositeOperation = 'copy';
+  b1x.globalAlpha = 1;
+  b1x.drawImage(b0C, 0, 0);
+  b1x.globalCompositeOperation = 'multiply';
+  b1x.drawImage(b0C, 0, 0);
+  b2x.globalCompositeOperation = 'copy';
+  b2x.globalAlpha = 1;
+  b2x.drawImage(b1C, 0, 0, b2C.width, b2C.height);
+
+  ctx.globalAlpha = 0.34 + heroT * 0.58;
+  ctx.drawImage(b2C, 0, 0, cv.width, cv.height);
+  if (quality >= 2) {
+    ctx.globalAlpha = 0.16 + heroT * 0.30;
+    ctx.drawImage(b1C, 0, 0, cv.width, cv.height);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// ══ SIZING ════════════════════════════════════════════════════════════════
+function targetCount() {
+  // legibility needs several motes across a letter stroke, so density matters more
+  // than raw count. motes are ~8px now (were ~25), so the fill cost is ~9x lower.
+  const area = W * H;                    // ~2860 at 390×844, 4200 on a desktop
+  let n = Math.round(area / 115);
+  if (DPR > 2.2) n = Math.round(n * 0.94);
+  if (RM) n = Math.round(n * 0.62);
+  return clamp(n, 900, 4200);
+}
+
+let sizedOnce = false;
+function resize(force) {
+  const nw = Math.max(1, cv.clientWidth || innerWidth);
+  const nh = Math.max(1, cv.clientHeight || innerHeight);
+  const ndpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (!force && sizedOnce && Math.abs(nw - W) < 2 && Math.abs(nh - H) < 2 && ndpr === DPR) return;
+
+  const first = !sizedOnce;
+  const dprChanged = ndpr !== DPR;
+  W = nw; H = nh; DPR = ndpr;
+  CX = W / 2; CY = H / 2; MIND = Math.min(W, H);
+  SPR_CSS = clamp(MIND / 52, 6, 10);      // small discrete motes; letterforms need many, not few fat ones
+
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  sceneC.width = cv.width; sceneC.height = cv.height;
+  b0C.width = Math.max(2, Math.round(cv.width / 4));  b0C.height = Math.max(2, Math.round(cv.height / 4));
+  b1C.width = b0C.width; b1C.height = b0C.height;
+  b2C.width = Math.max(2, Math.round(b1C.width / 3)); b2C.height = Math.max(2, Math.round(b1C.height / 3));
+  if ('imageSmoothingQuality' in b1x) { b0x.imageSmoothingQuality = 'high'; b1x.imageSmoothingQuality = 'high'; b2x.imageSmoothingQuality = 'high'; }
+  ctx.imageSmoothingEnabled = true;
+
+  if (first || dprChanged || !SPR.length) buildSprites();
+  buildBG();
+  buildFlow();
+  updateFlow(tSim);
+  seedStars();
+
+  N = targetCount();
+  if (first) { active = N; seedParticles(); quality = 2; }
+  else if (N > active) {
+    for (let i = active; i < N; i++) { px[i] = rnd() * W; py[i] = rnd() * H; vx[i] = 0; vy[i] = 0; mixA[i] = 0; part[i] = 0; }
+    active = N;
+  } else if (N < active) active = N;
+
+  sizedOnce = true;
+  if (!first && curBeat && curBeat.t === 'text') applyText(LINES[curBeat.k]);
+}
+
+// ══ MAIN LOOP ═════════════════════════════════════════════════════════════
+let raf = 0, last = 0, acc = 0, running = false;
+let frames = 0, workSum = 0, degrades = 0;
+
+function frame(now) {
+  raf = requestAnimationFrame(frame);
+  if (!last) last = now;
+  let dt = now - last; last = now;
+  if (dt > 100) dt = 100;
+  advanceClock(dt);
+  acc += dt;
+  let steps = 0;
+  while (acc >= DT && steps < 3) { step(); acc -= DT; steps++; }
+  if (!steps) return;                       // cap render at 60fps on 120Hz panels
+
+  const t0 = performance.now();
+  render();
+  const work = performance.now() - t0;
+
+  frames++; workSum += work;
+  if (frames >= 24) {
+    const avg = workSum / frames;
+    frames = 0; workSum = 0;
+    if (avg > 11.5 && degrades < 4) {
+      degrades++;
+      if (quality > 0) quality--;
+      else { active = Math.max(360, Math.round(active * 0.78)); if (curBeat.t === 'text') applyText(LINES[curBeat.k]); }
+    }
+  }
+}
+function start() { if (running) return; running = true; last = 0; acc = 0; raf = requestAnimationFrame(frame); }
+function stop() { running = false; cancelAnimationFrame(raf); }
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else start(); });
+
+// ══ INPUT ═════════════════════════════════════════════════════════════════
+const againBtn = document.getElementById('again');
+let downX = 0, downY = 0, downT = 0, downOnBtn = false;
+
+function movePointer(e) {
+  const x = e.clientX, y = e.clientY;
+  if (pOn) { const d = Math.hypot(x - lastPX, y - lastPY); pSpd = Math.max(pSpd, Math.min(60, d)); }
+  lastPX = x; lastPY = y;
+  mx = x; my = y; pOn = true;
+}
+addEventListener('pointermove', movePointer, { passive: true });
+addEventListener('pointerdown', e => {
+  downOnBtn = !!(e.target && e.target.closest && e.target.closest('#again'));
+  movePointer(e);
+  downX = e.clientX; downY = e.clientY; downT = performance.now();
+  if (!downOnBtn) shock(e.clientX, e.clientY);
+}, { passive: true });
+addEventListener('pointerup', e => {
+  const quick = performance.now() - downT < 400;
+  const still = Math.hypot(e.clientX - downX, e.clientY - downY) < 16;
+  if (!downOnBtn && quick && still) advance();
+  if (e.pointerType === 'touch') { pOn = false; mx = -1e5; my = -1e5; }
+}, { passive: true });
+function dropPointer() { pOn = false; mx = -1e5; my = -1e5; }
+addEventListener('pointercancel', dropPointer, { passive: true });
+addEventListener('pointerout', e => { if (!e.relatedTarget) dropPointer(); }, { passive: true });
+document.documentElement.addEventListener('pointerleave', dropPointer, { passive: true });
+addEventListener('blur', dropPointer);
+addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') {
+    if (document.activeElement === againBtn) return;
+    e.preventDefault(); shock(CX, CY); advance();
+  }
+});
+
+function advance() {
+  document.body.classList.add('hint-out');
+  if (frozen) { frozen = false; return; }
+  if (beatI < BEATS.length - 1) nextBeat();
+}
+
+againBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  document.body.classList.remove('outro');
+  frozen = false;
+  shock(CX, CY);
+  heroT = 0; pulseOn = false; pulseClock = 0;
+  bootFade = 0.34;
+  enterBeat(0, false);
+  againBtn.blur();
+});
+
+// ══ BOOT ══════════════════════════════════════════════════════════════════
+document.getElementById('sigName').textContent = (CONFIG.myName || 'amit').toLowerCase();
+document.getElementById('srText').textContent =
+  L_OPEN + '. ' + LINES[1].t + ', ' + LINES[2].t + '. you are soooo beautiful. ' + LINES[4].t;
+if (STILL) document.title = 'stardust — still';
+
+function fontsReady() {
+  const to = new Promise(r => setTimeout(r, 2600));
+  if (!document.fonts) return to;
+  const loads = [
+    document.fonts.load(FONT(100)),
+    document.fonts.load(FONT(48))
+  ];
+  return Promise.race([Promise.all(loads).then(() => document.fonts.ready), to]);
+}
+
+function warmUp() {
+  warming = true;
+  for (let i = 0; i < 46; i++) step();
+  warming = false;
+  for (let i = 0; i < 9; i++) { step(); drawParticles(); }   // build the motion-blur trail
+}
+
+let booted = false;
+function boot() {
+  if (booted) return;
+  booted = true;
+  resize(true);
+  bootFade = 0;
+
+  if (STAGE >= 0) {
+    frozen = true;
+    // fast-forward the earlier beats' side effects, then snap into place
+    enterBeat(STAGE_BEAT[STAGE], true);
+    if (STAGE >= 1) document.body.classList.add('hint-out');
+    bootFade = 1;
+    warmUp();
+  } else {
+    enterBeat(0, false);
+    setTimeout(() => { if (beatI === 0 && !frozen) document.body.classList.add('hinted'); }, RM ? 900 : 2200);
+  }
+  start();
+}
+
+let rTimer = 0;
+function onResize() { clearTimeout(rTimer); rTimer = setTimeout(() => resize(false), 140); }
+addEventListener('resize', onResize);
+addEventListener('orientationchange', () => setTimeout(() => resize(true), 220));
+if (window.visualViewport) visualViewport.addEventListener('resize', onResize);
+
+// is EB Garamond actually rasterising, or are we still on the fallback serif?
+const PROBE = 'you are soooo beautiful';
+function fontLoaded() {
+  mctx.font = 'italic 500 100px "EB Garamond", monospace';
+  const a = mctx.measureText(PROBE).width;
+  mctx.font = 'italic 500 100px monospace';
+  return Math.abs(a - mctx.measureText(PROBE).width) > 1;
+}
+
+function reflowForFont() {
+  if (!curBeat || curBeat.t !== 'text') return;
+  applyText(LINES[curBeat.k]);
+  if (frozen) { snapBeat(curBeat); warmUp(); }      // keep ?s=N screenshots settled
+}
+
+// note: .catch() guards fontsReady only — a throw inside boot must stay visible
+fontsReady().catch(() => {}).then(() => {
+  const had = fontLoaded();
+  boot();
+  // only re-sample if the webfont landed after we already measured the fallback
+  if (!had && document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      setTimeout(() => { if (fontLoaded()) reflowForFont(); }, 60);
+    });
+  }
+});
+
+})();
+</script>
+</body>
+</html>
