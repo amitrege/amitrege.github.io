@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!--
+  ══════════════════════════════════════════════════════════════════════════
+  THE BEAUTY OBSERVATORY — a single-file instrument that fails to measure her
+  ══════════════════════════════════════════════════════════════════════════
+
+  DEBUG / SCREENSHOT HOOKS
+    ?s=0    idle console (identical to a fresh load, nothing scheduled)
+    ?s=1    mid-measurement — first 5 telemetry lines printed, needle high,
+            waveform + spectrometer live, CAL/THRM amber. Frozen there.
+    ?s=2    the break — needle bent, tip snapped off and settled in the dial,
+            FAULT strip, sparks + embers. Blooms red -> rose-gold at +900ms.
+            (With ?still=1 the ambient freeze holds it at the red peak longer.)
+    ?s=3    final payoff — console gone, aurora up, result fully printed.
+    ?still=1  disables looping ambient motion (stars, scanline roll, sheen,
+              aurora drift, LED blink, waveform scroll, caret). One-shot
+              transitions still run. Layout is byte-identical either way.
+
+  Combine freely:  ?s=2&still=1
+  ══════════════════════════════════════════════════════════════════════════
+-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#04101a">
+<title>THE BEAUTY OBSERVATORY</title>
+<meta property="og:title" content="THE BEAUTY OBSERVATORY — instrument no. IV">
+<meta property="og:description" content="A very expensive instrument attempts to measure something. It does not end well for the instrument.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔭</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&family=Cormorant+Garamond:ital,wght@0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────  tokens  ───────────────────────────── */
+:root{
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;
+  --serif:'Cormorant Garamond','Iowan Old Style','Palatino Linotype',Georgia,'Times New Roman',serif;
+
+  --ink:#dcecf1;
+  --dim:#7593a0;
+  --dimmer:#4d6975;
+
+  --sig:#ffb454;              /* CRT amber — the panel's signal colour  */
+  --sig2:#ffe0b2;
+  --glow:rgba(255,180,84,.42);
+  --line:rgba(150,215,235,.13);
+  --tdur:.9s;
+
+  --ok:#48e0a4;
+  --amber:#ffb454;
+  --err:#ff5a63;
+  --gold:#ffc9a0;
+}
+/* the panel's whole colour identity swings on these two classes */
+.panel.crit { --sig:#ff5f6b; --sig2:#ffb4b9; --glow:rgba(255,80,92,.5);  --line:rgba(255,120,132,.24); --tdur:.16s; }
+.panel.bloom{ --sig:#ffc39a; --sig2:#ffe8d6; --glow:rgba(255,178,142,.5); --line:rgba(255,192,168,.24); --tdur:1.15s; }
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  background:#03080c;
+  color:var(--ink);
+  font-family:var(--mono);
+  -webkit-tap-highlight-color:transparent;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+
+/* ─────────────────────────────  the void  ───────────────────────────── */
+#void{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(120vw 70vh at 78% -12%, rgba(24,86,104,.55) 0%, rgba(24,86,104,0) 62%),
+    radial-gradient(90vw 60vh at 6% 106%, rgba(58,32,74,.45) 0%, rgba(58,32,74,0) 60%),
+    radial-gradient(70vw 50vh at 50% 50%, rgba(10,42,54,.35) 0%, rgba(10,42,54,0) 70%),
+    linear-gradient(178deg,#03080c 0%,#05121a 44%,#061a22 74%,#030a10 100%);
+}
+#fx{position:fixed;inset:0;z-index:1;pointer-events:none;display:block}
+
+/* planet limb: one huge circle whose apex sits 14vh off the bottom */
+#limb{
+  position:fixed;left:50%;bottom:calc(-200vw + 14vh);
+  width:200vw;height:200vw;border-radius:50%;
+  transform:translateX(-50%);
+  z-index:2;pointer-events:none;
+  background:
+    radial-gradient(130% 130% at 50% 0%, rgba(16,58,70,.92) 0%, rgba(6,20,28,.98) 42%, #02080c 70%);
+  box-shadow:
+    inset 0 3px 0 0 rgba(126,232,255,.42),
+    inset 0 22px 60px -18px rgba(72,206,240,.30),
+    0 -30px 80px -20px rgba(0,0,0,.9);
+  transition:box-shadow 1.8s ease;
+}
+#limb.on{
+  box-shadow:
+    inset 0 2px 0 0 rgba(255,216,194,.52),
+    inset 0 26px 70px -18px rgba(255,172,146,.40),
+    inset 0 70px 170px -40px rgba(120,235,220,.24),
+    0 -30px 80px -20px rgba(0,0,0,.9);
+}
+
+/* ─────────────────────────────  aurora  ───────────────────────────── */
+#aurora{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity 2.4s ease;mix-blend-mode:screen}
+#aurora.on{opacity:1}
+#aurora i{position:absolute;display:block;border-radius:50%;filter:blur(64px);will-change:transform}
+#aurora .r1{width:118vw;height:46vh;left:-9vw;top:-6vh;background:radial-gradient(closest-side,rgba(78,238,206,.30),rgba(78,238,206,0) 72%);animation:dr1 24s ease-in-out infinite alternate}
+#aurora .r2{width:92vw;height:52vh;right:-14vw;top:12vh;background:radial-gradient(closest-side,rgba(255,150,168,.46),rgba(255,150,168,0) 72%);animation:dr2 31s ease-in-out infinite alternate}
+#aurora .r3{width:104vw;height:40vh;left:-4vw;bottom:2vh;background:radial-gradient(closest-side,rgba(255,196,140,.42),rgba(255,196,140,0) 72%);animation:dr3 27s ease-in-out infinite alternate}
+#aurora .curtain{
+  position:absolute;left:-12vw;right:-12vw;top:2vh;height:58vh;border-radius:0;filter:blur(5px);
+  background:repeating-linear-gradient(94deg,rgba(150,255,228,.16) 0 2px,rgba(150,255,228,0) 2px 13px);
+  -webkit-mask-image:radial-gradient(58% 92% at 50% 26%,#000 0%,transparent 76%);
+  mask-image:radial-gradient(58% 92% at 50% 26%,#000 0%,transparent 76%);
+  animation:sway 19s ease-in-out infinite alternate;
+}
+@keyframes dr1{from{transform:translate3d(-3vw,0,0) scale(1)}to{transform:translate3d(4vw,3vh,0) scale(1.14)}}
+@keyframes dr2{from{transform:translate3d(2vw,2vh,0) scale(1.06)}to{transform:translate3d(-4vw,-2vh,0) scale(.96)}}
+@keyframes dr3{from{transform:translate3d(3vw,1vh,0) scale(1.02)}to{transform:translate3d(-3vw,-2vh,0) scale(1.16)}}
+@keyframes sway{from{transform:translate3d(-2vw,0,0) skewX(-3deg)}to{transform:translate3d(2vw,-2vh,0) skewX(4deg)}}
+
+/* rose-gold bloom behind the payoff text */
+#bloomGlow{
+  position:fixed;left:50%;top:50%;width:min(120vw,1100px);height:min(70vh,620px);
+  transform:translate(-50%,-50%);z-index:4;pointer-events:none;opacity:0;
+  background:radial-gradient(closest-side,rgba(255,186,150,.30),rgba(255,140,170,.12) 55%,rgba(255,140,170,0) 78%);
+  filter:blur(30px);transition:opacity 2s ease;
+}
+#bloomGlow.on{opacity:1;animation:breathe 9s ease-in-out infinite alternate}
+@keyframes breathe{from{transform:translate(-50%,-50%) scale(.94)}to{transform:translate(-50%,-50%) scale(1.08)}}
+
+/* ─────────────────────────  screen overlays  ───────────────────────── */
+#vignette{
+  position:fixed;inset:0;z-index:12;pointer-events:none;
+  background:radial-gradient(128% 96% at 50% 44%,rgba(0,0,0,0) 38%,rgba(0,0,0,.62) 100%);
+}
+#scan{position:fixed;inset:0;z-index:13;pointer-events:none;overflow:hidden;
+  background:repeating-linear-gradient(180deg,rgba(140,215,235,.030) 0 1px,rgba(0,0,0,0) 1px 3px)}
+#scan::after{content:'';position:absolute;left:0;right:0;height:36vh;
+  background:linear-gradient(180deg,rgba(150,230,255,0),rgba(150,230,255,.05),rgba(150,230,255,0));
+  animation:roll 8s linear infinite;will-change:transform}
+@keyframes roll{from{transform:translateY(-40vh)}to{transform:translateY(106vh)}}
+
+#glitch{position:fixed;inset:0;z-index:14;pointer-events:none;opacity:0}
+#glitch.go{opacity:1}
+#glitch::before{content:'';position:absolute;left:-4vw;right:-4vw;height:15vh;transform:translateY(-24vh);
+  background:linear-gradient(180deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.10) 26%,rgba(255,168,190,.26) 48%,rgba(140,240,255,.20) 62%,rgba(255,255,255,0) 100%);
+  mix-blend-mode:screen}
+#glitch.go::before{animation:band .78s cubic-bezier(.35,0,.15,1) 1 forwards}
+#glitch::after{content:'';position:absolute;inset:0;background:rgba(255,236,224,.055);opacity:0;mix-blend-mode:screen}
+#glitch.go::after{animation:flashout .5s ease-out 1 forwards}
+@keyframes band{from{transform:translateY(-24vh)}to{transform:translateY(122vh)}}
+@keyframes flashout{0%{opacity:1}100%{opacity:0}}
+
+/* ─────────────────────────────  stage  ───────────────────────────── */
+#stage{
+  position:fixed;left:0;right:0;top:0;z-index:10;
+  height:100vh;height:100dvh;
+  display:grid;place-items:center;
+  padding:calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+}
+#stage>section{grid-area:1/1}
+/* ─────────────────────────  the glass console  ───────────────────────── */
+.panel{
+  position:relative;
+  width:min(1120px,100%);
+  max-height:100%;
+  display:flex;flex-direction:column;
+  gap:clamp(8px,1.2vw,14px);
+  padding:clamp(12px,1.6vw,20px);
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(24,46,58,.60) 0%,rgba(7,18,25,.80) 58%,rgba(4,12,18,.86) 100%),
+    radial-gradient(140% 90% at 50% -25%,rgba(120,205,225,.13),rgba(120,205,225,0) 60%);
+  -webkit-backdrop-filter:blur(16px) saturate(1.35);
+  backdrop-filter:blur(16px) saturate(1.35);
+  box-shadow:
+    0 44px 130px rgba(0,0,0,.68),
+    0 0 0 1px rgba(160,225,240,.10),
+    inset 0 1px 0 rgba(255,255,255,.11),
+    inset 0 -1px 0 rgba(0,0,0,.55),
+    inset 0 0 90px -40px var(--glow);
+  transition:box-shadow var(--tdur) ease,opacity .55s ease,transform .55s cubic-bezier(.3,.8,.3,1);
+  overflow:hidden;
+}
+.panel::after{ /* hairline inner frame */
+  content:'';position:absolute;inset:6px;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 0 1px var(--line);
+  transition:box-shadow var(--tdur) ease;
+}
+.panel.gone{opacity:0;transform:scale(.965);pointer-events:none}
+.panel.shake{animation:shake .5s cubic-bezier(.36,.07,.19,.97) both}
+@keyframes shake{
+  10%,90%{transform:translate3d(-1px,0,0)} 20%,80%{transform:translate3d(2px,-1px,0)}
+  30%,50%,70%{transform:translate3d(-4px,1px,0) rotate(-.18deg)}
+  40%,60%{transform:translate3d(4px,-1px,0) rotate(.18deg)}
+}
+.panel.tear{animation:tear .22s steps(2) 2 both}
+@keyframes tear{0%{transform:translate3d(0,0,0)}50%{transform:translate3d(4px,-2px,0)}100%{transform:translate3d(-3px,1px,0)}}
+
+.screw{position:absolute;width:7px;height:7px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 34% 30%,#b9c8ce,#5d6b72 55%,#232d33);
+  box-shadow:0 1px 1px rgba(0,0,0,.7),inset 0 0 0 .5px rgba(255,255,255,.2)}
+.screw::before{content:'';position:absolute;left:1px;right:1px;top:3px;height:1px;background:rgba(0,0,0,.55);transform:rotate(28deg)}
+.s-tl{left:9px;top:9px}.s-tr{right:9px;top:9px}.s-bl{left:9px;bottom:9px}.s-br{right:9px;bottom:9px}
+
+/* ── rails ── */
+.rail{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:0 clamp(4px,1vw,10px);position:relative;z-index:2}
+.rail.top{justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:9px;transition:border-color var(--tdur) ease}
+.brandwrap{display:flex;align-items:center;gap:9px;min-width:0}
+.reticle{flex:0 0 auto;width:19px;height:19px;color:var(--sig);transition:color var(--tdur) ease}
+.reticle circle,.reticle line{stroke:currentColor;fill:none;stroke-width:1.2}
+.brand{min-width:0}
+.brand b{display:block;font-weight:700;font-size:clamp(.62rem,2.3vw,.76rem);letter-spacing:.24em;color:var(--ink);white-space:nowrap}
+.brand small{display:block;font-weight:300;font-size:clamp(.5rem,1.9vw,.6rem);letter-spacing:.13em;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.leds{display:flex;align-items:center;gap:clamp(8px,1.6vw,16px);flex:0 0 auto}
+.led{display:flex;align-items:center;gap:5px;font-size:.5rem;letter-spacing:.15em;color:var(--dimmer);font-weight:500}
+.led i{width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:#1b282e;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 1px rgba(255,255,255,.18);
+  transition:background .3s ease,box-shadow .3s ease}
+.led[data-s="ok"]   i{background:var(--ok);   box-shadow:0 0 8px var(--ok),   inset 0 0 0 1px rgba(255,255,255,.4)}
+.led[data-s="warn"] i{background:var(--amber);box-shadow:0 0 8px var(--amber),inset 0 0 0 1px rgba(255,255,255,.4);animation:blink 1.3s steps(1) infinite}
+.led[data-s="err"]  i{background:var(--err);  box-shadow:0 0 10px var(--err), inset 0 0 0 1px rgba(255,255,255,.4);animation:blink .42s steps(1) infinite}
+.led[data-s="gold"] i{background:var(--gold); box-shadow:0 0 10px var(--gold),inset 0 0 0 1px rgba(255,255,255,.45)}
+.led[data-s="ok"],.led[data-s="warn"],.led[data-s="err"],.led[data-s="gold"]{color:var(--dim)}
+@keyframes blink{0%,58%{opacity:1}59%,100%{opacity:.28}}
+
+/* ── main grid ── */
+.grid{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(10px,1.6vw,20px);
+  min-height:0;flex:1 1 auto;position:relative;z-index:2}
+.colL{display:flex;flex-direction:column;justify-content:center;gap:clamp(8px,1.2vw,12px);min-width:0;min-height:0}
+.colR{display:flex;flex-direction:column;gap:clamp(8px,1.2vw,12px);min-width:0;min-height:0}
+
+/* ── the gauge ── */
+.gaugeWrap{position:relative;align-self:center;width:min(290px,100%,36vh);aspect-ratio:1/1;
+  min-height:0;flex:0 0 auto;
+  filter:drop-shadow(0 18px 34px rgba(0,0,0,.6))}
+.gaugeWrap.knock{animation:knock .36s cubic-bezier(.3,.9,.3,1) both}
+@keyframes knock{0%{transform:rotate(0) scale(1)}30%{transform:rotate(-.9deg) scale(1.012)}60%{transform:rotate(.6deg) scale(.996)}100%{transform:none}}
+#gauge{display:block;width:100%;height:100%;overflow:visible}
+#gauge text{font-family:var(--mono);fill:var(--dim);transition:fill var(--tdur) ease}
+.gLabel{font-size:12.5px;font-weight:500;letter-spacing:3.4px;fill:var(--ink)!important}
+.gSub{font-size:5.6px;font-weight:400;letter-spacing:1.7px}
+.gNum{font-size:9px;font-weight:400;letter-spacing:.4px}
+.gMk{font-size:5.2px;font-weight:300;letter-spacing:1.5px;fill:var(--dimmer)!important}
+#lcd{font-size:15px;font-weight:700;letter-spacing:1.6px;fill:var(--sig)!important}
+#gauge .tick{stroke:rgba(190,225,238,.42);stroke-linecap:butt}
+#gauge .tick.maj{stroke:rgba(214,240,250,.78)}
+#gauge .tick.red{stroke:rgba(255,110,120,.85)}
+#arcTrack{stroke:rgba(160,215,235,.10)}
+#arcGlow,#arcVal{stroke:var(--sig);transition:stroke var(--tdur) ease}
+#arcRed{stroke:var(--err);opacity:.75}
+#needle{transform-box:view-box;transform-origin:110px 110px;will-change:transform}
+#needle .halo{stroke:var(--sig);opacity:.16;transition:stroke var(--tdur) ease}
+#needle .body,#tipG .tip{fill:#f4e2c8;transition:fill var(--tdur) ease}
+.panel.crit #needle .body,.panel.crit #tipG .tip{fill:#ffc9cc}
+.panel.bloom #needle .body,.panel.bloom #tipG .tip{fill:#ffe3cd}
+#tipG{transform-box:view-box;transform-origin:154px 110px}
+#tipG.bent{animation:bend .55s cubic-bezier(.3,1.6,.45,1) both}
+#tipG.bent.instant{animation-duration:.001s}
+#tipG.off{opacity:0}
+@keyframes bend{0%{transform:rotate(0)}55%{transform:rotate(-26deg)}100%{transform:rotate(-20deg)}}
+#shard .tip{fill:#f4e2c8}
+.panel.crit #shard .tip{fill:#ffc9cc}
+.panel.bloom #shard .tip{fill:#ffe3cd}
+#sheen{animation:sheen 11s ease-in-out infinite;will-change:transform}
+@keyframes sheen{0%{transform:translateX(-150px)}55%,100%{transform:translateX(160px)}}
+
+/* sparks at the snap (DOM, 16 max — under the canvas threshold) */
+.sparks{position:absolute;inset:0;pointer-events:none;z-index:3}
+.sparks b{position:absolute;left:50%;top:50%;width:3px;height:3px;border-radius:50%;
+  background:#ffd9a8;box-shadow:0 0 7px rgba(255,190,120,.95);
+  transform:translate(-50%,-50%);opacity:0;
+  animation:spark var(--t,.8s) cubic-bezier(.15,.7,.35,1) both}
+@keyframes spark{
+  0%{opacity:1;transform:translate(-50%,-50%) scale(1.3)}
+  70%{opacity:.9}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.3)}
+}
+
+/* ── scope: waveform + spectrometer ── */
+.scope{position:relative;border-radius:10px;overflow:hidden;flex:0 0 auto;
+  padding:8px 9px 7px;display:flex;flex-direction:column;gap:5px;
+  background:linear-gradient(180deg,rgba(3,15,21,.92),rgba(2,8,12,.96));
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 3px 14px rgba(0,0,0,.75);
+  transition:box-shadow var(--tdur) ease}
+.scope .mesh{position:absolute;inset:0;pointer-events:none;opacity:.55;
+  background-image:linear-gradient(90deg,var(--line) 1px,transparent 1px),linear-gradient(180deg,var(--line) 1px,transparent 1px);
+  background-size:24px 13px}
+.scope .cap{position:absolute;right:8px;top:6px;font-size:.44rem;letter-spacing:.18em;color:var(--dimmer);pointer-events:none;z-index:2}
+#wave{position:relative;display:block;width:100%;height:50px}
+.spec{position:relative;display:flex;align-items:flex-end;gap:2px;height:24px}
+.spec i{flex:1 1 0;height:100%;min-width:0;border-radius:1px 1px 0 0;transform:scaleY(.06);transform-origin:bottom;
+  background:linear-gradient(180deg,var(--sig2),var(--sig) 45%,rgba(255,120,60,.25));
+  transition:background var(--tdur) ease}
+
+/* ── telemetry log ── */
+.logHead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-size:.5rem;letter-spacing:.2em;color:var(--dimmer);flex:0 0 auto}
+.logHead em{font-style:normal;color:var(--sig);transition:color var(--tdur) ease}
+.log{
+  flex:1 1 auto;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;justify-content:flex-end;gap:1px;
+  padding:9px 11px;border-radius:10px;
+  background:
+    repeating-linear-gradient(180deg,rgba(150,215,235,.032) 0 1px,rgba(0,0,0,0) 1px 19px),
+    linear-gradient(180deg,rgba(3,14,20,.86),rgba(2,8,12,.94));
+  box-shadow:inset 0 0 0 1px var(--line),inset 0 3px 16px rgba(0,0,0,.7);
+  font-size:clamp(.6rem,1.55vw,.72rem);line-height:1.62;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 100%);
+  mask-image:linear-gradient(180deg,transparent 0,#000 14%,#000 100%);
+  transition:box-shadow var(--tdur) ease;
+}
+.ln{display:flex;gap:7px;align-items:baseline;flex:0 0 auto;
+  animation:lnIn .28s ease both;text-wrap:pretty}
+@keyframes lnIn{from{opacity:0;transform:translateY(5px)}}
+.ln .ca{flex:0 0 auto;color:var(--dimmer);user-select:none}
+.ln .tx{min-width:0;overflow-wrap:anywhere;
+  text-shadow:0 0 12px var(--glow),-.55px 0 rgba(255,60,90,.30),.55px 0 rgba(60,220,255,.26)}
+.ln.ok   .tx{color:#a9d8e2}
+.ln.dim  .tx{color:#617f8b;text-shadow:none}
+.ln.dim  .ca{color:#3b535d}
+.ln.warn .tx{color:var(--amber)}
+.ln.err  .tx{color:#ff7b83}
+.ln.err  .ca{color:#ff7b83}
+.ln.soft .tx{font-family:var(--serif);font-style:italic;font-size:1.42em;line-height:1.28;color:#ffd2c2;letter-spacing:.01em;text-shadow:0 0 20px rgba(255,180,150,.35)}
+.ln .cur{display:inline-block;width:.52em;height:1em;background:var(--sig);vertical-align:-.14em;margin-left:2px;
+  animation:cur 1s steps(1) infinite}
+@keyframes cur{0%,54%{opacity:.95}55%,100%{opacity:0}}
+
+/* ── tiles ── */
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;flex:0 0 auto}
+.tile{padding:6px 8px 7px;border-radius:8px;min-width:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008));
+  box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow var(--tdur) ease}
+.tl{display:block;font-size:.44rem;letter-spacing:.15em;color:var(--dimmer);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tv{display:block;margin-top:3px;font-size:clamp(.6rem,1.6vw,.72rem);font-weight:500;color:var(--sig2);
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-shadow:0 0 10px var(--glow);transition:color var(--tdur) ease}
+.bar{display:block;height:2px;margin-top:5px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
+.tile.flash{animation:tflash .85s cubic-bezier(.2,.9,.3,1) 1 both}
+@keyframes tflash{0%{transform:scale(1)}22%{transform:scale(1.055)}100%{transform:scale(1)}}
+.still .tile.flash{animation:none!important}
+.bar i{display:block;height:100%;width:100%;transform:scaleX(.04);transform-origin:left;border-radius:2px;
+  background:linear-gradient(90deg,var(--sig),var(--sig2));transition:background var(--tdur) ease}
+
+/* ── status strip ── */
+.status{flex:0 0 auto;position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:26px;padding:5px 10px;border-radius:7px;
+  font-size:clamp(.48rem,1.5vw,.58rem);letter-spacing:.2em;text-align:center;
+  color:var(--dim);background:rgba(255,255,255,.028);
+  box-shadow:inset 0 0 0 1px var(--line);
+  transition:color var(--tdur) ease,box-shadow var(--tdur) ease,background-color var(--tdur) ease}
+.status.err{color:#ff8a90;background:rgba(255,70,84,.10);box-shadow:inset 0 0 0 1px rgba(255,90,100,.35),0 0 30px -12px var(--err);
+  animation:pulseErr 1.05s steps(1) infinite}
+.status.gold{color:var(--gold);background:rgba(255,196,158,.09);box-shadow:inset 0 0 0 1px rgba(255,196,158,.32),0 0 34px -12px var(--glow)}
+@keyframes pulseErr{0%,52%{opacity:1}53%,100%{opacity:.45}}
+
+/* ── footer / buttons ── */
+.rail.bot{justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;transition:border-color var(--tdur) ease}
+.hint{font-size:.5rem;letter-spacing:.18em;color:var(--dimmer);text-align:right;flex:1 1 auto;min-width:0}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-height:48px;padding:0 clamp(16px,3vw,28px);border:0;border-radius:9px;cursor:pointer;
+  font-family:var(--mono);font-weight:700;font-size:clamp(.66rem,2.3vw,.78rem);
+  letter-spacing:.2em;text-transform:uppercase;white-space:nowrap;
+  color:#07141b;background:linear-gradient(180deg,var(--sig2),var(--sig));
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.30),inset 0 -2px 0 rgba(0,0,0,.22),0 8px 30px -8px var(--glow),0 2px 0 rgba(0,0,0,.4);
+  transition:transform .2s cubic-bezier(.2,.9,.3,1.4),box-shadow .3s ease,background var(--tdur) ease,filter .3s ease}
+.btn:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.34),0 12px 40px -8px var(--glow),0 2px 0 rgba(0,0,0,.4)}
+.btn:active{transform:translateY(1px) scale(.985)}
+.btn:focus-visible{outline:2px solid var(--sig2);outline-offset:3px}
+.btn[disabled]{background:transparent;color:rgba(255,216,182,.52);font-weight:500;filter:none;
+  box-shadow:inset 0 0 0 1px rgba(255,200,170,.20);cursor:default;transform:none}
+.btn.ghost{color:var(--sig2);background:transparent;font-weight:500;letter-spacing:.22em;text-transform:lowercase;
+  box-shadow:inset 0 0 0 1px rgba(255,200,170,.30),0 0 34px -14px var(--glow)}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1px rgba(255,214,190,.55),0 0 40px -10px var(--glow)}
+
+/* ─────────────────────────────  payoff  ───────────────────────────── */
+.payoff{--sig:#ffc39a;--sig2:#ffe8d6;--glow:rgba(255,178,142,.45);--line:rgba(255,192,168,.26);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;text-align:center;width:min(1000px,100%);padding-bottom:clamp(10px,4vh,44px);
+  opacity:0;transform:translateY(10px);transition:opacity 1s ease,transform 1s cubic-bezier(.2,.8,.25,1)}
+.payoff.on{opacity:1;transform:none}
+
+/* ── the headline ────────────────────────────────────────────────────────
+   NO background-clip:text anywhere. Every character carries its own solid
+   colour, sampled from the rose-gold ramp in JS, so the one line this whole
+   page exists to deliver can never fail to paint (iOS Safari included).   */
+.result{display:block;width:100%;overflow:hidden;--fs:64px;
+  font-weight:800;line-height:1;letter-spacing:.045em;
+  color:#ffcba4;                                   /* last-resort fill */
+  text-shadow:0 0 38px rgba(255,176,142,.42),0 0 10px rgba(255,200,170,.22)}
+.result .l{display:block;white-space:nowrap;color:inherit}
+.result .l1{font-size:calc(var(--fs)*.40);letter-spacing:.30em;margin-bottom:.30em;opacity:.94}
+.result .l2{font-size:var(--fs);line-height:1.04}
+.result .l3{font-size:var(--fs);line-height:1.04}
+.result .l span{display:inline-block;color:#ffcba4;-webkit-text-fill-color:currentColor;
+  opacity:0;animation:charIn .46s cubic-bezier(.2,.85,.25,1) both;
+  animation-delay:calc(var(--d,0ms) + var(--i,0) * 42ms)}
+@keyframes charIn{from{opacity:0;transform:translateY(.24em) scale(.86)}to{opacity:1;transform:none}}
+.result.instant .l span{animation-delay:0s!important;animation-duration:.001s!important}
+/* hard guarantee: once the print is over every glyph is opaque, animations or not */
+.result.done .l span{opacity:1!important;transform:none!important;animation:none!important}
+.caret{display:inline-block;width:.075em;min-width:3px;height:.76em;margin-left:.16em;vertical-align:-.02em;
+  background:#ffd9bd;opacity:0;
+  animation:cin .01s 2.3s both,cur 1.06s steps(1) 2.35s infinite}
+@keyframes cin{to{opacity:1}}
+.result.instant .caret{animation:cur 1.06s steps(1) infinite;opacity:1}
+
+.conf{font-family:var(--serif);font-style:italic;font-weight:400;
+  font-size:clamp(1rem,2.9vw,1.45rem);color:#f3dccd;letter-spacing:.012em;
+  margin-top:clamp(8px,1.4vh,16px);                /* stays welded to the headline */
+  text-shadow:0 0 26px rgba(255,180,150,.32);
+  opacity:0;animation:softIn 1.2s ease 2.3s both}
+.result.instant~.conf{animation-delay:.05s;animation-duration:.3s}
+@keyframes softIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.payoff .btn{margin-top:clamp(24px,4.6vh,50px);opacity:0;animation:softIn 1s ease 2.9s both}
+.result.instant~.btn{animation-delay:.1s;animation-duration:.3s}
+.micro{font-size:.54rem;letter-spacing:.24em;color:rgba(240,214,198,.58);
+  margin-top:clamp(12px,2vh,22px);
+  opacity:0;animation:softIn 1.1s ease 3.2s both}
+.result.instant~.micro{animation-delay:.15s;animation-duration:.3s}
+
+/* ─────────────────────────  responsive: stack  ───────────────────────── */
+@media (max-width:860px){
+  .grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:10px}
+  .gaugeWrap{width:min(190px,50vw,25vh)}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #wave{height:42px}
+}
+@media (max-width:560px){
+  .rail.top{flex-direction:column;align-items:stretch;gap:9px}
+  .leds{justify-content:space-between;gap:4px}
+  .led{font-size:.44rem;letter-spacing:.1em;gap:4px}
+  .brand small{white-space:normal}
+  .rail.bot{gap:9px}
+  .rail.bot .btn{flex:1 1 100%}
+  .hint{text-align:center;flex:1 1 100%}
+  .result .l1{letter-spacing:.22em}
+}
+@media (max-height:560px){
+  .gaugeWrap{width:min(168px,32vw,30vh)}
+  #wave{height:32px}
+  .spec{height:16px}
+  .scope{padding:6px 8px 5px}
+}
+
+/* ─────────────────────  reduced motion + still mode  ───────────────────── */
+.still #scan::after,.still #sheen,.still #aurora i,.still .led i,
+.still .ln .cur,.still #bloomGlow,.still .spec i,.still .status.err{animation:none!important}
+.still .sparks b{animation-delay:-.34s!important;animation-play-state:paused!important}
+.still #aurora,.still #bloomGlow,.still #limb,.still .payoff{transition:none!important}
+.still #bloomGlow.on{opacity:1}
+.still .caret{animation:none!important;opacity:1}
+
+@media (prefers-reduced-motion:reduce){
+  #scan::after,#sheen,#aurora i,.led i,.status.err,#bloomGlow,
+  .panel.shake,.panel.tear,.gaugeWrap.knock,.sparks b{animation:none!important}
+  #bloomGlow.on{opacity:1}
+  .sparks{display:none}
+  #glitch.go::before{animation:none!important;opacity:0}
+  .result:not(.instant) .l span{animation-duration:.2s!important;animation-delay:calc(var(--d,0ms)*.4 + var(--i,0)*14ms)!important}
+  .conf{animation-delay:1s!important}
+  .payoff .btn{animation-delay:1.3s!important}
+  .micro{animation-delay:1.5s!important}
+  .caret{animation:cin .01s 1s both,cur 1.06s steps(1) 1.05s infinite}
+  #tipG.bent{animation-duration:.2s!important}
+}
+</style>
+</head>
+<body>
+<div id="void" aria-hidden="true"></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="limb" aria-hidden="true"></div>
+<div id="aurora" aria-hidden="true"><i class="r1"></i><i class="r2"></i><i class="r3"></i><i class="curtain"></i></div>
+<div id="bloomGlow" aria-hidden="true"></div>
+
+<main id="stage">
+
+  <section class="panel" id="panel">
+    <span class="screw s-tl"></span><span class="screw s-tr"></span>
+    <span class="screw s-bl"></span><span class="screw s-br"></span>
+
+    <header class="rail top">
+      <div class="brandwrap">
+        <svg class="reticle" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="8.4"></circle><circle cx="12" cy="12" r="1.9"></circle>
+          <line x1="12" y1="0" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="24"></line>
+          <line x1="0" y1="12" x2="5" y2="12"></line><line x1="19" y1="12" x2="24" y2="12"></line>
+        </svg>
+        <div class="brand">
+          <b>THE BEAUTY OBSERVATORY</b>
+          <small id="subhead">STATION AMIT · INSTRUMENT MK IV · TARGET SUBJECT-01 @ 8,014 KM</small>
+        </div>
+      </div>
+      <div class="leds" id="leds">
+        <span class="led" id="ledPwr"  data-s="ok"><i></i>PWR</span>
+        <span class="led" id="ledLock" data-s="off"><i></i>LOCK</span>
+        <span class="led" id="ledCal"  data-s="ok"><i></i>CAL</span>
+        <span class="led" id="ledThrm" data-s="ok"><i></i>THRM</span>
+        <span class="led" id="ledSafe" data-s="ok"><i></i>SAFE</span>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="colL">
+        <div class="gaugeWrap" id="gaugeWrap">
+          <svg id="gauge" viewBox="0 0 220 220" role="img" aria-label="Analog gauge labelled BEAUTY">
+            <defs>
+              <radialGradient id="gFace" cx="38%" cy="28%" r="82%">
+                <stop offset="0"   stop-color="#14384a"/>
+                <stop offset=".52" stop-color="#0a1c26"/>
+                <stop offset="1"   stop-color="#040e14"/>
+              </radialGradient>
+              <linearGradient id="gBezel" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0"   stop-color="#8b9ba3"/>
+                <stop offset=".16" stop-color="#e8f0f3"/>
+                <stop offset=".36" stop-color="#54626a"/>
+                <stop offset=".54" stop-color="#a3b3ba"/>
+                <stop offset=".76" stop-color="#38444a"/>
+                <stop offset="1"   stop-color="#7b8a91"/>
+              </linearGradient>
+              <linearGradient id="gGlass" x1=".05" y1="0" x2=".55" y2="1">
+                <stop offset="0"  stop-color="#ffffff" stop-opacity=".17"/>
+                <stop offset=".55" stop-color="#ffffff" stop-opacity=".035"/>
+                <stop offset="1"  stop-color="#ffffff" stop-opacity="0"/>
+              </linearGradient>
+              <linearGradient id="gSheen" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0"  stop-color="#ffffff" stop-opacity="0"/>
+                <stop offset=".5" stop-color="#ffffff" stop-opacity=".085"/>
+                <stop offset="1"  stop-color="#ffffff" stop-opacity="0"/>
+              </linearGradient>
+              <radialGradient id="gHub" cx="34%" cy="28%" r="76%">
+                <stop offset="0"   stop-color="#eef5f8"/>
+                <stop offset=".48" stop-color="#8d9ca4"/>
+                <stop offset="1"   stop-color="#252f35"/>
+              </radialGradient>
+              <clipPath id="gClip"><circle cx="110" cy="110" r="95"/></clipPath>
+            </defs>
+
+            <circle cx="110" cy="110" r="106" fill="url(#gBezel)"/>
+            <circle cx="110" cy="110" r="106" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
+            <circle cx="110" cy="110" r="99.5" fill="#111b21"/>
+            <circle cx="110" cy="110" r="95" fill="url(#gFace)"/>
+            <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(0,0,0,.6)" stroke-width="5" opacity=".6"/>
+
+            <g id="gDyn"></g>
+
+            <text class="gLabel" x="110" y="75"  text-anchor="middle">BEAUTY</text>
+            <text class="gSub"   x="110" y="87"  text-anchor="middle">RELATIVE LUMINOSITY</text>
+
+            <rect x="78" y="145" width="64" height="24" rx="4" fill="#03121a" stroke="rgba(160,215,235,.16)" stroke-width="1"/>
+            <text id="lcd" x="110" y="162" text-anchor="middle">000.0</text>
+
+            <g id="shard" style="display:none">
+              <path class="tip" d="M 0 -1.35 L 35 0 L 0 1.35 Z"/>
+            </g>
+
+            <g id="needle">
+              <line class="halo" id="nhalo" x1="110" y1="110" x2="186" y2="110" stroke-width="6.5" stroke-linecap="round"/>
+              <path class="body" d="M 110 107 L 154 108.7 L 154 111.3 L 110 113 Z"/>
+              <g id="tipG"><path class="tip" d="M 154 108.7 L 189 110 L 154 111.3 Z"/></g>
+              <circle cx="94" cy="110" r="5.8" fill="#2b363c" stroke="rgba(255,255,255,.16)" stroke-width=".7"/>
+              <path d="M 110 107 L 154 108.7" stroke="rgba(255,255,255,.45)" stroke-width=".5" fill="none"/>
+            </g>
+
+            <circle cx="110" cy="110" r="10" fill="url(#gHub)"/>
+            <circle cx="110" cy="110" r="3.4" fill="#1a2429"/>
+            <circle cx="107" cy="107" r="2.6" fill="rgba(255,255,255,.35)"/>
+
+            <g clip-path="url(#gClip)" pointer-events="none">
+              <ellipse cx="82" cy="66" rx="88" ry="58" transform="rotate(-26 82 66)" fill="url(#gGlass)"/>
+              <rect id="sheen" x="-40" y="0" width="70" height="220" fill="url(#gSheen)" transform="translate(105 0)"/>
+              <circle cx="110" cy="110" r="95" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1.4"/>
+            </g>
+          </svg>
+          <div class="sparks" id="sparks" aria-hidden="true"></div>
+        </div>
+
+        <div class="scope">
+          <div class="mesh"></div>
+          <div class="cap">WAVEFORM · 48 kHz</div>
+          <canvas id="wave" aria-hidden="true"></canvas>
+          <div class="spec" id="spec" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="colR">
+        <div class="logHead"><span>TELEMETRY · CHANNEL <em>04</em></span><span id="logCount">00 LINES</span></div>
+        <div class="log" id="log" role="log" aria-live="off"></div>
+        <div class="tiles">
+          <div class="tile"><span class="tl">LUMINOSITY</span><span class="tv" id="tvLum">—— cd/m²</span><b class="bar"><i id="tbLum"></i></b></div>
+          <div class="tile"><span class="tl">SPECTRUM</span><span class="tv" id="tvSpec">IDLE</span><b class="bar"><i id="tbSpec"></i></b></div>
+          <div class="tile"><span class="tl" id="tlHr">HR · SENSOR A</span><span class="tv" id="tvHr">—— BPM</span><b class="bar"><i id="tbHr"></i></b></div>
+          <div class="tile" id="tileRange"><span class="tl">RANGE</span><span class="tv" id="tvRange">×1</span><b class="bar"><i id="tbRange"></i></b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">STANDBY · AWAITING OPERATOR</div>
+
+    <footer class="rail bot">
+      <button class="btn" id="go" type="button">Begin measurement</button>
+      <div class="hint" id="hint">ONE BUTTON. IT ONLY DOES ONE THING.</div>
+    </footer>
+  </section>
+
+  <section class="payoff" id="payoff" hidden aria-live="polite">
+    <div class="result" id="result"></div>
+    <p class="conf" id="conf">confidence: 100%. margin of error: none.</p>
+    <button class="btn ghost" id="again" type="button">run it again</button>
+    <p class="micro" id="micro">— OBSERVED FROM 8,014 KM AWAY —</p>
+  </section>
+
+</main>
+
+<div id="vignette" aria-hidden="true"></div>
+<div id="scan" aria-hidden="true"></div>
+<div id="glitch" aria-hidden="true"></div>
+
+<script>
+/* ───────────────────────────  customise me  ─────────────────────────── */
+const CONFIG = { herName: "", myName: "Amit" };
+/* ─────────────────────────────────────────────────────────────────────── */
+
+const $  = id => document.getElementById(id);
+const rand  = (a,b) => a + Math.random()*(b-a);
+const clamp = (v,a,b) => v < a ? a : v > b ? b : v;
+const DEG = Math.PI/180;
+
+const qs     = new URLSearchParams(location.search);
+const STAGE  = qs.has('s') ? clamp(parseInt(qs.get('s'),10) || 0, 0, 3) : -1;
+const STILL  = qs.get('still') === '1';
+const RM     = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (STILL) document.documentElement.classList.add('still');
+
+const MY     = (CONFIG.myName || 'Amit').trim();
+const HER    = (CONFIG.herName || '').trim();
+const TARGET = HER ? HER.toUpperCase() : 'SUBJECT-01';
+
+/* ── element refs ─────────────────────────────────────────────────────── */
+const panel  = $('panel'),  gaugeWrap = $('gaugeWrap'), sparksBox = $('sparks');
+const logEl  = $('log'),    logCount  = $('logCount');
+const statusEl = $('status'), hintEl = $('hint');
+const goBtn  = $('go'),     againBtn = $('again');
+const payoff = $('payoff'), result   = $('result');
+const auroraEl = $('aurora'), limbEl = $('limb'), bloomGlow = $('bloomGlow');
+const glitchEl = $('glitch');
+const needle = $('needle'), tipG = $('tipG'), shard = $('shard');
+const lcdEl  = $('lcd');
+const specEl = $('spec');
+const LED = { pwr:$('ledPwr'), lock:$('ledLock'), cal:$('ledCal'), thrm:$('ledThrm'), safe:$('ledSafe') };
+const TV = { lum:$('tvLum'), spec:$('tvSpec'), hr:$('tvHr'), range:$('tvRange') };
+const TB = { lum:$('tbLum'), spec:$('tbSpec'), hr:$('tbHr'), range:$('tbRange') };
+const tileRange = $('tileRange');
+
+$('subhead').textContent =
+  'STATION ' + MY.toUpperCase() + ' · INSTRUMENT MK IV · TARGET ' + TARGET + ' @ 8,014 KM';
+$('micro').textContent = HER
+  ? '— OBSERVATION OF ' + TARGET + ' · 8,014 KM —'
+  : '— OBSERVED FROM 8,014 KM AWAY —';
+
+/* ── timers, all in one bag so restart/skip can nuke them ─────────────── */
+const TIMERS = new Set();
+const TS = RM ? 0.5 : 1;
+function later(ms, fn){ const id = setTimeout(()=>{ TIMERS.delete(id); fn(); }, ms*TS); TIMERS.add(id); return id; }
+function killTimers(){ TIMERS.forEach(clearTimeout); TIMERS.clear(); }
+
+/* ── gauge geometry ───────────────────────────────────────────────────── */
+const CX = 110, CY = 110, A0 = 135, SWEEP = 270;
+const angOf = v => A0 + v*SWEEP;
+const ptOf  = (v,r) => [ CX + r*Math.cos(angOf(v)*DEG), CY + r*Math.sin(angOf(v)*DEG) ];
+function arcPath(r, v0, v1){
+  const [x0,y0] = ptOf(v0,r), [x1,y1] = ptOf(v1,r);
+  const large = (v1-v0)*SWEEP > 180 ? 1 : 0;
+  return 'M '+x0.toFixed(2)+' '+y0.toFixed(2)+' A '+r+' '+r+' 0 '+large+' 1 '+x1.toFixed(2)+' '+y1.toFixed(2);
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+function mk(tag, attrs){
+  const el = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+(function buildGauge(){
+  const g = $('gDyn');
+  // arcs
+  g.appendChild(mk('path',{ id:'arcTrack', d:arcPath(91,0,1), fill:'none', 'stroke-width':5, 'stroke-linecap':'round' }));
+  const glow = mk('path',{ id:'arcGlow', d:arcPath(91,0,1), fill:'none', 'stroke-width':11, 'stroke-linecap':'round',
+                           opacity:.17, pathLength:100, 'stroke-dasharray':100, 'stroke-dashoffset':100 });
+  const val  = mk('path',{ id:'arcVal',  d:arcPath(91,0,1), fill:'none', 'stroke-width':4.2, 'stroke-linecap':'round',
+                           pathLength:100, 'stroke-dasharray':100, 'stroke-dashoffset':100 });
+  g.appendChild(glow); g.appendChild(val);
+  g.appendChild(mk('path',{ id:'arcRed', d:arcPath(84.5,.85,1), fill:'none', 'stroke-width':2.4, 'stroke-linecap':'round' }));
+  // ticks
+  for (let i = 0; i <= 50; i++){
+    const v = i/50, maj = i % 5 === 0;
+    const r1 = maj ? 68 : 76, r2 = 82;
+    const [x1,y1] = ptOf(v,r1), [x2,y2] = ptOf(v,r2);
+    g.appendChild(mk('line',{ class:'tick'+(maj?' maj':'')+(v>=.85?' red':''),
+      x1:x1.toFixed(2), y1:y1.toFixed(2), x2:x2.toFixed(2), y2:y2.toFixed(2),
+      'stroke-width': maj ? 1.9 : .9 }));
+    if (i % 10 === 0){
+      const [nx,ny] = ptOf(v,62);
+      const t = mk('text',{ class:'gNum', x:nx.toFixed(2), y:(ny+3.1).toFixed(2), 'text-anchor':'middle' });
+      t.textContent = String(i*2);
+      g.appendChild(t);
+    }
+  }
+})();
+const arcVal = $('arcVal'), arcGlow = $('arcGlow');
+
+// spectrometer bars
+const BARS = 24, bars = [], barVal = new Float32Array(BARS), barTgt = new Float32Array(BARS);
+for (let i = 0; i < BARS; i++){ const b = document.createElement('i'); specEl.appendChild(b); bars.push(b); }
+
+/* ── live instrument state ────────────────────────────────────────────── */
+const S = {
+  phase:'idle',           // idle | run | broken | done
+  nv:0, nvel:0, ntgt:0,   // needle: value, velocity, target
+  pinned:false, strain:false, bent:false, snapped:false,
+  energy:0.09, chaos:0,
+  lum:0, lumTgt:0, hr:0, hrTgt:0, specV:0,
+  range:'×1'
+};
+
+function led(k, state){ if (LED[k]) LED[k].dataset.s = state; }
+function allLeds(state){ for (const k in LED) led(k, state); }
+function setStatus(txt, cls){
+  statusEl.textContent = txt;
+  statusEl.className = 'status' + (cls ? ' ' + cls : '');
+}
+function setLcd(t){ lcdEl.textContent = t; }
+function setRange(r){
+  const changed = S.range !== r;
+  S.range = r; TV.range.textContent = r;
+  if (changed && !RM){ tileRange.classList.remove('flash'); void tileRange.offsetWidth; tileRange.classList.add('flash'); }
+}
+function needleTo(v){ S.ntgt = v; }
+function needleSet(v){ S.nv = v; S.ntgt = v; S.nvel = 0; }
+function knock(){ if (RM) return; gaugeWrap.classList.remove('knock'); void gaugeWrap.offsetWidth; gaugeWrap.classList.add('knock'); }
+
+function bendNeedle(instant){
+  if (S.bent) return;
+  S.bent = true;
+  tipG.classList.toggle('instant', !!instant);
+  tipG.classList.add('bent');
+}
+const SH = { on:false, x:0, y:0, a:0, vx:0, vy:0, va:0, rest:0, settledPreroll:false };
+function snapNeedle(instant){
+  if (S.snapped) return;
+  S.snapped = true;
+  bendNeedle(true);
+  tipG.classList.add('off');
+  $('nhalo').setAttribute('x2', 156);          // the glow must not outlive the tip
+  // launch the broken tip as a rigid body, in gauge user-units.
+  // the joint sits at r=44 from the hub; the tip was already bent by 20°.
+  const base = angOf(clamp(S.nv, 0, 1));
+  const a = (base - 20) * DEG;
+  shard.style.display = '';
+  SH.on = true; SH.rest = 0;
+  SH.x = CX + 44*Math.cos(base*DEG);
+  SH.y = CY + 44*Math.sin(base*DEG);
+  SH.a = base - 20;
+  SH.vx = Math.cos(a)*rand(38,62);
+  SH.vy = Math.sin(a)*rand(38,62) - 40;
+  SH.va = rand(-280,-90);
+  if (instant) for (let i = 0; i < 170; i++) stepShard(0.016);
+}
+function stepShard(dt){
+  if (!SH.on) return;
+  if (SH.rest > 6){
+    // it has stopped bouncing: slide it down to the bottom of the dial and lie
+    // flat, so it always comes to rest somewhere legible instead of anywhere.
+    let a = ((SH.a % 360) + 360) % 360;
+    const goal = (a > 90 && a < 270) ? 188 : 8;
+    const k = Math.min(1, dt*3);
+    SH.x += (CX - SH.x)*k;
+    SH.y += (CY + 76 - SH.y)*k;
+    SH.a = a + (goal - a)*k;
+    SH.vx = SH.vy = SH.va = 0;
+  } else {
+    SH.vy += 260*dt;                       // gravity, user-units/s²
+    SH.x += SH.vx*dt; SH.y += SH.vy*dt; SH.a += SH.va*dt;
+    const dx = SH.x - CX, dy = SH.y - CY, d = Math.hypot(dx,dy) || 1;
+    if (d > 78){                           // bounce off the inside of the bezel
+      const nx = dx/d, ny = dy/d;
+      SH.x = CX + nx*78; SH.y = CY + ny*78;
+      const dot = SH.vx*nx + SH.vy*ny;
+      SH.vx = (SH.vx - 2*dot*nx)*0.42;
+      SH.vy = (SH.vy - 2*dot*ny)*0.42;
+      SH.va *= 0.5;
+      if (Math.hypot(SH.vx,SH.vy) < 26) SH.rest++;
+    }
+  }
+  shard.setAttribute('transform','translate('+SH.x.toFixed(2)+' '+SH.y.toFixed(2)+') rotate('+SH.a.toFixed(1)+')');
+}
+
+function sparks(n){
+  if (RM) return;
+  sparksBox.textContent = '';
+  const [tx,ty] = ptOf(clamp(S.nv,0,1), 62);
+  for (let i = 0; i < n; i++){
+    const b = document.createElement('b');
+    const a = rand(0,Math.PI*2), d = rand(24,88);
+    b.style.left = (tx/220*100).toFixed(1) + '%';
+    b.style.top  = (ty/220*100).toFixed(1) + '%';
+    b.style.setProperty('--dx', (Math.cos(a)*d).toFixed(0)+'px');
+    b.style.setProperty('--dy', (Math.sin(a)*d + 26).toFixed(0)+'px');
+    b.style.setProperty('--t', rand(.5,1.0).toFixed(2)+'s');
+    sparksBox.appendChild(b);
+  }
+  setTimeout(()=>{ sparksBox.textContent = ''; }, 1200);
+}
+/* ─────────────────────────  telemetry pools  ─────────────────────────
+   Three complete runs. Index positions are structural — index N always
+   triggers FX[N] — so the escalation lands the same way every time while
+   the jokes change.                                                      */
+const POOLS = [
+[ ['acquiring target ('+TARGET+')… lock.','ok'],
+  ['luminosity 4.21e6 cd/m². nominal for a human face: 300.','ok'],
+  ['assuming instrument fault. recalibrating.','ok'],
+  ['recalibrated. reading unchanged. smile detected — detector saturated.','warn'],
+  ['WARN needle at 100%. increasing range ×1000.','warn'],
+  ['WARN needle at 100% of the new range.','err'],
+  ['the needle has bent.','err'],
+  ['attempting to quantify eyes… failed. see /dev/poetry','err'],
+  ['note: the heart-rate sensor is reading MY pulse, not hers.','ok'],
+  ['logging as a bug. logging as not a bug.','soft'] ],
+
+[ ['pointing solved. target ('+TARGET+') centred in field.','ok'],
+  ['contrast ratio exceeds sensor dynamic range by four orders.','ok'],
+  ['re-seating optics. cleaning mirror. blaming mirror.','ok'],
+  ['mirror was clean. the problem is external.','warn'],
+  ['WARN full-scale deflection. switching to a logarithmic scale.','warn'],
+  ['WARN the logarithmic scale has also overflowed.','err'],
+  ['the needle has bent.','err'],
+  ['laughter sampled at 48 kHz. spectrometer now returns only warmth.','err'],
+  ['distance to target: 8,014 km. instrument reports: not far enough to help.','ok'],
+  ['filing under known issue. will not fix.','soft'] ],
+
+[ ['spin-up complete. target ('+TARGET+') locked in 0.4 s. suspiciously easy.','ok'],
+  ['baseline: 4,872 catalogued stars. the brightest is not in the catalogue.','ok'],
+  ['cross-checking against the second instrument.','ok'],
+  ['second instrument agrees. second instrument has stopped responding.','warn'],
+  ['WARN deflection at full scale. engaging range ×1000.','warn'],
+  ['WARN deflection at full scale of ×1000.','err'],
+  ['the needle has bent.','err'],
+  ['attempting to quantify the eyes. see /dev/poetry. see it twice.','err'],
+  ['operator has looked away twice to reset the sensor. sensor is the operator.','ok'],
+  ['one output remains and it was never going to be a number.','soft'] ]
+];
+const HOLD = [260,290,240,410,300,380,720,410,330,880];
+let poolIx = Math.floor(Math.random()*POOLS.length);
+let POOL = POOLS[poolIx];
+
+/* structural beats — index-aligned with every pool */
+const FX = [
+  ()=>{ led('lock','ok'); needleTo(.30); setStatus('MEASURING · DO NOT LOOK DIRECTLY AT SUBJECT'); S.energy = .55; },
+  ()=>{ needleTo(.62); S.lumTgt = 4.21e6; S.hrTgt = 74; TV.spec.textContent = 'SAMPLING'; S.energy = .75; },
+  ()=>{ led('cal','warn'); needleTo(.16); S.energy = .35; },
+  ()=>{ needleTo(1); S.pinned = true; led('thrm','warn'); setLcd('OVR'); knock(); S.energy = 1; S.hrTgt = 96;
+        TV.spec.textContent = 'ANOMALOUS'; },
+  ()=>{ setRange('×1000'); led('cal','ok'); S.pinned = false; needleSet(.02); S.lumTgt = 4.21e9; S.chaos = .25; setLcd('000.0');
+        later(500, ()=>{ needleTo(1); S.pinned = true; knock(); }); },
+  ()=>{ S.pinned = true; needleTo(1); led('thrm','err'); led('safe','warn'); knock(); S.chaos = .5; S.hrTgt = 118;
+        TV.spec.textContent = 'ROSE-DOMINANT'; },
+  ()=>{ bendNeedle(); led('safe','err'); S.strain = true; S.chaos = .7; },
+  ()=>{ setLcd('ERR'); S.chaos = .85; S.hrTgt = 131; },
+  ()=>{ $('tlHr').textContent = 'HR · OPERATOR'; S.hrTgt = 131; },
+  ()=>{ S.chaos = 1; }
+];
+
+/* ─────────────────────────────  the log  ─────────────────────────────── */
+const MAXLINES = 30;
+function addLine(text, cls, instant){
+  const ln = document.createElement('div');
+  ln.className = 'ln ' + cls;
+  const ca = document.createElement('span'); ca.className = 'ca'; ca.textContent = '>';
+  const tx = document.createElement('span'); tx.className = 'tx';
+  ln.appendChild(ca); ln.appendChild(tx);
+  logEl.appendChild(ln);
+  while (logEl.children.length > MAXLINES) logEl.removeChild(logEl.firstChild);
+  logCount.textContent = String(logEl.children.length).padStart(2,'0') + ' LINES';
+  if (instant){ tx.textContent = text; return null; }
+  return tx;
+}
+let typeTimer = 0, pending = null;      // the line currently being typed
+function typeInto(tx, text, done){
+  const dur = clamp(text.length*6, 220, 480);
+  const t0 = performance.now();
+  const cur = document.createElement('i'); cur.className = 'cur';
+  pending = { tx, text };
+  (function step(){
+    const p = clamp((performance.now()-t0)/dur, 0, 1);
+    const n = Math.ceil(text.length*p);
+    tx.textContent = text.slice(0,n);
+    if (p < 1){ tx.appendChild(cur); typeTimer = setTimeout(step, 16); TIMERS.add(typeTimer); }
+    else { pending = null; done(); }
+  })();
+}
+function flushPending(){ if (pending){ pending.tx.textContent = pending.text; pending = null; } }
+
+/* an idle instrument is never a blank screen. this boot log fills the well
+   before anything happens, and stays in it — the measurement lines push it up
+   under the fade, so the panel never shows a void. */
+const BOOT = [
+  'observatory online. 04:12 UTC.',
+  'primary mirror at 4.1 K. figure error 12 nm.',
+  'dome open. seeing 0.7".',
+  'sky background nominal. no moon.',
+  'spectrometer calibrated against a G2V standard.',
+  'photometer calibrated. dark frame subtracted.',
+  'heart-rate sensor: paired.',
+  'attitude control locked. drift 0.02"/min.',
+  'telemetry channel 04 open.',
+  'range gate set: 8,014 km.',
+  'previous measurements on record: none.',
+  'no instrument has attempted this one before.',
+  'awaiting operator.'
+];
+function bootLines(){ BOOT.forEach(t => addLine(t, 'dim', true)); }
+function idleLog(){
+  logEl.textContent = '';
+  bootLines();
+  const ln = document.createElement('div');
+  ln.className = 'ln dim curline';
+  const ca = document.createElement('span'); ca.className = 'ca'; ca.textContent = '>';
+  const tx = document.createElement('span'); tx.className = 'tx';
+  const c = document.createElement('i'); c.className = 'cur'; tx.appendChild(c);
+  ln.appendChild(ca); ln.appendChild(tx); logEl.appendChild(ln);
+  logCount.textContent = String(logEl.children.length).padStart(2,'0') + ' LINES';
+}
+
+/* ───────────────────────────  the sequence  ──────────────────────────── */
+let lineIx = 0;
+function runLine(){
+  if (lineIx >= POOL.length){ later(520, breakIt); return; }
+  const i = lineIx++, [text, cls] = POOL[i];
+  if (FX[i]) FX[i]();
+  if (RM){ addLine(text, cls, true); later(HOLD[i]*0.6 + 220, runLine); return; }
+  const tx = addLine(text, cls, false);
+  typeInto(tx, text, ()=> later(HOLD[i], runLine));
+}
+
+function begin(){
+  if (S.phase !== 'idle') return;
+  S.phase = 'run';
+  goBtn.disabled = true; goBtn.textContent = 'Measuring…';
+  hintEl.textContent = 'TAP ANYWHERE TO SKIP';
+  const cl = logEl.querySelector('.curline'); if (cl) cl.remove();
+  led('lock','warn'); led('pwr','ok');
+  S.energy = .45; S.hrTgt = 68;
+  setStatus('SPIN-UP · MIRROR AT TEMPERATURE');
+  // self-test sweep: full scale and back, like every real instrument
+  needleSet(0); needleTo(1);
+  later(620, ()=> needleTo(0));
+  later(1000, runLine);
+}
+
+/* ─────────────────────────────  the break  ───────────────────────────── */
+function toBloom(){
+  panel.classList.remove('crit'); panel.classList.add('bloom');
+  setStatus('RESULT AVAILABLE · ONE (1) VALUE', 'gold');
+  setLcd('∞'); allLeds('gold');
+  auroraEl.classList.add('on'); limbEl.classList.add('on'); bloomGlow.classList.add('on');
+  document.querySelector('meta[name=theme-color]').setAttribute('content','#1a0f14');
+}
+function glitchPass(){
+  if (RM) return;
+  glitchEl.classList.remove('go'); void glitchEl.offsetWidth; glitchEl.classList.add('go');
+  panel.classList.remove('tear'); void panel.offsetWidth; panel.classList.add('tear');
+  later(900, ()=>{ glitchEl.classList.remove('go'); panel.classList.remove('tear'); });
+}
+function breakIt(opts){
+  opts = opts || {};
+  S.phase = 'broken';
+  S.pinned = true; needleSet(1); S.strain = true; S.chaos = 1;
+  bendNeedle(!!opts.instant);
+  snapNeedle(!!opts.instant);          // launches from full-scale, always
+  panel.classList.remove('bloom'); panel.classList.add('crit');
+  setStatus('FAULT · FULL-SCALE DEFLECTION · NEEDLE INTEGRITY LOST', 'err');
+  setLcd('ERR'); allLeds('err'); led('pwr','err');
+  TV.spec.textContent = 'ROSE-DOMINANT';
+  sparks(16);
+  emberBurst(RM ? 16 : 64);
+  if (!RM){ panel.classList.remove('shake'); void panel.offsetWidth; panel.classList.add('shake'); }
+  later(560, ()=> panel.classList.remove('shake'));
+  if (opts.instant){ toBloom(); return; }
+  later(700, glitchPass);
+  later(1150, toBloom);
+  if (opts.stopAfterBloom) return;
+  later(2350, revealPayoff);
+}
+
+/* ────────────────────────────  the payoff  ───────────────────────────── */
+const RLINES = [['SHE IS','l1',180],['SOOOO','l2',720],['BEAUTIFUL','l3',1320]];
+/* rose-gold ramp, sampled per character. Solid `color` on every glyph \u2014 no
+   background-clip:text, nothing that can silently fail to paint. */
+const RAMP = [[255,240,221],[255,208,168],[255,182,189],[255,217,166],[255,242,226]];
+function rampAt(t){
+  t = clamp(t,0,1)*(RAMP.length-1);
+  const i = Math.min(RAMP.length-2, Math.floor(t)), f = t - i, a = RAMP[i], b = RAMP[i+1];
+  return 'rgb(' + Math.round(a[0]+(b[0]-a[0])*f) + ',' +
+                  Math.round(a[1]+(b[1]-a[1])*f) + ',' +
+                  Math.round(a[2]+(b[2]-a[2])*f) + ')';
+}
+function printResult(instant){
+  result.textContent = '';
+  result.classList.remove('done');
+  RLINES.forEach(([txt,cls,delay], li)=>{
+    const l = document.createElement('span');
+    l.className = 'l ' + cls;
+    l.style.setProperty('--d', delay + 'ms');
+    [...txt].forEach((ch,i)=>{
+      const s = document.createElement('span');
+      s.textContent = (ch === ' ') ? '\u00A0' : ch;
+      s.style.setProperty('--i', i);
+      // diagonal sweep: each line starts a little further along the ramp
+      s.style.color = rampAt((txt.length > 1 ? i/(txt.length-1) : .5)*0.72 + li*0.14);
+      l.appendChild(s);
+    });
+    if (cls === 'l3'){ const c = document.createElement('b'); c.className = 'caret'; l.appendChild(c); }
+    result.appendChild(l);
+  });
+  result.classList.toggle('instant', !!instant);
+  fitResult();
+  if (instant) result.classList.add('done');
+  else later(2260, ()=> result.classList.add('done'));   // TS halves this under reduced motion
+}
+/* the lines are block-level and nowrap, so scrollWidth clamps to the container
+   and would silently under-size the headline. measure the inline contents. */
+function lineWidth(l){
+  try {
+    const r = document.createRange();
+    r.selectNodeContents(l);
+    const w = r.getBoundingClientRect().width;
+    if (w > 0) return w;
+  } catch(e){}
+  return l.scrollWidth;
+}
+function fitResult(){
+  if (!result.isConnected || payoff.hidden) return;
+  const avail = result.clientWidth;
+  if (!avail) return;
+  result.style.setProperty('--fs','100px');
+  let maxw = 1;
+  for (const l of result.querySelectorAll('.l')) maxw = Math.max(maxw, lineWidth(l));
+  const byWidth  = 100*avail*0.92/maxw;              // maxw includes the caret
+  const byHeight = innerHeight*0.40/2.42;            // 3 lines must always fit vertically
+  const fs = clamp(Math.min(byWidth, byHeight), 24, 132);
+  result.style.setProperty('--fs', fs.toFixed(1)+'px');
+}
+function revealPayoff(instant){
+  S.phase = 'done';
+  panel.classList.add('gone');
+  const show = ()=>{
+    panel.hidden = true;
+    payoff.hidden = false;
+    printResult(!!instant);
+    if (instant) payoff.classList.add('on');
+    else requestAnimationFrame(()=> payoff.classList.add('on'));
+    document.title = 'SHE IS SOOOO BEAUTIFUL';
+  };
+  if (instant) show(); else later(520, show);
+}
+
+/* ─────────────────────────────  skip / reset  ────────────────────────── */
+function skip(){
+  if (S.phase !== 'run' && S.phase !== 'broken') return;
+  killTimers(); flushPending();
+  if (S.phase === 'run'){
+    while (lineIx < POOL.length){ const [t,c] = POOL[lineIx]; if (FX[lineIx]) FX[lineIx](); addLine(t,c,true); lineIx++; }
+    killTimers();                            // FX[4] schedules a timer of its own — clear it too
+    breakIt({ instant:true });
+  } else {
+    toBloom();
+  }
+  later(420, ()=> revealPayoff(false));
+}
+function resetAll(){
+  killTimers();
+  poolIx = (poolIx + 1 + Math.floor(Math.random()*(POOLS.length-1))) % POOLS.length;
+  POOL = POOLS[poolIx];
+  lineIx = 0;
+  logEl.textContent = ''; logCount.textContent = '00 LINES';
+  sparksBox.textContent = '';
+  panel.classList.remove('crit','bloom','gone','shake','tear');
+  panel.hidden = false;
+  payoff.hidden = true; payoff.classList.remove('on');
+  result.textContent = ''; result.classList.remove('on','instant','done');
+  auroraEl.classList.remove('on'); limbEl.classList.remove('on'); bloomGlow.classList.remove('on');
+  glitchEl.classList.remove('go');
+  tipG.classList.remove('bent','off','instant');
+  $('nhalo').setAttribute('x2', 186);
+  shard.style.display = 'none'; SH.on = false; SH.rest = 0;
+  Object.assign(S, { phase:'idle', nv:0, nvel:0, ntgt:0, pinned:false, strain:false, bent:false, snapped:false,
+                     energy:.09, chaos:0, lum:0, lumTgt:0, hr:0, hrTgt:0 });
+  embers.length = 0;
+  setRange('×1'); setLcd('000.0');
+  led('pwr','ok'); led('lock','off'); led('cal','ok'); led('thrm','ok'); led('safe','ok');
+  TV.lum.textContent = '—— cd/m²'; TV.spec.textContent = 'IDLE'; TV.hr.textContent = '—— BPM';
+  $('tlHr').textContent = 'HR · SENSOR A';
+  setStatus('STANDBY · AWAITING OPERATOR');
+  idleLog();
+  sizeWave();
+  goBtn.disabled = false; goBtn.textContent = 'Begin measurement';
+  hintEl.textContent = 'ONE BUTTON. IT ONLY DOES ONE THING.';
+  document.title = 'THE BEAUTY OBSERVATORY';
+  document.querySelector('meta[name=theme-color]').setAttribute('content','#04101a');
+}
+
+goBtn.addEventListener('click', begin);
+againBtn.addEventListener('click', ()=>{ resetAll(); later(260, begin); });
+addEventListener('pointerdown', e=>{ if (!e.target.closest('button')) skip(); });
+/* ───────────────────  canvas: starfield + embers  ─────────────────────
+   One canvas for every particle system in the scene. The snap-sparks are
+   16 DOM nodes inside the gauge (under the 40-particle threshold) so they
+   can sit above the glass without a second surface.                      */
+const cv = $('fx'), ctx = cv.getContext('2d', { alpha:true });
+let W = 0, H = 0, DPR = 1;
+const stars = [], embers = [];
+const EMBER_COLS = ['#ffb47a','#ff8f6b','#ffd6a0','#ff7f92','#ffe3c4'];
+
+function seedStars(){
+  stars.length = 0;
+  const n = Math.min(170, Math.max(46, Math.round(W*H/6000)));
+  for (let i = 0; i < n; i++){
+    const d = rand(.25,1);
+    stars.push({ x:rand(0,W), y:rand(0,H), r:d*rand(.45,1.7), ph:rand(0,6.28),
+                 sp:rand(.5,1.7), d, big:Math.random() < .06,
+                 c: Math.random() < .22 ? (Math.random() < .5 ? '#cfe8ff' : '#ffe6d8') : '#ffffff' });
+  }
+}
+function emberBurst(n){
+  const r = gaugeWrap.getBoundingClientRect();
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  for (let i = 0; i < n; i++){
+    const a = rand(0,6.283), sp = rand(70,340);          // wide spray, not a blob
+    const off = rand(0, r.width*.42);
+    embers.push({ x:cx + Math.cos(a)*off, y:cy + Math.sin(a)*off,
+      vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - rand(20,90),
+      s:rand(.9,2.6), life:1, decay:rand(.32,.66), ph:rand(0,6.28),   // gone before the payoff
+      c:EMBER_COLS[(Math.random()*EMBER_COLS.length)|0] });
+  }
+  if (embers.length > 140) embers.splice(0, embers.length-140);
+}
+/* afterglow: a slow trickle of embers across the whole viewport once the
+   result is up, so nothing is left clustered where the console used to be */
+function emberDrift(n){
+  for (let i = 0; i < n; i++){
+    embers.push({ x:rand(-20,W+20), y:rand(H*.35, H+40),
+      vx:rand(-10,10), vy:-rand(12,38),
+      s:rand(.7,1.9), life:rand(.45,1), decay:rand(.05,.12), ph:rand(0,6.28),
+      c:EMBER_COLS[(Math.random()*EMBER_COLS.length)|0] });
+  }
+  if (embers.length > 140) embers.splice(0, embers.length-140);
+}
+function stepEmbers(dt, t){
+  for (let i = embers.length-1; i >= 0; i--){
+    const p = embers[i];
+    p.vy += -34*dt;                                  // buoyancy: embers rise
+    p.vx += Math.sin(t*1.6 + p.ph)*10*dt;
+    p.vx *= 0.985; p.vy *= 0.985;
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    p.life -= p.decay*dt;
+    if (p.life <= 0 || p.y < -40) embers.splice(i,1);
+  }
+}
+function resize(){
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  W = innerWidth; H = innerHeight;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  cv.style.width = W+'px'; cv.style.height = H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  seedStars();
+  sizeWave();
+  fitResult();
+}
+
+/* ─────────────────────────  waveform canvas  ─────────────────────────── */
+const wcv = $('wave'), wctx = wcv.getContext('2d');
+let WW = 0, WH = 0, SAMP = [];
+function sizeWave(){
+  const r = wcv.getBoundingClientRect();
+  WW = Math.max(60, Math.round(r.width)); WH = Math.max(24, Math.round(r.height));
+  wcv.width = Math.round(WW*DPR); wcv.height = Math.round(WH*DPR);
+  wctx.setTransform(DPR,0,0,DPR,0,0);
+  const n = Math.max(40, Math.round(WW/2));
+  const next = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) next[i] = SAMP[i] || 0;
+  SAMP = next;
+}
+function hashNoise(i){ const x = Math.sin(i*127.1 + 311.7)*43758.5453; return (x - Math.floor(x)) - .5; }
+function sampleAt(t, i){
+  const e = S.energy, ch = S.chaos;
+  const n = STILL ? hashNoise(i) : (Math.random()-.5);
+  return (Math.sin(t*5.1 + i*.20)*.42 + Math.sin(t*11.3 + i*.07)*.24 + Math.sin(t*2.3 - i*.033)*.30)
+         * e + n*(.10 + ch*.62)*e;
+}
+let wavePhase = 0, sigCol = '#ffb454';
+function refreshSig(){ sigCol = getComputedStyle(panel).getPropertyValue('--sig').trim() || '#ffb454'; }
+function drawWave(t, dt){
+  wctx.clearRect(0,0,WW,WH);
+  if (!STILL){ wavePhase += dt*40; while (wavePhase >= 1){ wavePhase -= 1; SAMP.push(sampleAt(t, SAMP.length)); SAMP.shift(); } }
+  else for (let i = 0; i < SAMP.length; i++) SAMP[i] = sampleAt(i*0.037, i);
+  const mid = WH/2, amp = WH*0.44;
+  const sig = sigCol;
+  const step = WW/(SAMP.length-1);
+  const path = (lw, alpha)=>{
+    wctx.beginPath();
+    for (let i = 0; i < SAMP.length; i++){
+      const x = i*step, y = mid - SAMP[i]*amp;
+      i ? wctx.lineTo(x,y) : wctx.moveTo(x,y);
+    }
+    wctx.strokeStyle = sig; wctx.globalAlpha = alpha; wctx.lineWidth = lw;
+    wctx.lineJoin = 'round'; wctx.stroke();
+  };
+  path(4.5, .13); path(1.3, .95);
+  wctx.globalAlpha = 1;
+  // centre reference line
+  wctx.beginPath(); wctx.moveTo(0,mid); wctx.lineTo(WW,mid);
+  wctx.strokeStyle = 'rgba(150,215,235,.16)'; wctx.lineWidth = .5; wctx.stroke();
+}
+
+/* ─────────────────────────────  main loop  ───────────────────────────── */
+let raf = 0, last = 0, T = 0, meterAcc = 0, driftAcc = 0;
+function update(dt){
+  // needle: damped second-order spring, so it overshoots and settles like glass
+  let tgt = S.ntgt;
+  if (S.phase === 'idle') tgt = 0.012 + 0.008*Math.sin(T*1.25);
+  if (S.pinned) tgt = 1.02;
+  if (S.strain) tgt = 1.02 + 0.010*Math.sin(T*46);
+  const k = RM ? 220 : 130, c = RM ? 34 : 14.5;
+  S.nvel += (k*(tgt - S.nv) - c*S.nvel)*dt;
+  S.nv   += S.nvel*dt;
+  if (S.nv > 1.015){ S.nv = 1.015; if (S.nvel > 0) S.nvel *= -0.30; }   // it hits the stop
+  if (S.nv < -0.012){ S.nv = -0.012; if (S.nvel < 0) S.nvel *= -0.30; }
+
+  if (!STILL || !SH.settledPreroll) stepShard(dt);
+  if (!STILL){
+    stepEmbers(dt, T);
+    if (S.phase === 'done' && !RM){
+      driftAcc += dt;
+      if (driftAcc > 0.24){ driftAcc = 0; if (embers.length < 42) emberDrift(1); }
+    }
+  }
+
+  // meters chase their targets
+  S.lum += (S.lumTgt - S.lum)*Math.min(1, dt*2.4);
+  S.hr  += (S.hrTgt  - S.hr )*Math.min(1, dt*3.0);
+  const chaos = S.chaos;
+  for (let i = 0; i < BARS; i++){
+    const bell = Math.exp(-Math.pow((i - (5 + chaos*13))/(4.4 + chaos*2.6), 2));
+    barTgt[i] = clamp((0.10 + bell*(0.32 + S.energy*0.72)
+              + (STILL ? Math.abs(Math.sin(i*1.7))*0.10 : Math.random()*(0.09 + chaos*0.30))) * (0.55 + S.energy*0.45), 0.07, 1);
+    barVal[i] += (barTgt[i] - barVal[i])*Math.min(1, dt*(STILL ? 1 : 9));
+  }
+}
+function draw(dt){
+  ctx.clearRect(0,0,W,H);
+  // stars
+  for (const s of stars){
+    if (!STILL){ s.ph += s.sp*dt; s.y += s.d*4*dt; if (s.y > H+3){ s.y = -3; s.x = rand(0,W); } }
+    const tw = .30 + .70*(.5 + .5*Math.sin(s.ph));
+    ctx.globalAlpha = tw*.9; ctx.fillStyle = s.c;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+    if (s.big){
+      ctx.globalAlpha = tw*.35; ctx.strokeStyle = s.c; ctx.lineWidth = .6;
+      const L = s.r*5;
+      ctx.beginPath(); ctx.moveTo(s.x-L,s.y); ctx.lineTo(s.x+L,s.y);
+      ctx.moveTo(s.x,s.y-L); ctx.lineTo(s.x,s.y+L); ctx.stroke();
+    }
+  }
+  // embers
+  for (const p of embers){
+    const a = clamp(p.life,0,1);
+    ctx.globalAlpha = a*.16; ctx.fillStyle = p.c;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.s*3.4, 0, 6.283); ctx.fill();
+    ctx.globalAlpha = a;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (!panel.hidden){
+    // needle + arc
+    needle.style.transform = 'rotate(' + angOf(clamp(S.nv,-.02,1.02)).toFixed(2) + 'deg)';
+    const off = 100 - clamp(S.nv,0,1)*100;
+    arcVal.setAttribute('stroke-dashoffset', off.toFixed(1));
+    arcGlow.setAttribute('stroke-dashoffset', off.toFixed(1));
+    for (let i = 0; i < BARS; i++) bars[i].style.transform = 'scaleY(' + barVal[i].toFixed(3) + ')';
+    drawWave(T, dt);
+  }
+}
+function meters(){
+  if (panel.hidden) return;
+  refreshSig();
+  if (!S.snapped && S.phase !== 'broken'){
+    const shown = clamp(S.nv,0,1)*100;
+    if (lcdEl.textContent !== 'OVR' && lcdEl.textContent !== 'ERR' && lcdEl.textContent !== '∞')
+      setLcd(shown >= 99.95 ? 'OVR' : shown.toFixed(1).padStart(5,'0'));
+  }
+  TV.lum.textContent = S.lum < 1 ? '—— cd/m²' : S.lum.toExponential(2) + ' cd/m²';
+  TV.hr.textContent  = S.hr  < 1 ? '—— BPM'   : Math.round(S.hr + ((S.chaos>.4 && !STILL) ? Math.round(rand(-2,2)) : 0)) + ' BPM';
+  TB.lum.style.transform   = 'scaleX(' + clamp(Math.log10(Math.max(S.lum,1))/9.7, .04, 1).toFixed(3) + ')';
+  TB.hr.style.transform    = 'scaleX(' + clamp(S.hr/140, .04, 1).toFixed(3) + ')';
+  TB.spec.style.transform  = 'scaleX(' + clamp(.1 + S.energy*.9, .04, 1).toFixed(3) + ')';
+  TB.range.style.transform = 'scaleX(' + (S.range === '×1' ? .12 : 1) + ')';
+}
+function frame(now){
+  raf = requestAnimationFrame(frame);
+  let dt = (now - last)/1000; last = now;
+  if (!(dt > 0) || dt > 0.1) dt = 0.016;
+  if (!STILL) T += dt;
+  update(dt);
+  draw(dt);
+  meterAcc += dt;
+  if (meterAcc > 0.07){ meterAcc = 0; meters(); }
+}
+function startLoop(){ if (!raf){ last = performance.now(); raf = requestAnimationFrame(frame); } }
+document.addEventListener('visibilitychange', ()=>{
+  if (document.hidden){ cancelAnimationFrame(raf); raf = 0; }
+  else startLoop();
+});
+let rsz = 0;
+addEventListener('resize', ()=>{ clearTimeout(rsz); rsz = setTimeout(resize, 120); });
+addEventListener('orientationchange', ()=> setTimeout(resize, 260));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ sizeWave(); fitResult(); });
+
+/* ──────────────────────  ?s= fast-forward hooks  ─────────────────────── */
+function gotoStage(n){
+  if (n === 0) return;                                  // idle is the default state
+  if (n === 1){
+    S.phase = 'run';
+    goBtn.disabled = true; goBtn.textContent = 'Measuring…';
+    hintEl.textContent = 'TAP ANYWHERE TO SKIP';
+    lineIx = 5; logEl.textContent = ''; bootLines();
+    for (let i = 0; i < 5; i++) addLine(POOL[i][0], POOL[i][1], true);
+    led('lock','ok'); led('cal','warn'); led('thrm','warn');
+    setStatus('MEASURING · DO NOT LOOK DIRECTLY AT SUBJECT');
+    setRange('×1000'); S.lum = S.lumTgt = 4.21e9; S.hr = S.hrTgt = 96;
+    S.energy = 1; S.chaos = .3; TV.spec.textContent = 'ANOMALOUS';
+    needleSet(.92); setLcd('092.0');
+    killTimers();                                        // FX not run: nothing pending, but be certain
+  }
+  if (n === 2){
+    S.phase = 'run'; lineIx = POOL.length;
+    goBtn.disabled = true; goBtn.textContent = 'Measuring…';
+    hintEl.textContent = 'TAP ANYWHERE TO SKIP';
+    logEl.textContent = ''; bootLines();
+    for (let i = 0; i < POOL.length; i++) addLine(POOL[i][0], POOL[i][1], true);
+    setRange('×1000'); S.lum = S.lumTgt = 4.21e9; S.hr = S.hrTgt = 131;
+    S.energy = 1; $('tlHr').textContent = 'HR · OPERATOR';
+    breakIt({ instant:false, stopAfterBloom:true });
+    if (STILL){                                          // pre-roll the physics so nothing is mid-air
+      for (let i = 0; i < 170; i++) stepShard(0.016);
+      SH.settledPreroll = true;
+      for (let i = 0; i < 26; i++) stepEmbers(0.016, i*0.016);
+    }
+  }
+  if (n === 3){
+    S.phase = 'done'; lineIx = POOL.length;
+    logEl.textContent = ''; bootLines();
+    for (let i = 0; i < POOL.length; i++) addLine(POOL[i][0], POOL[i][1], true);
+    setRange('×1000'); S.energy = 1; S.chaos = 1;
+    breakIt({ instant:true });
+    revealPayoff(true);
+    // the break happened "a moment ago": clear its spray, seed the afterglow
+    embers.length = 0; emberDrift(24);
+    if (STILL) for (let i = 0; i < 40; i++) stepEmbers(0.016, i*0.016);
+    document.title = 'SHE IS SOOOO BEAUTIFUL';
+  }
+}
+
+/* ────────────────────────────────  boot  ─────────────────────────────── */
+resize();
+setRange('×1'); setLcd('000.0');
+idleLog();
+startLoop();
+if (STAGE >= 0) gotoStage(STAGE);
+</script>
+</body>
+</html>
