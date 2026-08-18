@@ -1,0 +1,1025 @@
+<!--
+  OUR YOGA TRIP — "The Poster Wakes Up"
+  A gift page for Katie. One file. No frameworks, no build, no WebGL.
+
+  URL PARAMS (for previews / screenshots)
+    ?s=0   idle poster, settled, not yet awake
+    ?s=1   butterflies active, mid-shimmer
+    ?s=2   held / inhale bloom at peak
+    ?s=3   details lifted + invitation
+    ?still=1   freeze everything on one deterministic frame (combine with ?s=)
+  e.g.  design-y1-alive.html?s=2&still=1
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Our Yoga Trip — Vol. 1 · September 27</title>
+<meta name="description" content="An invitation from Katie: Our Yoga Trip, Vol. 1 — September 27. Connection, community, and celebration.">
+<meta name="theme-color" content="#2a0f06">
+<meta property="og:title" content="Our Yoga Trip — Vol. 1">
+<meta property="og:description" content="September 27 · connection, community, and celebration. Press and hold the poster and watch it breathe.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%B7%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Fraunces:SOFT,WONK,opsz,wght@0..100,0..1,9..144,400..800&display=swap">
+
+<style>
+:root{
+  --t0: 0;              /* stage fast-forward offset, seconds */
+  --hold: 0;            /* 0..1 inhale amount, set from JS */
+  --orange:#d55716; --red:#d43b08; --lime:#aab839; --gold:#e8c959;
+  --warmgold:#dfb049; --lorange:#e47d40; --leaf:#488252; --maroon:#713024;
+  --brown:#77491c; --teal:#4b998c; --pink:#e99bb1; --cream:#f9dcb6;
+  --ink:#2a0f06;
+  --serif:'Fraunces','Hoefler Text',Georgia,'Times New Roman',serif;
+  --hand:'Caveat','Segoe Script','Bradley Hand','Brush Script MT',cursive;
+}
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{
+  height:100%; height:100dvh; width:100%;
+  overflow:hidden; overscroll-behavior:none;
+  background:var(--ink); color:var(--cream);
+  font-family:var(--serif);
+  -webkit-text-size-adjust:100%;
+  -webkit-tap-highlight-color:transparent;
+}
+body{ touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.sr{ position:absolute!important; width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap; }
+
+/* ---------------- ground ---------------- */
+.ground{ position:fixed; inset:0; z-index:0;
+  background:
+    radial-gradient(120% 80% at 50% 8%,  rgba(224,120,40,.30), rgba(224,120,40,0) 60%),
+    radial-gradient(90% 70% at 50% 108%, rgba(30,110,104,.34), rgba(30,110,104,0) 62%),
+    radial-gradient(70% 60% at 8% 78%,   rgba(170,184,57,.16), rgba(170,184,57,0) 70%),
+    radial-gradient(70% 60% at 96% 26%,  rgba(212,59,8,.28),  rgba(212,59,8,0) 70%),
+    linear-gradient(#3a1408 0%, #2a0f06 46%, #240b05 100%);
+}
+.blobs{ position:fixed; inset:-20%; z-index:0; opacity:.62; }
+.blobs i{ position:absolute; border-radius:50%; display:block; will-change:transform;
+  animation:drift 34s ease-in-out infinite alternate;
+  animation-delay:calc((var(--d) - var(--t0)) * 1s); }
+.blobs i:nth-child(1){ left:6%;  top:14%; width:52vmax; height:52vmax; --d:0;
+  background:radial-gradient(closest-side, rgba(213,87,22,.30), rgba(213,87,22,0) 72%); }
+.blobs i:nth-child(2){ right:2%; top:52%; width:46vmax; height:46vmax; --d:-9;
+  background:radial-gradient(closest-side, rgba(72,130,82,.26), rgba(72,130,82,0) 72%); }
+.blobs i:nth-child(3){ left:34%; bottom:2%; width:56vmax; height:56vmax; --d:-18;
+  background:radial-gradient(closest-side, rgba(75,153,140,.24), rgba(75,153,140,0) 72%); }
+@keyframes drift{ from{ transform:translate3d(-4%,-3%,0) scale(1) } to{ transform:translate3d(6%,5%,0) scale(1.16) } }
+.vignette{ position:fixed; inset:0; z-index:1; pointer-events:none;
+  background:radial-gradient(120% 90% at 50% 45%, rgba(0,0,0,0) 42%, rgba(24,6,2,.55) 100%);
+  transition:opacity .5s ease; }
+.grain{ position:fixed; inset:0; z-index:2; pointer-events:none; opacity:.26; mix-blend-mode:overlay;
+  background-image:var(--noise); background-size:170px 170px; }
+
+/* ---------------- layout ---------------- */
+.stage{ position:fixed; left:0; top:0; width:100%; height:100dvh; z-index:5;
+  transform:translateX(var(--shiftX,0px));
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:clamp(12px,2.6vh,26px);
+  padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 16px)
+          calc(env(safe-area-inset-bottom) + 14px) calc(env(safe-area-inset-left) + 16px);
+}
+.postercol{ display:flex; flex-direction:column; align-items:center; gap:10px; flex:0 0 auto; }
+
+/* ---------------- the sheet ---------------- */
+.hang{ position:relative; height:clamp(158px, min(47dvh, calc(100dvh - 340px)), 430px);
+  max-width:78vw; aspect-ratio:742/992;
+  will-change:transform; }
+.castshadow{ position:absolute; left:50%; bottom:-5%; width:82%; height:9%;
+  transform:translateX(-50%); border-radius:50%; z-index:0; filter:blur(13px);
+  background:radial-gradient(closest-side, rgba(12,3,0,.62), rgba(12,3,0,0) 78%); }
+
+/* mandala of light that blooms from behind */
+.bloom{ position:absolute; left:50%; top:50%; width:186%; aspect-ratio:1; z-index:0;
+  transform:translate(-50%,-50%); pointer-events:none;
+  opacity:calc(.14 + .86 * var(--hold)); }
+.bloom > *{ position:absolute; inset:0; border-radius:50%; }
+.b-glow{ background:radial-gradient(closest-side,
+    rgba(255,232,176,.92) 0%, rgba(255,170,66,.58) 24%, rgba(232,92,18,.30) 42%,
+    rgba(214,60,8,.11) 62%, rgba(214,60,8,0) 82%);
+  transform:scale(calc(.56 + .54*var(--hold))); }
+.b-rays{
+  background:repeating-conic-gradient(from 0deg,
+    rgba(255,238,192,0)   0deg,   rgba(255,238,192,.40) 4.5deg,
+    rgba(255,158,50,.20)  8deg,   rgba(255,238,192,0)   13deg,
+    rgba(255,238,192,0)   18deg);
+  -webkit-mask-image:radial-gradient(closest-side, transparent 42%, rgba(0,0,0,.5) 55%, #000 66%, rgba(0,0,0,.22) 80%, transparent 92%);
+  mask-image:radial-gradient(closest-side, transparent 42%, rgba(0,0,0,.5) 55%, #000 66%, rgba(0,0,0,.22) 80%, transparent 92%);
+  transform:scale(calc(.82 + .28*var(--hold)));
+  opacity:calc(.03 + .22*var(--hold));
+  animation:spin 140s linear infinite; animation-delay:calc(var(--t0) * -1s);
+}
+.b-rays2{
+  background:repeating-conic-gradient(from 7deg,
+    rgba(255,120,30,0)  0deg,    rgba(255,120,30,.42) 4deg,
+    rgba(255,206,120,.14) 8deg,  rgba(255,120,30,0)  13deg,
+    rgba(255,120,30,0)  19deg);
+  -webkit-mask-image:radial-gradient(closest-side, transparent 46%, #000 62%, rgba(0,0,0,.24) 80%, transparent 92%);
+  mask-image:radial-gradient(closest-side, transparent 46%, #000 62%, rgba(0,0,0,.24) 80%, transparent 92%);
+  transform:scale(calc(.90 + .24*var(--hold)));
+  opacity:calc(.02 + .17*var(--hold));
+  animation:spin 104s linear infinite reverse; animation-delay:calc(var(--t0) * -1s);
+}
+.b-rings{
+  background:repeating-radial-gradient(closest-side,
+    rgba(255,216,152,0) 0%, rgba(255,222,162,.34) 3.4%, rgba(255,150,60,.12) 5.6%, rgba(255,216,152,0) 8.4%);
+  -webkit-mask-image:radial-gradient(closest-side, transparent 40%, #000 58%, rgba(0,0,0,.26) 80%, transparent 92%);
+  mask-image:radial-gradient(closest-side, transparent 40%, #000 58%, rgba(0,0,0,.26) 80%, transparent 92%);
+  transform:scale(calc(.86 + .30*var(--hold)));
+  opacity:calc(.025 + .46*var(--hold));
+}
+@keyframes spin{ to{ rotate:360deg } }
+
+.sheet{ position:absolute; inset:0; z-index:1; isolation:isolate;
+  padding:1.1%; border-radius:3px;
+  background:linear-gradient(150deg,#fdf0dd,#f2ddbe 55%,#e8cda6);
+  box-shadow:
+    0 1px 1px rgba(30,8,2,.30),
+    0 6px 12px -3px rgba(30,8,2,.42),
+    0 26px 48px -14px rgba(20,5,0,.62),
+    0 54px 90px -34px rgba(10,2,0,.70);
+}
+.art{ position:absolute; inset:1.1%; width:97.8%; height:97.8%; border-radius:1px; overflow:hidden;
+  isolation:isolate; will-change:filter;
+  background:#8a4a18 url(poster-sm.jpg) center/100% 100% no-repeat; }
+.art img{ position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:fill;
+  pointer-events:none; -webkit-user-drag:none;
+  opacity:0; transition:opacity .5s ease; }
+.art img.on{ opacity:1; }
+.art canvas{ position:absolute; display:block; }
+#wTitle{ left:5.930%; width:88.140%; top:10.887%; height:15.927%; }
+#wWater{ left:5.930%; width:88.140%; top:69.556%; height:19.556%; }
+
+/* moon phases along the top */
+.mn{ position:absolute; left:calc(var(--x)*100%); top:calc(var(--y)*100%);
+  width:calc(var(--r)*200%); aspect-ratio:1; transform:translate(-50%,-50%);
+  border-radius:50%; overflow:hidden; background:#f7c68f; }
+.mn::before{ content:''; position:absolute; inset:-3%; border-radius:50%;
+  background:#5a6e17; will-change:transform;
+  animation:phase 34s linear infinite; animation-delay:calc((var(--d) - var(--t0)) * 1s); }
+@keyframes phase{
+  0%   { transform:translateX(-104%) scaleX(1) }
+  25%  { transform:translateX(-52%)  scaleX(.06) }
+  50%  { transform:translateX(0%)    scaleX(1) }
+  75%  { transform:translateX(52%)   scaleX(.06) }
+  100% { transform:translateX(104%)  scaleX(1) }
+}
+.moonglow{ position:absolute; left:calc(var(--x)*100%); top:calc(var(--y)*100%);
+  width:calc(var(--r)*760%); aspect-ratio:1; transform:translate(-50%,-50%); border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,226,170,.55), rgba(255,200,130,0) 70%);
+  mix-blend-mode:screen;
+  animation:moonglow 34s ease-in-out infinite; animation-delay:calc((var(--d) - var(--t0)) * 1s); }
+@keyframes moonglow{ 0%{opacity:.55} 25%{opacity:.06} 50%{opacity:0} 75%{opacity:.06} 100%{opacity:.55} }
+
+/* psychedelic shimmer waves living on top of the artwork */
+.shm{ position:absolute; pointer-events:none; }
+.shm-hue{ inset:-40%; border-radius:50%;
+  background:conic-gradient(from 0turn,#ff5a00,#ffd23f,#8ee6c8,#3aa0d0,#ff2f7b,#a7d129,#ff5a00);
+  mix-blend-mode:color; opacity:.07;
+  animation:spin 52s linear infinite; animation-delay:calc(var(--t0) * -1s); }
+.shm-wave{ inset:-60% -20%;
+  background:repeating-linear-gradient(102deg,
+    rgba(255,240,205,.13) 0 9%, rgba(255,120,20,.07) 9% 18%,
+    rgba(16,54,46,.07) 18% 27%, rgba(255,236,190,0) 27% 40%);
+  mix-blend-mode:soft-light; opacity:.24;
+  animation:wave 21s linear infinite; animation-delay:calc(var(--t0) * -1s); }
+@keyframes wave{ from{ transform:translate3d(-16%,-6%,0) } to{ transform:translate3d(16%,6%,0) } }
+.shm-breathe{ inset:0;
+  background:radial-gradient(120% 90% at 50% 62%, rgba(255,222,160,.26), rgba(255,140,40,0) 64%);
+  mix-blend-mode:overlay;
+  animation:breathe 11s ease-in-out infinite; animation-delay:calc(var(--t0) * -1s); }
+@keyframes breathe{ 0%,100%{opacity:.07} 50%{opacity:.34} }
+.paper{ position:absolute; inset:0; pointer-events:none; opacity:.19; mix-blend-mode:overlay;
+  background-image:var(--noise); background-size:150px 150px; }
+.gloss{ position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:2px; }
+.gloss::before{ content:''; position:absolute; top:-60%; bottom:-60%; left:-45%; width:38%;
+  background:linear-gradient(100deg, rgba(255,255,255,0), rgba(255,248,232,.38), rgba(255,255,255,0));
+  transform:rotate(9deg) translateX(0); mix-blend-mode:overlay;
+  animation:sweep 1.0s cubic-bezier(.3,.7,.2,1) .2s both;
+  animation-delay:calc(.2s + var(--t0) * -1s); }
+@keyframes sweep{ from{ transform:rotate(9deg) translateX(-40%) } to{ transform:rotate(9deg) translateX(360%) } }
+
+/* ---------------- the little voice under the poster ---------------- */
+.say{ position:relative; height:1.6em; width:100%;
+  font-family:var(--hand); font-size:clamp(15px,4vw,19px); }
+.say span{ position:absolute; left:0; right:0; top:0; opacity:0; white-space:nowrap;
+  display:flex; align-items:center; justify-content:center; gap:.5em;
+  transition:opacity .7s ease; text-shadow:0 1px 8px rgba(0,0,0,.55); }
+.say span.on{ opacity:1; }
+.s-tease{ color:#dfa168; font-style:italic; }
+.s-hint{ color:#f2c187; letter-spacing:.02em; }
+.s-hint b{ width:.44em; height:.44em; border-radius:50%; background:#f2c187; font-weight:400;
+  animation:tap 2.1s ease-in-out infinite; animation-delay:calc(var(--t0) * -1s); }
+@keyframes tap{ 0%,100%{ transform:scale(.7); opacity:.55 } 45%{ transform:scale(1.5); opacity:1 } }
+
+/* ---------------- the payoff ---------------- */
+.payoff{ flex:0 0 auto; max-height:0; overflow:hidden;
+  transition:max-height 1.05s cubic-bezier(.2,.8,.25,1); }
+.payoff.done{ max-height:none; overflow:visible; }
+.details{ text-align:center; max-width:min(560px,92vw);
+  display:flex; flex-direction:column; align-items:center; gap:clamp(5px,.9vh,10px); }
+.details > *{ opacity:0; transform:translateY(16px); filter:blur(7px);
+  transition:opacity .95s cubic-bezier(.2,.8,.25,1), transform 1.05s cubic-bezier(.16,.9,.24,1), filter .95s ease;
+  transition-delay:calc(var(--i) * 110ms); }
+.details.lift > *{ opacity:1; transform:none; filter:none; }
+.eyebrow{ font-size:clamp(9.5px,2.5vw,11.5px); letter-spacing:.34em; text-transform:uppercase;
+  color:#eab06a; font-weight:600; padding-left:.34em; }
+.wordmark{ font-size:clamp(23px,7.1vw,40px); font-weight:800; letter-spacing:.045em; line-height:1;
+  font-variation-settings:'SOFT' 44,'WONK' 1,'opsz' 120;
+  background:linear-gradient(174deg,#ffe6b4 4%,#ffb356 44%,#e8560c 96%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 2px 0 rgba(88,22,4,.55)) drop-shadow(0 8px 22px rgba(255,110,20,.30));
+  text-transform:uppercase; }
+.rule{ display:flex; align-items:center; gap:.7em; color:#c9a25f; font-size:12px; letter-spacing:.3em; }
+.rule::before,.rule::after{ content:''; height:1px; width:clamp(26px,9vw,58px);
+  background:linear-gradient(90deg,transparent,#c9784a,transparent); }
+.when{ font-size:clamp(16px,4.7vw,23px); font-weight:600; color:#ffdca8; letter-spacing:.03em;
+  font-variation-settings:'SOFT' 30,'WONK' 1,'opsz' 60; }
+.when em{ font-style:normal; color:#f6a24e; padding:0 .34em; }
+.tag{ font-size:clamp(8.6px,2.42vw,12.5px); letter-spacing:.185em; text-transform:uppercase;
+  color:#bcd158; font-weight:600; padding-left:.185em; white-space:nowrap; }
+.note{ font-family:var(--hand); font-weight:500; font-size:clamp(17px,4.85vw,23px); line-height:1.32;
+  color:#fbe7ca; max-width:33ch; margin-top:clamp(3px,.8vh,9px); text-wrap:balance; }
+.sign{ font-family:var(--hand); font-weight:700; font-size:clamp(15px,4.2vw,20px); color:#f2924b; }
+
+/* ---------------- fx canvas ---------------- */
+#fx{ position:fixed; left:0; top:0; width:100%; height:100dvh; z-index:40; pointer-events:none; }
+
+/* ---------------- desktop ---------------- */
+html.ready .stage{ transition:transform 1.1s cubic-bezier(.2,.8,.25,1); }
+@media (min-width:900px) and (min-height:560px){
+  .stage{ flex-direction:row; justify-content:center; gap:clamp(38px,6vw,92px); }
+  .payoff{ max-height:none!important; overflow:visible; }
+  .hang{ height:min(74dvh,646px); max-width:40vw; }
+  .details{ text-align:left; align-items:flex-start; max-width:min(470px,40vw); gap:clamp(6px,1.1vh,12px); }
+  .eyebrow{ padding-left:0; }
+  .rule::before{ display:none; }
+  .tag{ padding-left:0; }
+  .note{ max-width:31ch; }
+  .postercol{ gap:16px; }
+}
+@media (max-height:620px) and (min-width:900px){ .hang{ height:74dvh; } }
+
+/* ---------------- phone held sideways ---------------- */
+@media (max-height:620px) and (min-aspect-ratio:1/1) and (max-width:899px){
+  .stage{ flex-direction:row; justify-content:center; gap:clamp(18px,4vw,46px); }
+  .payoff{ max-height:none!important; overflow:visible; }
+  .postercol{ gap:6px; }
+  .hang{ height:min(72dvh,320px); max-width:44vw; }
+  .details{ text-align:left; align-items:flex-start; max-width:min(430px,50vw); gap:3px; }
+  .eyebrow,.tag{ padding-left:0; }
+  .rule::before{ display:none; }
+  .note{ max-width:30ch; margin-top:2px; }
+}
+
+/* ---------------- reduced motion ---------------- */
+@media (prefers-reduced-motion:reduce){
+  .blobs i,.b-rays,.b-rays2,.shm-hue,.shm-wave,.shm-breathe,.mn::before,.moonglow,.gloss::before,.s-hint b{
+    animation:none!important; }
+  .gloss::before{ opacity:0; }
+  .mn,.moonglow,.art canvas{ display:none; }
+  .shm-breathe{ opacity:.18; }
+  .details > *{ transition-duration:.35s; transform:none; filter:none; }
+  .payoff{ transition-duration:.35s; }
+  html.ready .stage{ transition-duration:.35s; }
+}
+/* ---------------- freeze ---------------- */
+html.still *, html.still *::before, html.still *::after{
+  animation-play-state:paused!important; transition:none!important; }
+</style>
+
+<div class="ground"></div>
+<div class="blobs" aria-hidden="true"><i></i><i></i><i></i></div>
+<div class="vignette" id="vig" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<h1 class="sr">Our Yoga Trip — Vol. 1, September 27. Connection, community, and celebration. An invitation from Katie.</h1>
+
+<main class="stage">
+  <div class="postercol">
+    <div class="hang" id="hang">
+      <div class="castshadow" aria-hidden="true"></div>
+      <div class="bloom" aria-hidden="true">
+        <div class="b-glow"></div><div class="b-rings"></div><div class="b-rays2"></div><div class="b-rays"></div>
+      </div>
+        <div class="sheet">
+          <div class="art" id="art">
+            <img id="poster" src="poster.jpg" width="742" height="992" decoding="async"
+                 alt="Psychedelic Our Yoga Trip poster: a meditating goddess on a pink lotus, flanked by peacocks, butterflies and moon phases.">
+            <canvas id="wTitle" aria-hidden="true"></canvas>
+            <canvas id="wWater" aria-hidden="true"></canvas>
+            <div id="moons" aria-hidden="true"></div>
+            <div class="shm shm-hue" aria-hidden="true"></div>
+            <div class="shm shm-wave" aria-hidden="true"></div>
+            <div class="shm shm-breathe" aria-hidden="true"></div>
+            <div class="paper" aria-hidden="true"></div>
+            <div class="gloss" aria-hidden="true"></div>
+          </div>
+        </div>
+    </div>
+    <p class="say">
+      <span class="s-tease" id="teaser">shhh &mdash; she&rsquo;s waking up&hellip;</span>
+      <span class="s-hint" id="hint"><b></b>press &amp; hold the poster</span>
+    </p>
+  </div>
+
+  <div class="payoff" id="payoff">
+  <section class="details" id="details">
+    <p class="eyebrow" style="--i:0">you&rsquo;re invited to</p>
+    <p class="wordmark" style="--i:1">Our Yoga Trip</p>
+    <p class="rule" style="--i:2">&#10023;</p>
+    <p class="when" style="--i:3"><span id="dVol">Vol. 1</span><em>&middot;</em><span id="dDate">September 27</span></p>
+    <p class="tag" style="--i:4">connection, community, and celebration</p>
+    <p class="note" style="--i:5">Roll out your mat, bring a friend and something sweet to share. We&rsquo;ll breathe, we&rsquo;ll wobble, we&rsquo;ll laugh until we fall over. Come exactly as you are &mdash; that&rsquo;s the whole point.</p>
+    <p class="sign" style="--i:6">&mdash; all my love, <span id="dName">Katie</span> &#10047;</p>
+  </section>
+  </div>
+</main>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+
+<script>
+const CONFIG = { herName: "Katie", eventDate: "September 27", volume: "Vol. 1" };
+
+(function(){
+"use strict";
+
+/* ------------------------------------------------------------------ setup */
+const $  = (s)=>document.querySelector(s);
+const root = document.documentElement;
+const Q = new URLSearchParams(location.search);
+const STILL = Q.get('still') === '1';
+let STAGE = Q.has('s') ? Math.max(0, Math.min(3, parseInt(Q.get('s'),10)||0)) : null;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+$('#dVol').textContent  = CONFIG.volume;
+$('#dDate').textContent = CONFIG.eventDate;
+$('#dName').textContent = CONFIG.herName;
+
+/* paper / ground grain, generated once as a data URI */
+root.style.setProperty('--noise',
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='170' height='170'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='170' height='170' filter='url(%23n)' opacity='.62'/%3E%3C/svg%3E\")");
+
+/* moon phases, measured off the poster (fractions of 742x992) */
+const MOONS = [
+  {x:0.3369, y:0.0920, r:0.01482, d:-22.5},
+  {x:0.4178, y:0.0852, r:0.01685, d:-26.4},
+  {x:0.5020, y:0.0852, r:0.02156, d:  0.0},
+  {x:0.5860, y:0.0852, r:0.01685, d: -7.6},
+  {x:0.6664, y:0.0920, r:0.01482, d:-11.5}
+];
+(function buildMoons(){
+  const host = $('#moons'), f = document.createDocumentFragment();
+  for (const m of MOONS){
+    const g = document.createElement('div'); g.className = 'moonglow';
+    g.style.cssText = `--x:${m.x};--y:${m.y};--r:${m.r};--d:${m.d}`;
+    const e = document.createElement('div'); e.className = 'mn';
+    e.style.cssText = `--x:${m.x};--y:${m.y};--r:${m.r};--d:${m.d}`;
+    f.appendChild(g); f.appendChild(e);
+  }
+  host.appendChild(f);
+})();
+
+/* ------------------------------------------------------- the poster image */
+const img   = $('#poster');
+const artEl = $('#art');
+const hang  = $('#hang');
+const hintEl  = $('#hint');
+const detailsEl = $('#details');
+const teaserEl  = $('#teaser');
+const payoffEl  = $('#payoff');
+const stageEl   = document.querySelector('.stage');
+const colEl     = document.querySelector('.postercol');
+const WIDE = ()=> getComputedStyle(stageEl).flexDirection === 'row';
+function updateShift(){
+  if (!WIDE() || lifted){ stageEl.style.setProperty('--shiftX','0px'); return; }
+  stageEl.style.setProperty('--shiftX','0px');
+  const r = colEl.getBoundingClientRect();
+  stageEl.style.setProperty('--shiftX', (innerWidth/2 - (r.left + r.width/2)).toFixed(1)+'px');
+}
+const vigEl = $('#vig');
+let imgReady = false;
+
+/* --------------------------------------------------------- sprite atlases */
+const DPR = Math.min(window.devicePixelRatio || 1, 2);
+const BF = 12, BS = 96;                              /* butterfly frames / cell */
+const bfly = document.createElement('canvas');
+bfly.width = BF*BS; bfly.height = BS;
+const PT = 6, PS = 48;                               /* petal variants / cell   */
+const petal = document.createElement('canvas');
+petal.width = PT*PS; petal.height = PS;
+const glow = document.createElement('canvas');
+glow.width = glow.height = 128;
+
+(function makeSprites(){
+  /* --- soft additive glow blob --- */
+  const g = glow.getContext('2d');
+  const rg = g.createRadialGradient(64,64,0,64,64,64);
+  rg.addColorStop(0,   'rgba(255,244,214,1)');
+  rg.addColorStop(0.22,'rgba(255,206,120,.72)');
+  rg.addColorStop(0.55,'rgba(255,132,36,.22)');
+  rg.addColorStop(1,   'rgba(255,120,20,0)');
+  g.fillStyle = rg; g.fillRect(0,0,128,128);
+
+  /* --- monarch butterfly --- */
+  const c = bfly.getContext('2d');
+  const U = BS*0.44;                                  /* wing unit */
+  const fore = new Path2D();
+  fore.moveTo(0.02,-0.10);
+  fore.bezierCurveTo(0.30,-0.96, 0.76,-1.06, 0.99,-0.71);
+  fore.bezierCurveTo(1.11,-0.51, 0.79,-0.15, 0.42,-0.02);
+  fore.closePath();
+  const hind = new Path2D();
+  hind.moveTo(0.05,-0.03);
+  hind.bezierCurveTo(0.44, 0.01, 0.82, 0.20, 0.73, 0.53);
+  hind.bezierCurveTo(0.67, 0.78, 0.28, 0.67, 0.04, 0.36);
+  hind.closePath();
+
+  function wing(ctx, path, grad){
+    ctx.fillStyle = '#31160a'; ctx.fill(path);        /* dark rim */
+    ctx.save(); ctx.translate(0.055,0.005); ctx.scale(0.845,0.855);
+    ctx.fillStyle = grad; ctx.fill(path); ctx.restore();
+  }
+  for (let f=0; f<BF; f++){
+    const ph  = f/BF*Math.PI*2;
+    const sx  = 0.56 + 0.44*(0.5+0.5*Math.cos(ph));   /* wings folding */
+    const sy  = 1 + 0.12*(1-sx);
+    c.save(); c.translate(f*BS + BS/2, BS/2 + BS*0.02);
+    c.scale(U, U);
+    const grad = c.createLinearGradient(0.1,-0.8,0.9,0.5);
+    grad.addColorStop(0,   '#ffcb63');
+    grad.addColorStop(0.42,'#f18c22');
+    grad.addColorStop(1,   '#dc540d');
+    for (let side=0; side<2; side++){
+      c.save();
+      c.scale(side? -sx : sx, sy);
+      wing(c, hind, grad);
+      wing(c, fore, grad);
+      /* veins */
+      c.strokeStyle = 'rgba(46,20,8,.85)'; c.lineWidth = 0.045; c.lineCap='round';
+      c.beginPath();
+      c.moveTo(0.14,-0.14); c.lineTo(0.80,-0.62);
+      c.moveTo(0.14,-0.10); c.lineTo(0.72,-0.24);
+      c.moveTo(0.12,-0.02); c.lineTo(0.60,-0.02);
+      c.moveTo(0.12, 0.06); c.lineTo(0.55, 0.36);
+      c.stroke();
+      /* white spots along the rim */
+      c.fillStyle = '#fff3dd';
+      const spots = [[0.90,-0.68,0.052],[0.79,-0.86,0.045],[0.63,-0.93,0.040],
+                     [1.00,-0.50,0.042],[0.70, 0.47,0.040],[0.50, 0.60,0.034]];
+      for (const s of spots){ c.beginPath(); c.arc(s[0],s[1],s[2],0,6.2832); c.fill(); }
+      c.restore();
+    }
+    /* body + antennae */
+    c.fillStyle = '#2b1207';
+    c.beginPath(); c.ellipse(0,0.02,0.062,0.55,0,0,6.2832); c.fill();
+    c.beginPath(); c.arc(0,-0.56,0.075,0,6.2832); c.fill();
+    c.strokeStyle = '#2b1207'; c.lineWidth = 0.035; c.lineCap='round';
+    c.beginPath();
+    c.moveTo(-0.03,-0.60); c.quadraticCurveTo(-0.22,-0.86,-0.30,-1.00);
+    c.moveTo( 0.03,-0.60); c.quadraticCurveTo( 0.22,-0.86, 0.30,-1.00);
+    c.stroke();
+    c.fillStyle='#2b1207';
+    c.beginPath(); c.arc(-0.31,-1.02,0.045,0,6.2832); c.fill();
+    c.beginPath(); c.arc( 0.31,-1.02,0.045,0,6.2832); c.fill();
+    c.restore();
+  }
+
+  /* --- petals: 3 lotus pink, 3 warm gold --- */
+  const p = petal.getContext('2d');
+  const cols = [['#f6bfd0','#dd85a6','#b85b83'], ['#f6bfd0','#e693b0','#c06b8e'],
+                ['#f7cdda','#e08fae','#bf6389'], ['#ffdb9a','#eda850','#c9761f'],
+                ['#ffe6b6','#f0b45f','#cf7f28'], ['#ffd48c','#e79b46','#bd6b1c']];
+  for (let i=0;i<PT;i++){
+    const o = i*PS, w = PS*0.245, h = PS*0.455;
+    p.save(); p.translate(o+PS/2, PS/2);
+    if (i%3===1) p.rotate(0.22); if (i%3===2) p.rotate(-0.18);
+    const gg = p.createLinearGradient(0,-h,0,h);
+    gg.addColorStop(0, cols[i][0]); gg.addColorStop(0.6, cols[i][1]); gg.addColorStop(1, cols[i][2]);
+    p.fillStyle = gg;
+    p.beginPath();
+    p.moveTo(0,-h);
+    p.bezierCurveTo( w*1.25,-h*0.34,  w*0.82, h*0.72, 0, h);
+    p.bezierCurveTo(-w*0.82, h*0.72, -w*1.25,-h*0.34, 0,-h);
+    p.fill();
+    p.strokeStyle = 'rgba(150,66,96,.22)'; p.lineWidth = PS*0.014;
+    p.beginPath(); p.moveTo(0,-h*0.78); p.lineTo(0,h*0.72); p.stroke();
+    p.restore();
+  }
+})();
+
+/* ------------------------------------------------------------- fx canvas */
+const fx = $('#fx'), fc = fx.getContext('2d', {alpha:true});
+let VW = 0, VH = 0;
+
+/* warp canvases (live, melting parts of the artwork) */
+const wT = $('#wTitle'), tc = wT.getContext('2d');
+const wW = $('#wWater'), wc = wW.getContext('2d');
+const PHONE = matchMedia('(max-width:760px)').matches;
+const BAND_T = {sx:44, sy:108, sw:654, sh:158, rows:PHONE?26:34};
+const BAND_W = {sx:44, sy:690, sw:654, sh:194, rows:PHONE?24:32};
+
+function sizeCanvas(cv, ctx){
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(2, Math.round(r.width*DPR)), h = Math.max(2, Math.round(r.height*DPR));
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  ctx.setTransform(1,0,0,1,0,0);
+  return r;
+}
+let artRect = {left:0, top:0, width:1, height:1};
+function measure(){
+  VW = innerWidth; VH = innerHeight;
+  fx.width  = Math.round(VW*DPR); fx.height = Math.round(VH*DPR);
+  fc.setTransform(DPR,0,0,DPR,0,0);
+  sizeCanvas(wT, tc); sizeCanvas(wW, wc);
+  updateShift();
+  readArt();
+}
+function readArt(){
+  const r = artEl.getBoundingClientRect();
+  artRect.left = r.left; artRect.top = r.top; artRect.width = r.width; artRect.height = r.height;
+}
+
+/* --------------------------------------------------------------- helpers */
+const clamp = (v,a,b)=> v<a?a : v>b?b : v;
+const lerp  = (a,b,t)=> a+(b-a)*t;
+function smooth(a,b,x){ const t = clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); }
+let seed = 1337;
+function rnd(){ seed = (seed*1664525 + 1013904223) & 0x7fffffff; return seed/0x7fffffff; }
+function rng(a,b){ return a + (b-a)*rnd(); }
+
+/* --------------------------------------------------------- particle pools */
+const isPhone = PHONE;
+const NB = isPhone ? 9 : 14;
+const NP = isPhone ? 40 : 64;
+const NK = 110;
+const NR = 6;
+
+const B = [], P = [], K = [], R = [];
+/* printed butterflies on the poster, normalised on the artwork */
+const SPOTS = [[0.098,0.322],[0.856,0.320],[0.377,0.393],[0.627,0.402],[0.290,0.556],
+               [0.735,0.549],[0.250,0.737],[0.775,0.745],[0.336,0.440],[0.664,0.440],
+               [0.176,0.470],[0.824,0.470],[0.430,0.300],[0.570,0.300]];
+for (let i=0;i<NB;i++){
+  const s = SPOTS[i % SPOTS.length];
+  B.push({ on:false, born:0, rel:1.50 + i*0.16 + rng(0,0.10),
+    nx:s[0], ny:s[1], x:0, y:0, vx:0, vy:0, ang:0, flap:rng(0,6.28),
+    fsp:rng(9.5,14.5), size:isPhone? rng(21,31) : rng(24,40),
+    tx:0, ty:0, tw:rng(3.0,5.6), tt:0, drag:rng(0.900,0.945), seedA:rng(0,100),
+    ph:rng(0,6.283), osp:rng(0.10,0.26)*(rnd()<0.5?-1:1), rad:rng(0.36,1.05) });
+}
+for (let i=0;i<NP;i++) P.push({on:false,x:0,y:0,vx:0,vy:0,r:0,rv:0,s:1,sp:0,life:0,max:1,type:0,sw:0});
+for (let i=0;i<NK;i++) K.push({on:false,x:0,y:0,vx:0,vy:0,life:0,max:1,sz:1,warm:1});
+for (let i=0;i<NR;i++) R.push({on:false,x:0,y:0,life:0,max:1,r0:0,r1:0,w:1});
+
+function spawnPetal(x,y,vx,vy,scale){
+  for (let i=0;i<NP;i++){ const p = P[i]; if (p.on) continue;
+    p.on=true; p.x=x; p.y=y; p.vx=vx; p.vy=vy; p.r=rng(0,6.28); p.rv=rng(-2.2,2.2);
+    p.s=(scale||1)*rng(0.55,1.25); p.life=0; p.max=rng(5.5,11); p.type=(rnd()*PT)|0;
+    p.sw=rng(0.7,1.9); p.sp=rng(0,6.28); return p; }
+  return null;
+}
+function spawnSpark(x,y,vx,vy,life,sz,warm){
+  for (let i=0;i<NK;i++){ const k = K[i]; if (k.on) continue;
+    k.on=true; k.x=x; k.y=y; k.vx=vx; k.vy=vy; k.life=0; k.max=life; k.sz=sz; k.warm=warm; return k; }
+  return null;
+}
+function spawnRing(x,y,r0,r1,life,w){
+  for (let i=0;i<NR;i++){ const r = R[i]; if (r.on) continue;
+    r.on=true; r.x=x; r.y=y; r.r0=r0; r.r1=r1; r.life=0; r.max=life; r.w=w; return r; }
+  R[0].on=true; R[0].x=x; R[0].y=y; R[0].r0=r0; R[0].r1=r1; R[0].life=0; R[0].max=life; R[0].w=w;
+  return R[0];
+}
+
+/* ------------------------------------------------------------------ state */
+let T = 0;                       /* page time, seconds                       */
+let hold = 0, holdV = 0;         /* inhale 0..1 + spring velocity            */
+let pressing = false, pressT = 0;
+let pulse = 0;                   /* one-shot tap pulse                       */
+let flash = 0;                   /* white bloom on tap                       */
+let held = false;                /* has she discovered the hold?             */
+let lifted = false;              /* details revealed                         */
+let hintOn = -1, teaseOn = -1;
+let px_ = -1, py_ = -1, pointerLive = false, pIdle = 0;
+let ax = 0, ay = 0;              /* attractor the butterflies chase          */
+let tiltX = 0, tiltY = 0, tTX = 0, tTY = 0;
+let rectDirty = 0;
+
+const LIFT_AT = 3.8;   /* fallback — the exhale lifts them sooner */
+
+function openPayoff(){
+  updateShift();
+  payoffEl.style.maxHeight = (detailsEl.scrollHeight + 26) + 'px';
+  if (STILL || RM) payoffEl.classList.add('done');
+  else setTimeout(()=>payoffEl.classList.add('done'), 1150);
+}
+function sheetCX(){ return artRect.left + artRect.width*0.5; }
+function sheetCY(){ return artRect.top  + artRect.height*0.52; }
+function lotusX(){ return artRect.left + artRect.width*0.5; }
+function lotusY(){ return artRect.top  + artRect.height*0.80; }
+
+/* ---------------------------------------------------------------- input */
+function burst(x,y,strength){
+  pulse = Math.max(pulse, 1);
+  flash = Math.max(flash, 0.85*strength);
+  spawnRing(x,y, 8, 150*strength, 0.85, 3);
+  spawnRing(x,y, 4, 86*strength, 0.6, 1.6);
+  const n = RM ? 5 : 14;
+  for (let i=0;i<n;i++){
+    const a = rng(0,6.283), sp = rng(60,235)*strength;
+    spawnPetal(x, y, Math.cos(a)*sp, Math.sin(a)*sp - 40, 0.85);
+  }
+  for (let i=0;i<26;i++){
+    const a = rng(0,6.283), sp = rng(90,430)*strength;
+    spawnSpark(x, y, Math.cos(a)*sp, Math.sin(a)*sp, rng(0.35,0.95), rng(1.2,3.2), rng(0.6,1));
+  }
+}
+function onDown(e){
+  const x = e.clientX, y = e.clientY;
+  px_ = ax = x; py_ = ay = y; pointerLive = true; pIdle = 0;
+  pressing = true; pressT = 0;
+  burst(x, y, 1);
+  if (fx.setPointerCapture) { try{ document.body.setPointerCapture(e.pointerId); }catch(_){} }
+}
+function onMove(e){ px_ = e.clientX; py_ = e.clientY; pointerLive = true; pIdle = 0; }
+function onUp(){
+  if (pressing && hold > 0.28){
+    /* the exhale */
+    held = true;
+    holdV = -2.2;
+    const cx = sheetCX(), cy = sheetCY();
+    for (let i=0;i<(RM?6:18);i++){
+      const a = rng(0,6.283), sp = rng(130,330)*(0.5+hold);
+      spawnPetal(cx + Math.cos(a)*artRect.width*0.3, cy + Math.sin(a)*artRect.height*0.3,
+                 Math.cos(a)*sp, Math.sin(a)*sp, 0.9);
+    }
+    for (let i=0;i<34;i++){
+      const a = rng(0,6.283), sp = rng(160,520);
+      spawnSpark(cx, cy, Math.cos(a)*sp, Math.sin(a)*sp, rng(0.4,1.0), rng(1.4,3.4), 1);
+    }
+    spawnRing(cx, cy, artRect.width*0.30, artRect.width*1.15, 1.05, 2.4);
+  }
+  pressing = false;
+}
+addEventListener('pointerdown', onDown, {passive:true});
+addEventListener('pointermove', onMove, {passive:true});
+addEventListener('pointerup', onUp, {passive:true});
+addEventListener('pointercancel', onUp, {passive:true});
+addEventListener('contextmenu', e=>e.preventDefault());
+function onResize(){
+  measure();
+  if (lifted && !payoffEl.classList.contains('done')) openPayoff();
+  if (STILL) drawAll();
+}
+addEventListener('resize', onResize, {passive:true});
+addEventListener('orientationchange', onResize, {passive:true});
+if (window.visualViewport) visualViewport.addEventListener('resize', onResize, {passive:true});
+
+/* ------------------------------------------------------------- the warp */
+function wave(j, v, t){
+  return 0.62*Math.sin(t*0.85 + v*4.2 + j*2.1) + 0.38*Math.sin(t*1.37 - v*6.1 + j*4.7);
+}
+function drawWarp(ctx, cv, band, t, amp, envMode){
+  if (!imgReady || cv.width < 2) return;
+  const N = 3, seg = band.sw/N, cw = cv.width, ch = cv.height;
+  const rows = band.rows;
+  for (let r=0; r<rows; r++){
+    const v  = (r+0.5)/rows;
+    let e = Math.sin(Math.PI*v);
+    e = envMode ? e*(0.34 + 0.66*v) : e*e*0.55 + e*0.45;
+    const sy0 = band.sy + (r/rows)*band.sh;
+    const vs  = e*amp*0.34*Math.sin(t*0.72 + v*6.4);
+    const sy  = clamp(sy0 + vs, 0, 990);
+    const sh  = band.sh/rows + 0.8;
+    const dy  = (r/rows)*ch;
+    const dh  = ch/rows + 1.1;
+    for (let j=0;j<N;j++){
+      const d0 = j===0   ? 0 : e*amp*wave(j,   v, t);
+      const d1 = j===N-1 ? 0 : e*amp*wave(j+1, v, t);
+      const sxa = band.sx + j*seg + d0;
+      const sxb = band.sx + (j+1)*seg + d1;
+      const dxa = (j/N)*cw, dxb = ((j+1)/N)*cw;
+      ctx.drawImage(img, sxa, sy, sxb-sxa, sh, dxa, dy, dxb-dxa, dh);
+    }
+  }
+}
+
+/* --------------------------------------------------------------- physics */
+function step(dt){
+  T += dt;
+  if (rectDirty > 0){ rectDirty -= dt; readArt(); }
+
+  /* pointer / attractor ------------------------------------------------- */
+  pIdle += dt;
+  if (pIdle > 2.6) pointerLive = false;
+  if (pointerLive){ ax = lerp(ax, px_, 1-Math.exp(-dt*4.5)); ay = lerp(ay, py_, 1-Math.exp(-dt*4.5)); }
+  else {
+    const w = Math.max(artRect.width, artRect.height*0.8)*0.80;
+    ax = sheetCX() + Math.cos(T*0.21)*w + Math.cos(T*0.13)*w*0.34;
+    ay = sheetCY() + Math.sin(T*0.17)*w*0.72 + Math.sin(T*0.29)*w*0.20;
+  }
+
+  /* hold spring --------------------------------------------------------- */
+  if (pressing) pressT += dt;
+  const target = (pressing && pressT > 0.10) ? 1 : 0;
+  const k = pressing ? 26 : 20, damp = pressing ? 8.5 : 6.2;
+  holdV += (target - hold)*k*dt - holdV*damp*dt;
+  hold  = clamp(hold + holdV*dt, 0, 1.14);
+  if (!pressing && hold < 0.002 && Math.abs(holdV) < 0.01){ hold = 0; holdV = 0; }
+  pulse *= Math.exp(-dt*5.5);
+  flash *= Math.exp(-dt*4.2);
+
+  /* tilt ---------------------------------------------------------------- */
+  if (!RM){
+    const nx = pointerLive ? (px_/VW - 0.5) : Math.cos(T*0.23)*0.30;
+    const ny = pointerLive ? (py_/VH - 0.5) : Math.sin(T*0.19)*0.30;
+    tTX = ny * -7.5; tTY = nx * 10;
+  } else { tTX = 0; tTY = 0; }
+  tiltX = lerp(tiltX, tTX, 1-Math.exp(-dt*3.2));
+  tiltY = lerp(tiltY, tTY, 1-Math.exp(-dt*3.2));
+
+  /* details reveal ------------------------------------------------------ */
+  if (!lifted && (held || T >= LIFT_AT)){
+    lifted = true;
+    rectDirty = 1.6;
+    openPayoff();
+    detailsEl.classList.add('lift');
+    const sx0 = lotusX(), sy0 = lotusY();
+    const dr = detailsEl.getBoundingClientRect();
+    const dx = dr.left + dr.width*0.5, dy = dr.top + dr.height*0.4;
+    for (let i=0;i<(RM?10:46);i++){
+      const t = rnd();
+      const a = Math.atan2(dy-sy0, dx-sx0) + rng(-0.55,0.55);
+      const sp = rng(130,430);
+      spawnSpark(sx0 + rng(-30,30), sy0 + rng(-14,14),
+                 Math.cos(a)*sp, Math.sin(a)*sp - rng(40,150), rng(0.7,1.5), rng(1.3,3.0), 1);
+    }
+    spawnRing(sx0, sy0, 6, artRect.width*0.75, 1.2, 2);
+    flash = Math.max(flash, 0.5);
+  }
+
+  /* butterflies --------------------------------------------------------- */
+  const cx = sheetCX(), cy = sheetCY();
+  for (let i=0;i<NB;i++){
+    const b = B[i];
+    if (!b.on){
+      if (T >= b.rel){
+        b.on = true; b.born = T;
+        b.x = artRect.left + b.nx*artRect.width;
+        b.y = artRect.top  + b.ny*artRect.height;
+        const a = Math.atan2(b.y-cy, b.x-cx);
+        b.vx = Math.cos(a)*rng(40,95); b.vy = Math.sin(a)*rng(20,60) - rng(30,90);
+        b.tx = b.x + rng(-140,140); b.ty = b.y - rng(40,180);
+      }
+      continue;
+    }
+    b.tt -= dt;
+    if (b.tt <= 0){ b.tt = b.tw; b.rad = rng(0.36,1.05); b.osp = rng(0.10,0.26)*(rnd()<0.5?-1:1); }
+    const R = Math.max(artRect.width,200)*b.rad;
+    let tX = cx + Math.cos(b.ph + T*b.osp)*R;
+    let tY = cy + Math.sin(b.ph*1.7 + T*b.osp*0.83)*R*0.76;
+    if (pointerLive){
+      tX = lerp(tX, ax + Math.cos(b.ph)*66, 0.74);
+      tY = lerp(tY, ay + Math.sin(b.ph)*66, 0.74);
+    }
+    b.tx = clamp(tX, 26, VW-26); b.ty = clamp(tY, 26, VH-26);
+    /* steer toward wander target, biased at the attractor */
+    let fx1 = (b.tx - b.x), fy1 = (b.ty - b.y);
+    const d1 = Math.hypot(fx1,fy1) || 1;
+    fx1 /= d1; fy1 /= d1;
+    let acc = 470;
+    /* she gets a shy little escort when her finger is on the page */
+    let gx = ax - b.x, gy = ay - b.y;
+    const gd = Math.hypot(gx,gy) || 1;
+    gx /= gd; gy /= gd;
+    const pull = pointerLive ? (gd > 78 ? 300 : -430) : 0;
+    /* spiral inward while held */
+    let sx1 = 0, sy1 = 0;
+    if (hold > 0.02){
+      let vx1 = cx - b.x, vy1 = cy - b.y;
+      const vd = Math.hypot(vx1,vy1) || 1;
+      vx1 /= vd; vy1 /= vd;
+      const ring = artRect.width*0.42;
+      const pullIn = clamp((vd - ring)/ring, -0.9, 1);
+      sx1 = (vx1*pullIn*0.85 - vy1*0.95) * 1500 * hold;
+      sy1 = (vy1*pullIn*0.85 + vx1*0.95) * 1500 * hold;
+      acc *= (1-hold*0.55);
+    }
+    b.vx += (fx1*acc + gx*pull + sx1)*dt + Math.sin(T*1.7 + b.seedA)*100*dt;
+    b.vy += (fy1*acc + gy*pull + sy1)*dt + Math.cos(T*1.3 + b.seedA)*86*dt - 26*dt;
+    const dr = Math.pow(b.drag, dt*60);
+    b.vx *= dr; b.vy *= dr;
+    const sp = Math.hypot(b.vx,b.vy);
+    const max = 205 + hold*170;
+    if (sp > max){ b.vx = b.vx/sp*max; b.vy = b.vy/sp*max; }
+    b.x += b.vx*dt; b.y += b.vy*dt;
+    /* soft walls */
+    const m2 = 24;
+    if (b.x < m2){ b.x = m2; b.vx = Math.abs(b.vx)*0.6; }
+    if (b.x > VW-m2){ b.x = VW-m2; b.vx = -Math.abs(b.vx)*0.6; }
+    if (b.y < m2){ b.y = m2; b.vy = Math.abs(b.vy)*0.6; }
+    if (b.y > VH-m2){ b.y = VH-m2; b.vy = -Math.abs(b.vy)*0.6; }
+    b.ang = lerp(b.ang, Math.atan2(b.vy,b.vx) + Math.PI/2, 1-Math.exp(-dt*5));
+    b.flap += dt*(b.fsp*(0.55 + Math.min(1, sp/150)*0.75) + hold*7);
+  }
+
+  /* petals -------------------------------------------------------------- */
+  /* ambient fall */
+  if (!RM && T > 2.0 && rnd() < dt*(isPhone? 2.8 : 4.2)){
+    spawnPetal(rng(-30, VW+30), -26, rng(-14,14), rng(24,52), 0.6);
+  }
+  for (let i=0;i<NP;i++){
+    const p = P[i]; if (!p.on) continue;
+    p.life += dt;
+    if (p.life > p.max){ p.on=false; continue; }
+    p.sp += dt*1.7;
+    const rise = hold*130;                      /* petals lift on the inhale */
+    p.vy += (34 - rise)*dt;
+    p.vx += Math.sin(p.sp)*p.sw*22*dt;
+    p.vx *= Math.pow(0.965, dt*60); p.vy *= Math.pow(0.975, dt*60);
+    p.x += p.vx*dt; p.y += p.vy*dt;
+    p.r += p.rv*dt;
+    if (p.y > VH+50 || p.x < -70 || p.x > VW+70) p.on = false;
+  }
+
+  /* sparks + rings ------------------------------------------------------ */
+  for (let i=0;i<NK;i++){
+    const s = K[i]; if (!s.on) continue;
+    s.life += dt; if (s.life > s.max){ s.on=false; continue; }
+    s.vy += 90*dt;
+    s.vx *= Math.pow(0.93, dt*60); s.vy *= Math.pow(0.945, dt*60);
+    s.x += s.vx*dt; s.y += s.vy*dt;
+  }
+  for (let i=0;i<NR;i++){
+    const r = R[i]; if (!r.on) continue;
+    r.life += dt; if (r.life > r.max) r.on = false;
+  }
+
+  /* teaser -------------------------------------------------------------- */
+  const wantTease = (!lifted && T > 0.7 && T < 2.6) ? 1 : 0;
+  if (wantTease !== teaseOn){ teaseOn = wantTease; teaserEl.classList.toggle('on', !!wantTease); }
+
+  /* hint ---------------------------------------------------------------- */
+  const wantHint = (!held && T > 2.8 && T < 44 && hold < 0.15) ? 1 : 0;
+  if (wantHint !== hintOn){ hintOn = wantHint; hintEl.classList.toggle('on', !!wantHint); }
+}
+
+/* ----------------------------------------------------------------- paint */
+const bloomEl = document.querySelector('.bloom');
+let lastHold = -1, lastFilter = '', lastVig = '', lastEase = 0;
+const q = (v,n)=> String(Math.round(v*n)/n);
+function drawAll(){
+  const h = clamp(hold,0,1);
+
+  /* --- css-driven bits (written only when they actually change) --- */
+  const hq = Math.round(h*160)/160;
+  if (hq !== lastHold){ lastHold = hq; bloomEl.style.setProperty('--hold', hq.toFixed(4)); }
+  const entry = RM ? 1 : smooth(0, 1.15, T);
+  const ease  = entry*entry*(3-2*entry);
+  const sc = (RM ? 1 : lerp(0.93, 1, ease)) * (1 + h*0.055 + pulse*0.014);
+  hang.style.transform =
+    'perspective(1200px) translate3d(0,'+((1-ease)*22).toFixed(2)+'px,0) rotateX('+tiltX.toFixed(2)+'deg) rotateY('+tiltY.toFixed(2)+'deg) scale('+sc.toFixed(4)+')';
+  if (ease < 1){ hang.style.opacity = ease.toFixed(3); lastEase = ease; }
+  else if (lastEase !== 1){ lastEase = 1; hang.style.opacity = '1'; }
+  const breath = RM ? 0 : Math.sin(T*0.62)*0.5+0.5;
+  const f =
+    'saturate('+q(1 + h*0.30 + breath*0.09 + pulse*0.09, 100)+') '+
+    'contrast('+q(1 + h*0.09, 100)+') '+
+    'brightness('+q(1 + h*0.045 + pulse*0.05 + flash*0.07, 100)+') '+
+    'hue-rotate('+q((breath-0.5)*6 + h*2.5, 2)+'deg)';
+  if (f !== lastFilter){ lastFilter = f; artEl.style.filter = f; }
+  const vo = q(1 - h*0.55, 40);
+  if (vo !== lastVig){ lastVig = vo; vigEl.style.opacity = vo; }
+
+  /* --- living artwork --- */
+  if (!RM){
+    drawWarp(tc, wT, BAND_T, T, 5.4 + h*7.0, 0);
+    drawWarp(wc, wW, BAND_W, T*0.82 + 40, 4.0 + h*5.5, 1);
+  }
+
+  /* --- particles --- */
+  fc.setTransform(DPR,0,0,DPR,0,0);
+  fc.clearRect(0,0,VW,VH);
+
+  /* petals behind */
+  for (let i=0;i<NP;i++){
+    const p = P[i]; if (!p.on) continue;
+    const fade = Math.min(1, p.life/0.25) * (1 - smooth(p.max-1.6, p.max, p.life));
+    fc.save();
+    fc.globalAlpha = fade*0.95;
+    fc.translate(p.x, p.y);
+    fc.rotate(p.r);
+    const sz = PS*p.s*0.88;
+    fc.drawImage(petal, p.type*PS, 0, PS, PS, -sz/2, -sz/2, sz, sz*(0.75+0.25*Math.abs(Math.cos(p.sp))));
+    fc.restore();
+  }
+
+  /* additive light: rings, sparks, flash */
+  fc.globalCompositeOperation = 'lighter';
+  for (let i=0;i<NR;i++){
+    const r = R[i]; if (!r.on) continue;
+    const t = r.life/r.max;
+    const rad = lerp(r.r0, r.r1, 1-Math.pow(1-t,2.4));
+    fc.globalAlpha = (1-t)*(1-t)*0.75;
+    fc.strokeStyle = '#ffcf86'; fc.lineWidth = r.w*(1-t*0.6)+0.4;
+    fc.beginPath(); fc.arc(r.x, r.y, rad, 0, 6.2832); fc.stroke();
+  }
+  for (let i=0;i<NK;i++){
+    const s = K[i]; if (!s.on) continue;
+    const t = s.life/s.max, a = (1-t)*(1-t);
+    const g = 26*s.sz;
+    fc.globalAlpha = a*0.55;
+    fc.drawImage(glow, s.x-g/2, s.y-g/2, g, g);
+    fc.globalAlpha = a;
+    fc.fillStyle = s.warm > 0.8 ? '#fff2cf' : '#ffd08a';
+    fc.fillRect(s.x-s.sz*0.5, s.y-s.sz*0.5, s.sz, s.sz);
+  }
+  if (flash > 0.01){
+    const cx = sheetCX(), cy = sheetCY(), g = Math.max(VW,VH)*1.1*(0.5+flash*0.6);
+    fc.globalAlpha = flash*0.30;
+    fc.drawImage(glow, cx-g/2, cy-g/2, g, g);
+  }
+  if (h > 0.02){
+    const cx = sheetCX(), cy = sheetCY(), g = artRect.width*(2.6 + h*1.6);
+    fc.globalAlpha = h*h*0.10;
+    fc.drawImage(glow, cx-g/2, cy-g/2, g, g);
+  }
+  fc.globalCompositeOperation = 'source-over';
+
+  /* butterflies in front */
+  for (let i=0;i<NB;i++){
+    const b = B[i]; if (!b.on) continue;
+    const age = T - b.born;
+    const pop = age < 0.75 ? (1 - Math.pow(1-clamp(age/0.75,0,1), 3)) : 1;
+    const s = b.size * (0.22 + 0.78*pop) * (1 + h*0.12);
+    const f = ((b.flap % BF) + BF) % BF | 0;
+    fc.save();
+    fc.globalAlpha = Math.min(1, age/0.28);
+    fc.translate(b.x, b.y);
+    fc.rotate(b.ang);
+    fc.drawImage(bfly, f*BS, 0, BS, BS, -s/2, -s/2, s, s);
+    fc.restore();
+  }
+  fc.globalAlpha = 1;
+}
+
+/* ------------------------------------------------------------- the loop */
+let raf = 0, last = 0, running = false, LOW = false, slowAcc = 0, slowN = 0;
+function frame(ts){
+  raf = 0;
+  if (!running) return;
+  const now = ts*0.001;
+  let dt = last ? now-last : 1/60;
+  last = now;
+  if (dt > 1/15) dt = 1/15;
+  step(dt);
+  drawAll();
+  if (!LOW && T > 2.5){
+    slowAcc += dt; slowN++;
+    if (slowN >= 70){
+      if (slowAcc/slowN > 0.032){ LOW = true; BAND_T.rows = 15; BAND_W.rows = 13; }
+      slowAcc = 0; slowN = 0;
+    }
+  }
+  raf = requestAnimationFrame(frame);
+}
+function start(){ if (running || STILL) return; running = true; last = 0; raf = requestAnimationFrame(frame); }
+function stop(){ running = false; if (raf) cancelAnimationFrame(raf); raf = 0; }
+document.addEventListener('visibilitychange', ()=>{ document.hidden ? stop() : start(); });
+
+/* --------------------------------------------------------------- stages */
+const STAGE_T = [1.35, 3.4, 5.8, 9.8];
+function boot(){
+  measure();
+  if (STAGE !== null){
+    const target = STAGE_T[STAGE];
+    root.style.setProperty('--t0', String(target));
+    /* deterministic fast-forward */
+    const dt = 1/60;
+    const preT = STAGE === 2 ? target - 1.35 : target;
+    let guard = 0;
+    while (T < preT && guard++ < 3000) step(dt);
+    if (STAGE === 2){
+      pressing = true; pressT = 0.2;
+      while (T < target && guard++ < 3000) step(dt);
+      hold = 1; holdV = 0;
+      if (!STILL) setTimeout(()=>{ pressing = false; held = true; holdV = -1.8; }, 2400);
+    }
+  }
+  drawAll();
+  if (STILL){ root.classList.add('still'); }
+  else { start(); requestAnimationFrame(()=>requestAnimationFrame(()=>root.classList.add('ready'))); }
+}
+
+if (img.complete && img.naturalWidth){ imgReady = true; img.classList.add('on'); }
+else img.addEventListener('load', ()=>{ imgReady = true; img.classList.add('on'); measure(); drawAll(); });
+img.addEventListener('error', ()=>{ imgReady = false; });
+
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ measure(); if (STILL) drawAll(); });
+addEventListener('load', ()=>{ measure(); if (STILL) drawAll(); });
+boot();
+
+})();
+</script>
