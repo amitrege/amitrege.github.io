@@ -44,6 +44,16 @@
     /* live values, written from JS */
     --open:0; --bloom:0; --sync:0; --inv:0;
     --mx:50vw; --my:44vh; --mr:140px;
+
+    /* stable frame metrics, written from JS.
+       A phone's URL bar collapses and expands during any scroll or swipe, and
+       every step of that animation fires resize and changes 100dvh. Anything
+       measured from the live height therefore twitches through the whole
+       gesture. --vh0 is the height the layout was last *meaningfully* measured
+       at; --cvh is the painted height, which only ever grows, so a collapsing
+       toolbar can never reveal an unpainted strip. The dvh fallbacks keep the
+       page correct if the script never runs. */
+    --vh0:100dvh; --cvh:100dvh;
   }
 
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -59,7 +69,9 @@
   #world{ position:fixed; inset:0; height:100dvh; width:100vw; overflow:hidden; isolation:isolate; }
 
   /* ── background strata ─────────────────────────────────────────────── */
-  .bg{ position:absolute; inset:0; pointer-events:none; }
+  /* pinned to the painted height, not to 100dvh, so the whole world holds
+     still while a URL bar slides in and out over the top of it */
+  .bg{ position:absolute; left:0; right:0; top:0; height:var(--cvh); pointer-events:none; }
 
   /* night water — always there */
   #bgBase{
@@ -76,7 +88,7 @@
   }
   /* warm sun behind the flower, breathes with --open */
   #bgSun{
-    inset:-10%;
+    left:-10%; right:-10%; top:calc(var(--cvh) * -0.1); height:calc(var(--cvh) * 1.2);
     background:radial-gradient(closest-side circle at 50% 44%,
       rgba(255,236,168,.62) 0%, rgba(232,201,89,.44) 26%, rgba(213,87,22,.34) 52%, rgba(212,59,8,0) 76%);
     transform:scale(calc(0.66 + var(--open)*0.48));
@@ -85,7 +97,7 @@
   }
   /* psychedelic concentric wash */
   #bgRings{
-    inset:-8%;
+    left:-8%; right:-8%; top:calc(var(--cvh) * -0.08); height:calc(var(--cvh) * 1.16);
     background:repeating-radial-gradient(circle at 50% 44%,
       rgba(255,150,50,.55) 0 3.6%,
       rgba(255,214,110,.50) 3.6% 6.4%,
@@ -123,7 +135,9 @@
     will-change:transform,opacity;
   }
 
-  #c{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  /* the canvas is sized to --cvh, never to the live viewport: reallocating a
+     canvas clears it, and a toolbar that reallocates it every frame flashes */
+  #c{ position:absolute; left:0; top:0; width:100%; height:var(--cvh); display:block; }
 
   /* ── art nouveau frame ─────────────────────────────────────────────── */
   #frame{
@@ -173,9 +187,10 @@
   #guide{
     top:calc(var(--my) + var(--mr) * 1.34);
     font-family:var(--f-groovy);
-    /* the vh term only bites on a short-but-wide frame, where a 42px display
-       face would crowd the whisper below it */
-    font-size:clamp(26px, min(7.6vw, 5.4vh), 42px); line-height:1.1;
+    /* the height term only bites on a short-but-wide frame, where a 42px
+       display face would crowd the whisper below it. It reads --vh0, not vh,
+       so a URL bar sliding away can't resize the word mid-breath. */
+    font-size:clamp(26px, min(7.6vw, calc(var(--vh0) * 0.054)), 42px); line-height:1.1;
     color:#ffdd93;
     text-shadow:0 2px 0 rgba(112,36,10,.9), 0 0 26px rgba(213,87,22,.66), 0 0 60px rgba(255,200,90,.34);
     white-space:nowrap; will-change:opacity,transform;
@@ -185,7 +200,7 @@
      so the two can never reach the same pixels, and they cross-fade: the
      bottom line is the hint first, then the asides once she's playing. */
   #aside{
-    bottom:calc(env(safe-area-inset-bottom,0px) + clamp(30px, 5.8vh, 52px));
+    bottom:calc(env(safe-area-inset-bottom,0px) + clamp(30px, calc(var(--vh0) * 0.058), 52px));
     font-family:var(--f-body); font-weight:500;
     font-size:clamp(12px,3.4vw,15px); letter-spacing:.2em;
     color:rgba(252,236,204,.92);
@@ -193,8 +208,12 @@
     white-space:nowrap;
   }
   /* below this the frame is too short to hold flower + word + whisper apart,
-     so the whisper simply steps aside */
-  @media (max-height: 620px){ #aside{ display:none; } }
+     so the whisper simply steps aside. It is a class rather than a media query
+     on purpose: a URL bar collapsing can swing the live viewport across 620px
+     mid-swipe, and the whisper would blink in and out with it. The class is set
+     from the same stable height the flower is laid out against, so the two can
+     never disagree. */
+  html.h620 #aside{ display:none; }
   #hint{
     bottom:calc(env(safe-area-inset-bottom,0px) + 40px);
     font-family:var(--f-body); font-weight:600;
@@ -224,10 +243,10 @@
     transition:opacity 1.6s ease;
   }
   #invite{
-    position:absolute; left:50%; top:58%;
+    position:absolute; left:50%; top:calc(var(--vh0) * 0.58);
     transform:translate(-50%,-42%) scale(.93);
     width:min(90vw, 430px);
-    max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 34px);
+    max-height:calc(var(--vh0) - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 34px);
     overflow:auto; -webkit-overflow-scrolling:touch;
     opacity:0; visibility:hidden; pointer-events:none;
     transition:opacity 1.5s ease, transform 1.7s cubic-bezier(.19,1,.22,1), visibility 0s linear 1.7s;
@@ -313,7 +332,7 @@
     #invite{
       top:calc(var(--fy) + var(--fr) * 1.34);
       width:min(74vw, 900px, calc(492px + 20vw));
-      max-height:calc(100dvh - var(--fy) - var(--fr) * 1.34 - 3.4vh);
+      max-height:calc(var(--vh0) - var(--fy) - var(--fr) * 1.34 - var(--vh0) * 0.034);
       transform:translate(-50%, 14px) scale(.965);
       padding:clamp(18px,2.9vh,28px) clamp(30px,4.4vw,60px) clamp(16px,2.5vh,23px);
       border-radius:clamp(20px,3vh,30px);
@@ -365,27 +384,28 @@
   #hold:focus-visible{ outline:2px solid rgba(255,214,120,.55); outline-offset:-12px; border-radius:26px; }
   #world.invited #hold{ pointer-events:none; }
 
-  /* short / landscape phones: tighten everything so nothing ever collides */
-  @media (max-height: 560px){
-    #moons{ top:calc(env(safe-area-inset-top,0px) + 10px); }
-    #moons svg{ width:min(54%, 300px); }
-    #title{ top:calc(env(safe-area-inset-top,0px) + 40px); font-size:clamp(22px,6.4vh,30px); }
-    #title .sub{ margin-top:5px; font-size:9.5px; letter-spacing:.26em; }
-    #guide{ font-size:clamp(20px,6.2vh,28px); }
-    #hint{ bottom:calc(env(safe-area-inset-bottom,0px) + 12px); font-size:10.5px; letter-spacing:.16em; }
-    #hint .dot{ display:none; }
-    #hint em{ margin-top:3px; }
-    #invite{ top:50%; width:min(84vw,470px); padding:14px 20px 12px; border-radius:16px; }
-    #invite .joke{ font-size:clamp(19px,5.6vh,26px); }
-    #invite .rule{ margin:7px auto 7px; height:11px; }
-    #invite .come{ font-size:11px; }
-    #invite .name{ font-size:clamp(24px,7.4vh,34px); }
-    #invite .when{ font-size:14px; margin-top:3px; }
-    #invite .three{ font-size:9px; margin-top:5px; }
-    #invite .note{ margin-top:9px; font-size:12px; line-height:1.42; max-width:46ch; }
-    #invite .sig{ margin-top:5px; font-size:14px; }
-    #again{ margin-top:10px; padding:7px 15px; font-size:11px; }
-  }
+  /* short / landscape phones: tighten everything so nothing ever collides.
+     Same reasoning as .h620 — driven by the stable height, not the live one,
+     so a toolbar animation can't shove the page across the breakpoint. */
+  html.h560 #moons{ top:calc(env(safe-area-inset-top,0px) + 10px); }
+  html.h560 #moons svg{ width:min(54%, 300px); }
+  html.h560 #title{ top:calc(env(safe-area-inset-top,0px) + 40px);
+    font-size:clamp(22px,calc(var(--vh0) * 0.064),30px); }
+  html.h560 #title .sub{ margin-top:5px; font-size:9.5px; letter-spacing:.26em; }
+  html.h560 #guide{ font-size:clamp(20px,calc(var(--vh0) * 0.062),28px); }
+  html.h560 #hint{ bottom:calc(env(safe-area-inset-bottom,0px) + 12px); font-size:10.5px; letter-spacing:.16em; }
+  html.h560 #hint .dot{ display:none; }
+  html.h560 #hint em{ margin-top:3px; }
+  html.h560 #invite{ top:calc(var(--vh0) * 0.5); width:min(84vw,470px); padding:14px 20px 12px; border-radius:16px; }
+  html.h560 #invite .joke{ font-size:clamp(19px,calc(var(--vh0) * 0.056),26px); }
+  html.h560 #invite .rule{ margin:7px auto 7px; height:11px; }
+  html.h560 #invite .come{ font-size:11px; }
+  html.h560 #invite .name{ font-size:clamp(24px,calc(var(--vh0) * 0.074),34px); }
+  html.h560 #invite .when{ font-size:14px; margin-top:3px; }
+  html.h560 #invite .three{ font-size:9px; margin-top:5px; }
+  html.h560 #invite .note{ margin-top:9px; font-size:12px; line-height:1.42; max-width:46ch; }
+  html.h560 #invite .sig{ margin-top:5px; font-size:14px; }
+  html.h560 #again{ margin-top:10px; padding:7px 15px; font-size:11px; }
 
   @media (prefers-reduced-motion: reduce){
     #hint .dot{ animation:none; }
@@ -715,7 +735,11 @@ function paintWing(g, w, h){
 
 const SPR = {};
 function buildSprites(){
-  SS = Math.min(2.4, (window.devicePixelRatio || 1) * Math.max(1, R/150) * 1.05);
+  const ss = Math.min(2.4, (window.devicePixelRatio || 1) * Math.max(1, R/150) * 1.05);
+  /* rasterising fifteen sprites is the single most expensive thing this page
+     does. If the flower is the same size as last time they are already right. */
+  if (SPR.pad && Math.abs(ss - SS) < 0.02) return;
+  SS = ss;
 
   SPR.petalGreen = makeSprite(58, 150, (g,w,h)=>paintPetal(g,w,h,
     ['#2c5a28', P.leaf, '#b6c848'], { belly:0.84, line:'#20401c', vein:'rgba(28,60,24,.55)', hi:'rgba(230,244,158,.45)' }));
@@ -861,12 +885,50 @@ function reflowParticles(ow, oh){
    a crown resting on the card, not a badge lost in the corner. */
 let INV_Y = 0.175, INV_SC = 0.48;
 let seeded = false;
-function resize(){
-  const ow = W, oh = H;
-  W = window.innerWidth; H = window.innerHeight;
-  DPR = Math.min(2, window.devicePixelRatio || 1);
-  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+
+/* ── a frame that holds still ────────────────────────────────────────────
+   On a phone the URL bar collapses and expands through every scroll and swipe,
+   and each step of that fires resize and changes innerHeight by ~10%. Redoing
+   the layout on that moves the flower, moves the card, re-rasterises the
+   blend-mode strata and clears the canvas — thirty times a gesture. So a
+   height-only change inside the toolbar band is ignored entirely: the layout
+   keeps the height it was last measured at (HS), and the canvas only grows,
+   never shrinks and never moves, so the taller state stays covered.
+   Desktop windows have no toolbar, so a wide frame always re-measures. */
+let HS = 0, CH = 0, lastW = 0;
+const COARSE = matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints | 0) > 0;
+const band = h => Math.max(110, Math.round(h * 0.18));
+
+/* grow the backing store to cover h. Returns true if it was reallocated —
+   which clears it, so the caller has to repaint in the same task. */
+function growCanvas(h){
+  const want = Math.max(CH, h, HS);
+  if (want === CH && cv.width === Math.round(W*DPR)) return false;
+  CH = want;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(CH*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
+  root.style.setProperty('--cvh', CH + 'px');
+  return true;
+}
+
+function resize(force){
+  const w = window.innerWidth, h = window.innerHeight;
+  if (!force && HS && w === lastW && (COARSE || w <= 900) &&
+      Math.abs(h - HS) <= band(Math.max(h, HS))){
+    /* the toolbar, not a new window: cover the taller frame and nothing else */
+    if (growCanvas(h)) draw();
+    return;
+  }
+
+  const ow = W, oh = H;
+  W = w; H = HS = h; lastW = w;
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  CH = 0;
+  growCanvas(h);
+  root.style.setProperty('--vh0', H + 'px');
+  /* the two short-frame breakpoints, keyed to the same stable height */
+  root.classList.toggle('h620', H <= 620);
+  root.classList.toggle('h560', H <= 560);
 
   const SHORT = H < 560;
   CX = W/2;
@@ -887,7 +949,7 @@ function resize(){
 
   buildSprites();
   if (!seeded){ seedParticles(); seeded = true; }
-  else reflowParticles(ow, oh);
+  else { reflowParticles(ow, oh); syncDOM(); draw(); }
 }
 
 /* ── colour rings ───────────────────────────────────────────────────── */
@@ -972,7 +1034,7 @@ function update(dt){
     p.ph += dt*p.sp;
     p.x += (p.vx*0.4 + Math.sin(p.ph)*10)*dt*drift;
     p.y += p.vy*dt*drift;
-    if (p.y < -20){ p.y = H + 16; p.x = rnd()*W; }
+    if (p.y < -20){ p.y = CH + 16; p.x = rnd()*W; }
     if (p.x < -20) p.x = W + 16; else if (p.x > W + 20) p.x = -16;
   }
 
@@ -995,7 +1057,7 @@ function update(dt){
     f.vx *= (1 - dt*1.7); f.vy *= (1 - dt*1.7);
     f.x += f.vx*dt*6; f.y += f.vy*dt*6;
     if (f.x < -50) f.x = W + 36; else if (f.x > W + 50) f.x = -36;
-    if (f.y < -50) f.y = H + 36; else if (f.y > H + 50) f.y = -36;
+    if (f.y < -50) f.y = CH + 36; else if (f.y > CH + 50) f.y = -36;
     if (Math.abs(f.vx) + Math.abs(f.vy) > 0.4){
       let d = Math.atan2(f.vy, f.vx) - f.ang;
       while (d > Math.PI) d -= Math.PI*2;
@@ -1054,7 +1116,7 @@ function syncDOM(){
 
 /* ── draw ───────────────────────────────────────────────────────────── */
 function draw(){
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0,0,W,CH);
   const o = S.open, bl = S.bloom, sy = S.sync, inv = S.inv;
   const mCX = CX, mCY = CY + (H*INV_Y - CY)*inv, mR = R*(1 - (1 - INV_SC)*inv);
   const q = mR/150;
@@ -1289,10 +1351,13 @@ document.addEventListener('visibilitychange', () => {
 });
 
 let rzT = 0;
-window.addEventListener('resize', () => {
+function scheduleResize(force){
   clearTimeout(rzT);
-  rzT = setTimeout(() => { resize(); if (STILL){ syncDOM(); draw(); } }, 140);
-});
+  rzT = setTimeout(() => resize(force), 140);
+}
+window.addEventListener('resize', () => scheduleResize(false));
+/* a real turn of the phone always re-measures, band or no band */
+window.addEventListener('orientationchange', () => scheduleResize(true));
 
 /* ── stages ─────────────────────────────────────────────────────────── */
 function warm(sec, holding){
