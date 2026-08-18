@@ -186,7 +186,7 @@
     <div><b>Tuned on original calls</b>: fine-tuned on cleaned-up replies from the live phone agent</div>
     <div><b>Tuned on Claude rewrites (our model)</b>: fine-tuned on Claude Opus's improved rewrites of those same replies</div>
     <div><b>First correction pass (DPO)</b>: our model plus a preference pass trained against the old recorded replies</div>
-    <div><b>Second correction pass (DPO)</b>: our model plus a preference pass trained against its own losing replies</div>
+    <div><b>Second correction pass (DPO)</b>: our model plus a preference pass built from its own materially different replies, with Claude rewrites designated as preferred</div>
     <div><b>Bigger 30B model (same recipe)</b>: a larger model tuned on the same rewrites</div>
     <div><b>Production agent</b>: the replies the live phone agent actually gave</div>
     <div><b>Claude Opus (reference)</b>: the big model everything is measured against</div>
