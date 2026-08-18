@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  ============================================================================
+  OUR YOGA TRIP  ·  MANDALA MAKER
+  A finger-painting kaleidoscope toy. Every stroke is mirrored around a
+  mandala, the colour drifts through the poster's palette, and the brushes
+  stamp little peacock eyes, lotus petals, monarchs and moons.
+
+  URL FLAGS (for screenshots / demos)
+    ?s=0   empty canvas, "draw with your finger" hint  (auto-demo disabled)
+    ?s=1   a partial drawing, mid-scribble
+    ?s=2   a rich, finished mandala
+    ?s=3   the same mandala, frozen into its framed keepsake
+    ?still=1  freeze everything: no rAF, no CSS animation, no auto-demo.
+              Combine, e.g. ?s=2&still=1
+  Stages 1-3 are synthesised by feeding hand-drawn-looking curved paths
+  through the exact same drawing pipeline a finger uses.
+  ============================================================================
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex">
+<title>Mandala Maker · OUR YOGA TRIP</title>
+<meta name="description" content="Draw with your finger and it blooms into a kaleidoscope. Make one, bring it, we'll put them on the wall.">
+<meta name="theme-color" content="#2a0d07">
+<meta property="og:title" content="Mandala Maker · OUR YOGA TRIP">
+<meta property="og:description" content="Draw with your finger and it blooms into a kaleidoscope. Make one, bring it, we'll put them on the wall. Vol. 1 · September 27.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Modak&family=Caveat:wght@500;700&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --orange:#d55716; --red:#d43b08; --lime:#aab839; --gold:#e8c959; --gold2:#dfb049;
+  --lightor:#e47d40; --leaf:#488252; --maroon:#713024; --brown:#77491c;
+  --teal:#2f9c93; --pink:#e88bb5; --ink:#f7e6c2; --deep:#2a0d07;
+  --hand:'Caveat', 'Segoe Script', 'Bradley Hand', cursive;
+  --ui:'Rubik', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  background:#170604; color:var(--ink); font-family:var(--ui);
+  width:100%; height:100dvh; position:fixed; inset:0;
+  -webkit-user-select:none; user-select:none;
+  -webkit-touch-callout:none;
+}
+canvas{display:block}
+#bg,#art{position:fixed; inset:0; width:100%; height:100%}
+#art{touch-action:none; cursor:crosshair; transition:opacity .22s ease}
+#art.wiping{opacity:0}
+
+/* ---------------- header ---------------- */
+.top{
+  position:fixed; left:0; right:0; top:0; z-index:5; pointer-events:none;
+  padding:calc(env(safe-area-inset-top,0px) + 6px) 14px 4px;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  text-shadow:0 2px 14px rgba(0,0,0,.65);
+}
+.mark{width:min(300px,74vw); height:auto; display:block; filter:drop-shadow(0 3px 10px rgba(0,0,0,.55))}
+.subline{
+  font-family:var(--ui); font-size:9.5px; font-weight:500; letter-spacing:.30em;
+  color:#f0c37a; opacity:.85; text-transform:uppercase; margin-top:-2px;
+}
+
+/* ---------------- hint ---------------- */
+#hint{
+  position:fixed; z-index:4; left:50%; transform:translate(-50%,-50%);
+  font-family:var(--hand); font-size:24px; color:#ffe6a8; white-space:nowrap;
+  pointer-events:none; opacity:.92; text-shadow:0 2px 16px rgba(0,0,0,.8);
+  transition:opacity .5s ease;
+  animation:bob 3.4s ease-in-out infinite;
+}
+#hint.gone{opacity:0}
+#hint .arrow{display:inline-block; animation:point 2.2s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translate(-50%,-50%)}50%{transform:translate(-50%,calc(-50% - 7px))}}
+@keyframes point{0%,100%{transform:translateX(0)}50%{transform:translateX(7px)}}
+
+/* ---------------- tray ---------------- */
+#tray{
+  position:fixed; left:0; right:0; bottom:0; z-index:6;
+  padding:14px 12px calc(env(safe-area-inset-bottom,0px) + 10px);
+  background:linear-gradient(to top, rgba(24,7,4,.97) 40%, rgba(48,15,7,.92) 78%, rgba(48,15,7,0));
+  display:flex; flex-direction:column; align-items:center; gap:9px;
+}
+#tray .squiggle{position:absolute; left:0; top:-13px; width:100%; height:16px; display:block; opacity:.75; pointer-events:none}
+
+/* brush chips */
+.brushes{display:flex; gap:10px; align-items:flex-start; justify-content:center}
+.chip{
+  -webkit-appearance:none; appearance:none; background:none; border:0; padding:0; margin:0;
+  display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer;
+  touch-action:manipulation; font:inherit; color:inherit;
+}
+.chip .pebble{
+  width:52px; height:52px; display:grid; place-items:center; position:relative;
+  border-radius:49% 51% 47% 53% / 52% 48% 52% 48%;
+  background:radial-gradient(circle at 34% 28%, rgba(255,225,170,.20), rgba(90,28,10,.55) 62%, rgba(40,12,6,.7));
+  box-shadow:inset 0 0 0 1.5px rgba(232,201,89,.30), 0 3px 10px rgba(0,0,0,.42);
+  transition:transform .18s cubic-bezier(.3,1.5,.5,1), box-shadow .18s ease;
+}
+.chip canvas{width:38px; height:38px; display:block; pointer-events:none}
+.chip .lbl{font-family:var(--hand); font-size:14px; line-height:1; color:#e9c98d; opacity:.72; letter-spacing:.01em}
+.chip[aria-pressed="true"] .pebble{
+  transform:translateY(-4px) scale(1.06);
+  background:radial-gradient(circle at 34% 28%, rgba(255,232,180,.34), rgba(160,58,14,.6) 60%, rgba(60,16,6,.75));
+  box-shadow:inset 0 0 0 2px rgba(255,214,110,.92), 0 0 18px rgba(226,140,40,.55), 0 4px 12px rgba(0,0,0,.45);
+}
+.chip[aria-pressed="true"] .lbl{color:var(--gold); opacity:1}
+
+/* symmetry beads */
+.beadrow{display:flex; align-items:center; gap:9px; position:relative}
+.beadrow .caption{font-family:var(--hand); font-size:16px; color:#e9c98d; opacity:.8}
+.beads{display:flex; align-items:center; gap:8px; position:relative; padding:0 3px}
+.beads .string{position:absolute; left:0; right:0; top:50%; height:2px; transform:translateY(-1px); pointer-events:none; overflow:visible}
+.bead{
+  -webkit-appearance:none; appearance:none; border:0; padding:0; cursor:pointer; position:relative;
+  width:29px; height:29px; border-radius:50%; touch-action:manipulation;
+  font-family:var(--ui); font-size:11px; font-weight:500; letter-spacing:.01em;
+  color:#f0d9a8;
+  background:radial-gradient(circle at 35% 30%, #7a3416, #4a1908 70%);
+  box-shadow:inset 0 0 0 1.4px rgba(232,201,89,.35), 0 2px 5px rgba(0,0,0,.4);
+  transition:transform .18s cubic-bezier(.3,1.5,.5,1), box-shadow .18s ease, background .18s ease;
+}
+.bead[aria-pressed="true"]{
+  transform:scale(1.30); color:#3a1004; font-weight:700;
+  background:radial-gradient(circle at 35% 28%, #ffe08a, #e0a02f 62%, #c07414);
+  box-shadow:inset 0 0 0 1.4px rgba(255,240,190,.8), 0 0 16px rgba(232,201,89,.6), 0 2px 6px rgba(0,0,0,.45);
+}
+.mirror{
+  -webkit-appearance:none; appearance:none; cursor:pointer; touch-action:manipulation;
+  display:flex; align-items:center; gap:5px; padding:5px 11px 5px 8px; border-radius:999px;
+  border:1.4px solid rgba(232,201,89,.32); background:rgba(90,30,12,.35);
+  font-family:var(--hand); font-size:16px; color:#e9c98d;
+  transition:all .2s ease;
+}
+.mirror svg{width:19px; height:15px; display:block; overflow:visible}
+.mirror .wingR{transform-origin:9.5px 12px; transition:transform .3s cubic-bezier(.3,1.4,.5,1)}
+.mirror[aria-pressed="false"]{opacity:.55; border-color:rgba(232,201,89,.16)}
+.mirror[aria-pressed="false"] .wingR{transform:scaleX(.12)}
+.mirror[aria-pressed="true"]{color:#ffe6a8; border-color:rgba(255,214,110,.6); background:rgba(150,58,16,.35)}
+
+/* whimsy + buttons */
+.lower{display:flex; flex-direction:column; align-items:center; gap:9px; width:100%}
+.whimsy{font-family:var(--hand); font-size:17px; color:var(--gold); opacity:.92; text-align:center; line-height:1.15}
+.acts{display:flex; align-items:center; gap:12px; justify-content:center}
+.btn{
+  -webkit-appearance:none; appearance:none; cursor:pointer; touch-action:manipulation; border:0;
+  font-family:var(--hand); font-size:22px; line-height:1; padding:11px 22px 12px;
+  border-radius:999px; transition:transform .16s cubic-bezier(.3,1.5,.5,1), filter .16s ease;
+}
+.btn:active{transform:scale(.95)}
+.btn.keep{
+  color:#401304; font-weight:700;
+  background:linear-gradient(170deg,#ffe08a,#e8b13c 45%,#d4761c);
+  box-shadow:0 3px 0 #8e3a0c, 0 6px 18px rgba(213,87,22,.45);
+  border:1.5px solid rgba(255,236,190,.7);
+}
+.btn.over{
+  color:#f0cf9a; background:transparent; border:1.5px dashed rgba(232,201,89,.42);
+  padding:10px 18px 11px;
+}
+
+/* ---------------- keepsake ---------------- */
+#keep{
+  position:fixed; inset:0; z-index:20; display:none;
+  align-items:center; justify-content:center; flex-direction:column; gap:10px;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) 14px calc(env(safe-area-inset-bottom,0px) + 12px);
+  background:radial-gradient(120% 90% at 50% 42%, rgba(58,18,8,.90), rgba(10,3,2,.96));
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+}
+#keep.on{display:flex}
+#keep .frame{
+  max-height:min(74dvh, 700px); max-width:min(92vw,520px); width:auto; height:auto;
+  border-radius:3px; transform:rotate(-1.1deg);
+  -webkit-touch-callout:default;      /* so a long press can save it to her camera roll */
+  -webkit-user-select:auto; user-select:auto;
+  box-shadow:0 18px 44px rgba(0,0,0,.72), 0 0 0 1px rgba(255,220,150,.18);
+  animation:land .55s cubic-bezier(.2,1.3,.4,1) both;
+}
+@keyframes land{from{opacity:0; transform:rotate(-5deg) scale(.9)}to{opacity:1; transform:rotate(-1.1deg) scale(1)}}
+#keep .save{font-family:var(--hand); font-size:16px; color:#e9c98d; opacity:.8; text-align:center}
+
+/* desktop */
+@media (min-width:820px) and (min-height:560px){
+  .top{padding-top:calc(env(safe-area-inset-top,0px) + 12px)}
+  .mark{width:330px}
+  .subline{font-size:10.5px}
+  #tray{
+    left:50%; right:auto; transform:translateX(-50%); bottom:14px; width:min(930px,95vw);
+    border-radius:26px; padding:12px 24px 13px;
+    background:linear-gradient(to top, rgba(30,9,5,.94), rgba(56,18,8,.86));
+    border:1.5px solid rgba(232,201,89,.22);
+    box-shadow:0 14px 40px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,220,160,.12);
+    gap:8px;
+  }
+  #tray .squiggle{display:none}
+  /* two tidy columns: what she draws with on the left, how it repeats on the right */
+  #tray{display:grid; grid-template-columns:auto auto; grid-template-areas:"brush beads" "whim acts";
+        align-items:center; justify-items:center; gap:10px 34px}
+  .lower{display:contents}
+  .brushes{grid-area:brush; gap:16px}
+  .beadrow{grid-area:beads; gap:12px}
+  .whimsy{grid-area:whim}
+  .acts{grid-area:acts}
+  .chip .pebble{width:54px; height:54px}
+  .chip canvas{width:40px;height:40px}
+  .whimsy{font-size:18px}
+  #hint{font-size:27px}
+  #keep .frame{max-height:82dvh; max-width:min(46vw,520px)}
+}
+@media (max-height:700px) and (max-width:819px){
+  .chip .pebble{width:46px;height:46px}
+  .chip canvas{width:34px;height:34px}
+  .btn{font-size:20px; padding:9px 18px 10px}
+  .whimsy{font-size:16px}
+  #tray{gap:7px; padding-top:11px}
+}
+
+/* phone on its side — everything gets small and neat so the mandala keeps the room */
+@media (max-height:559px) and (orientation:landscape){
+  .mark{width:190px}
+  .subline{font-size:8.5px}
+  .top{padding:calc(env(safe-area-inset-top,0px) + 4px) 12px 2px}
+  #tray{                            /* no transform here: .whimsy is fixed to the page */
+    flex-direction:row; align-items:center; justify-content:center; gap:16px; flex-wrap:nowrap;
+    padding:7px 14px calc(env(safe-area-inset-bottom,0px) + 7px);
+    left:0; right:0; transform:none; bottom:0; width:auto;
+    border-radius:20px 20px 0 0; border:1.5px solid rgba(232,201,89,.2); border-bottom:0;
+    background:linear-gradient(to top, rgba(26,8,4,.96), rgba(52,17,7,.9));
+  }
+  #tray .brushes,#tray .lower,#tray .beadrow,#tray .acts{flex:0 0 auto}
+  #tray .btn{white-space:nowrap}
+  #tray .squiggle{display:none}
+  .brushes{gap:9px}
+  .chip .lbl{display:none}
+  .chip .pebble{width:40px; height:40px}
+  .chip canvas{width:30px; height:30px}
+  .lower{flex-direction:row; align-items:center; gap:14px; width:auto}
+  .beadrow{gap:8px}
+  .beadrow .caption{display:none}
+  .bead{width:26px; height:26px; font-size:10px}
+  .mirror{font-size:14px; padding:4px 9px 4px 7px}
+  .btn{font-size:17px; padding:8px 14px 9px}
+  .btn.over{padding:7px 12px 8px}
+  .whimsy{                         /* the invitation moves up out of the way */
+    position:fixed; top:calc(env(safe-area-inset-top,0px) + 8px); right:14px;
+    font-size:13px; line-height:1.15; text-align:right; border:0; padding:0; max-width:34vw;
+  }
+  #hint{font-size:20px}
+  #keep{gap:6px}
+  #keep .frame{max-height:66dvh}
+  #keep .save{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important; transition:none!important}
+}
+body.still *,body.still *::before,body.still *::after{animation:none!important; transition:none!important}
+</style>
+</head>
+<body>
+
+<canvas id="bg" aria-hidden="true"></canvas>
+<canvas id="art" aria-label="Mandala drawing surface. Draw with your finger or mouse."></canvas>
+
+<div class="top">
+  <svg class="mark" viewBox="0 0 320 74" aria-label="our yoga trip">
+    <defs>
+      <linearGradient id="wm" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffe487"/><stop offset=".45" stop-color="#f0a52c"/>
+        <stop offset="1" stop-color="#d8410a"/>
+      </linearGradient>
+      <path id="arc" d="M14 58 Q160 6 306 58"/>
+    </defs>
+    <text font-family="Modak, fantasy, cursive" font-size="40" fill="url(#wm)"
+          stroke="#5d1a05" stroke-width="4.5" stroke-linejoin="round" paint-order="stroke"
+          letter-spacing="1.5">
+      <textPath href="#arc" startOffset="50%" text-anchor="middle">our yoga trip</textPath>
+    </text>
+  </svg>
+  <div class="subline" id="subline">vol. 1 · september 27</div>
+</div>
+
+<div id="hint">draw with your finger <span class="arrow">→</span></div>
+
+<div id="tray">
+  <svg class="squiggle" viewBox="0 0 390 16" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 11 C 26 3, 44 15, 70 9 S 116 2, 142 10 S 190 16, 218 8 S 264 2, 292 10 S 340 15, 390 7"
+          fill="none" stroke="#e8c959" stroke-width="1.6" stroke-linecap="round" opacity=".5"/>
+    <circle cx="70" cy="9" r="1.7" fill="#e8c959" opacity=".55"/>
+    <circle cx="218" cy="8" r="1.7" fill="#e8c959" opacity=".55"/>
+    <circle cx="330" cy="12" r="1.7" fill="#e8c959" opacity=".45"/>
+  </svg>
+
+  <div class="brushes" id="brushes" role="group" aria-label="brushes"></div>
+
+  <div class="lower">
+    <div class="beadrow">
+      <span class="caption">folds</span>
+      <div class="beads" id="beads" role="group" aria-label="how many folds">
+        <svg class="string" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 3 Q 25 0.4 50 3 T 100 3" fill="none" stroke="#e8c959" stroke-width=".7" opacity=".4"/>
+        </svg>
+      </div>
+      <button class="mirror" id="mirror" aria-pressed="true">
+        <svg viewBox="0 0 19 15" aria-hidden="true">
+          <path d="M9.5 12 C 6 12, 1.5 9, 1.5 5 C 5 1.5, 8 4, 9.5 12 Z" fill="#e8c959" opacity=".85"/>
+          <path class="wingR" d="M9.5 12 C 13 12, 17.5 9, 17.5 5 C 14 1.5, 11 4, 9.5 12 Z" fill="#e88bb5" opacity=".9"/>
+        </svg>
+        mirror
+      </button>
+    </div>
+
+    <div class="whimsy">make one. bring it.<br>we'll put them on the wall.</div>
+
+    <div class="acts">
+      <button class="btn keep" id="keepBtn">keep this one</button>
+      <button class="btn over" id="overBtn">start over</button>
+    </div>
+  </div>
+</div>
+
+<div id="keep" role="dialog" aria-label="your keepsake">
+  <img class="frame" id="keepImg" alt="Your mandala, framed as a poster">
+  <div class="save" id="saveHint">press &amp; hold the picture to save it</div>
+  <div class="acts">
+    <button class="btn keep" id="againBtn">keep drawing</button>
+    <button class="btn over" id="overBtn2">start over</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const CONFIG = { herName: "Katie", eventDate: "September 27", volume: "Vol. 1" };
+
+/* ------------------------------------------------------------------ setup */
+const QS      = new URLSearchParams(location.search);
+const STAGE   = QS.has('s') ? Math.max(0, Math.min(3, parseInt(QS.get('s'), 10) || 0)) : null;
+const STILL   = QS.get('still') === '1';
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COARSE  = matchMedia('(pointer: coarse)').matches;
+
+const bg   = document.getElementById('bg');
+const art  = document.getElementById('art');
+const bctx = bg.getContext('2d');
+const actx = art.getContext('2d', { alpha: true, desynchronized: true });
+
+document.getElementById('subline').textContent =
+  CONFIG.volume.toLowerCase() + ' · ' + CONFIG.eventDate.toLowerCase();
+if (!COARSE) document.getElementById('saveHint').textContent = 'right-click the picture to save it';
+
+/* ------------------------------------------------------------- palette LUT */
+const PAL = ['#d55716','#e47d40','#dfb049','#e8c959','#aab839','#488252',
+             '#2f9c93','#54c9c1','#e88bb5','#d9498f','#d43b08'];
+function hex2rgb(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+const PRGB = PAL.map(hex2rgb);
+
+const HUES = 180;                                   // colour resolution
+const ALPHAS = [0.016, 0.034, 0.90, 0.13, 0.060];   // halo, mid, core, white-core, stamp-bloom
+const INK = 'rgba(48,11,3,0.55)';                   // the poster's hand-inked outline
+const DRIFT = 0.0007;                               // palette cycles per pixel drawn
+const STEP  = 260;                                  // colour nudge between strokes
+const CSTR = [], WSTR = [];                         // pre-built strings: zero per-frame allocation
+(function buildLUT(){
+  for (let i = 0; i < HUES; i++){
+    const x = i / HUES * PRGB.length;
+    const a = PRGB[Math.floor(x) % PRGB.length], b = PRGB[(Math.floor(x)+1) % PRGB.length];
+    const f = x - Math.floor(x);
+    const r = Math.round(a[0]+(b[0]-a[0])*f), g = Math.round(a[1]+(b[1]-a[1])*f), bl = Math.round(a[2]+(b[2]-a[2])*f);
+    const row = [], wrow = [];
+    for (let k = 0; k < ALPHAS.length; k++) row.push('rgba('+r+','+g+','+bl+','+ALPHAS[k]+')');
+    const wr = Math.round(r+(255-r)*0.72), wg = Math.round(g+(255-g)*0.72), wb = Math.round(bl+(255-bl)*0.72);
+    wrow.push('rgba('+wr+','+wg+','+wb+','+ALPHAS[3]+')');
+    CSTR.push(row); WSTR.push(wrow[0]);
+  }
+})();
+const hueIdx = t => ((Math.round(t * HUES) % HUES) + HUES) % HUES;
+function jitter(x, y){ const s = Math.sin(x*12.9898 + y*78.233) * 43758.5453; return s - Math.floor(s); }
+
+/* ---------------------------------------------------------------- sprites */
+function sprite(draw){
+  const S = 128, SC = 2;
+  const c = document.createElement('canvas');
+  c.width = S*SC; c.height = S*SC;
+  const g = c.getContext('2d');
+  g.scale(SC, SC); g.translate(S/2, S/2);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  draw(g);
+  return c;
+}
+function ell(g, rx, ry, cy, fill, line, lw){
+  g.beginPath(); g.ellipse(0, cy||0, rx, ry, 0, 0, Math.PI*2);
+  if (fill){ g.fillStyle = fill; g.fill(); }
+  if (line){ g.strokeStyle = line; g.lineWidth = lw||1; g.stroke(); }
+}
+
+/* a peacock tail eye — teal barbs, gold ring, indigo eye */
+const SP_PEACOCK = sprite(g => {
+  g.strokeStyle = 'rgba(34,116,100,.85)'; g.lineWidth = 1.5;
+  for (let i = 0; i < 52; i++){
+    const a = i/52*Math.PI*2, ca = Math.cos(a), sa = Math.sin(a);
+    const r0 = 32, r1 = 52 + 7*Math.sin(i*1.9) + 5*Math.cos(a);
+    g.beginPath(); g.moveTo(ca*r0*.96, sa*r0-2); g.lineTo(ca*r1*.96, sa*r1-2); g.stroke();
+  }
+  g.strokeStyle = 'rgba(30,92,78,.5)'; g.lineWidth = 1.1;
+  for (let i = 0; i < 30; i++){
+    const a = i/30*Math.PI*2;
+    g.beginPath(); g.moveTo(Math.cos(a)*24, Math.sin(a)*26-2); g.lineTo(Math.cos(a)*45, Math.sin(a)*47-2); g.stroke();
+  }
+  ell(g, 36, 39, -2, '#276b5c', 'rgba(74,28,14,.6)', 1.4);
+  ell(g, 29, 32, -2, '#4b8a3c', 'rgba(74,28,14,.4)', 1.1);
+  ell(g, 23, 25, -2, '#aab839', 'rgba(74,28,14,.4)', 1.1);
+  ell(g, 17, 19, -2, '#e0b04a', 'rgba(74,28,14,.4)', 1.1);
+  ell(g, 12, 14, -2, '#d1571d', 'rgba(74,28,14,.45)', 1.1);
+  ell(g,  7, 10, -2, '#37204f', 'rgba(20,8,26,.8)', 1.2);
+  g.beginPath(); g.ellipse(-2.4, -6, 2.2, 3, -.4, 0, Math.PI*2);
+  g.fillStyle = 'rgba(255,255,255,.6)'; g.fill();
+});
+
+/* a lotus petal — tip points "up" (outward) */
+const SP_LOTUS = sprite(g => {
+  const grad = g.createLinearGradient(0, 48, 0, -52);
+  grad.addColorStop(0, '#b62a6e'); grad.addColorStop(.42, '#e56ba6'); grad.addColorStop(1, '#fbcfe4');
+  g.beginPath();
+  g.moveTo(0, 48);
+  g.bezierCurveTo(-30, 30, -26, -14, 0, -52);
+  g.bezierCurveTo(26, -14, 30, 30, 0, 48);
+  g.closePath();
+  g.fillStyle = grad; g.fill();
+  g.strokeStyle = 'rgba(105,17,58,.85)'; g.lineWidth = 2.4; g.stroke();
+  g.strokeStyle = 'rgba(255,225,240,.42)'; g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(0, 40); g.lineTo(0, -40); g.stroke();
+  g.strokeStyle = 'rgba(150,26,80,.4)'; g.lineWidth = 1.2;
+  g.beginPath(); g.moveTo(0, 26); g.quadraticCurveTo(-11, 6, -12, -18); g.stroke();
+  g.beginPath(); g.moveTo(0, 26); g.quadraticCurveTo( 11, 6,  12, -18); g.stroke();
+});
+
+/* a monarch butterfly — head "up" (travel direction) */
+const SP_FLUTTER = sprite(g => {
+  function wing(sx){
+    g.save(); g.scale(sx, 1);
+    g.beginPath();                                   // forewing
+    g.moveTo(2, -18);
+    g.bezierCurveTo(20, -46, 50, -44, 52, -16);
+    g.bezierCurveTo(53, 2, 26, 6, 3, 3);
+    g.closePath();
+    g.fillStyle = '#d55716'; g.fill();
+    g.strokeStyle = '#3a1208'; g.lineWidth = 3.2; g.stroke();
+    g.beginPath();                                   // hindwing
+    g.moveTo(3, 2);
+    g.bezierCurveTo(28, 4, 44, 16, 36, 34);
+    g.bezierCurveTo(28, 48, 8, 40, 2, 24);
+    g.closePath();
+    g.fillStyle = '#c9410c'; g.fill();
+    g.strokeStyle = '#3a1208'; g.lineWidth = 3.2; g.stroke();
+    g.strokeStyle = 'rgba(58,18,8,.85)'; g.lineWidth = 1.9;   // veins
+    g.beginPath(); g.moveTo(5,-12); g.lineTo(42,-30); g.moveTo(5,-6); g.lineTo(46,-14);
+    g.moveTo(5,0); g.lineTo(40,-2); g.moveTo(6,10); g.lineTo(32,20); g.moveTo(6,18); g.lineTo(26,30); g.stroke();
+    g.fillStyle = '#fdf1d6';                                   // spots
+    const dots = [[46,-30],[51,-21],[52,-11],[47,-3],[38,29],[28,38]];
+    for (const d of dots){ g.beginPath(); g.arc(d[0], d[1], 2.5, 0, 6.284); g.fill(); }
+    g.restore();
+  }
+  wing(1); wing(-1);
+  g.fillStyle = '#2e1206';
+  g.beginPath(); g.ellipse(0, 6, 3.6, 24, 0, 0, Math.PI*2); g.fill();
+  g.beginPath(); g.arc(0, -22, 4.6, 0, 6.284); g.fill();
+  g.strokeStyle = '#2e1206'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(-1.6,-25); g.quadraticCurveTo(-12,-38,-18,-40);
+  g.moveTo(1.6,-25); g.quadraticCurveTo(12,-38,18,-40); g.stroke();
+  g.fillStyle = '#e8c959';
+  g.beginPath(); g.arc(-18,-40,2.4,0,6.284); g.fill();
+  g.beginPath(); g.arc( 18,-40,2.4,0,6.284); g.fill();
+});
+
+/* a little moon — crescent inside the ghost of the full disc */
+const SP_MOON = sprite(g => {
+  g.beginPath(); g.arc(0, 0, 40, 0, 6.284);
+  g.strokeStyle = 'rgba(232,201,89,.35)'; g.lineWidth = 1.6; g.stroke();
+  const o = document.createElement('canvas'); o.width = o.height = 128;
+  const q = o.getContext('2d'); q.translate(64, 64);
+  const gg = q.createRadialGradient(-8,-10, 4, 0, 0, 38);
+  gg.addColorStop(0, '#fff8e0'); gg.addColorStop(.7, '#f2d68c'); gg.addColorStop(1, '#dda63c');
+  q.beginPath(); q.arc(0, 0, 37, 0, 6.284); q.fillStyle = gg; q.fill();
+  q.globalCompositeOperation = 'destination-out';
+  q.beginPath(); q.arc(24, -8, 32, 0, 6.284); q.fill();
+  g.drawImage(o, -64, -64);
+  g.fillStyle = 'rgba(255,244,214,.9)';
+  for (const s of [[30,-26,2.6],[-34,20,2.0],[8,-42,1.7]]){
+    g.beginPath();
+    for (let i = 0; i < 8; i++){
+      const a = i/8*Math.PI*2, r = (i%2 ? s[2]*.36 : s[2]*2.1);
+      g[i?'lineTo':'moveTo'](s[0]+Math.cos(a)*r, s[1]+Math.sin(a)*r);
+    }
+    g.closePath(); g.fill();
+  }
+});
+
+const BRUSHES = [
+  /* spacing + size are fractions of the mandala radius, so it scales with the screen */
+  { id:'glow',    label:'glow',    sprite:null,        w:0.86, glow:1.30, spacing:0,    size:0,    orient:'none'   },
+  { id:'peacock', label:'peacock', sprite:SP_PEACOCK,  w:0.52, glow:0.50, spacing:0.36, size:0.20, orient:'radial' },
+  { id:'lotus',   label:'lotus',   sprite:SP_LOTUS,    w:0.46, glow:0.55, spacing:0.25, size:0.19, orient:'radial' },
+  { id:'flutter', label:'flutter', sprite:SP_FLUTTER,  w:0.42, glow:0.45, spacing:0.46, size:0.25, orient:'travel' },
+  { id:'moon',    label:'moon',    sprite:SP_MOON,     w:0.46, glow:0.60, spacing:0.34, size:0.20, orient:'none'   }
+];
+
+/* ------------------------------------------------------------------ state */
+const S = {
+  folds: 8, mirror: true, brush: 0,
+  w: 0, h: 0, dpr: 1, cx: 0, cy: 0, R: 0,
+  trayTop: 0, rectL: 0, rectT: 0,
+  drawing: false, drew: false, demo: null, demoArt: false, raf: 0, hidden: false
+};
+
+/* ------------------------------------------------------------- background */
+function paintBG(){
+  const w = S.w, h = S.h, d = S.dpr;
+  bctx.setTransform(d, 0, 0, d, 0, 0);
+  bctx.clearRect(0, 0, w, h);
+  const g = bctx.createRadialGradient(S.cx, S.cy, 0, S.cx, S.cy, Math.max(w, h) * .78);
+  g.addColorStop(0, '#4d1d0c'); g.addColorStop(.35, '#3a1208');
+  g.addColorStop(.72, '#210a05'); g.addColorStop(1, '#120403');
+  bctx.fillStyle = g; bctx.fillRect(0, 0, w, h);
+
+  /* the faintest ghost of a lotus, so the empty page still feels like an invitation */
+  bctx.save(); bctx.translate(S.cx, S.cy);
+  const R = S.R;
+  bctx.strokeStyle = 'rgba(240,196,120,.045)'; bctx.lineWidth = 1.2;
+  for (const f of [.44, .78, 1.06]){
+    bctx.beginPath(); bctx.arc(0, 0, R*f, 0, 6.284); bctx.stroke();
+  }
+  bctx.strokeStyle = 'rgba(240,196,120,.055)'; bctx.lineWidth = 1.4;
+  for (const ring of [[0.24, 1.0], [0.44, 0.62]]){
+    const rr = R*ring[0], f = ring[1];
+    for (let i = 0; i < S.folds; i++){
+      const a = i/S.folds*Math.PI*2 - Math.PI/2 + (ring[0] > .3 ? Math.PI/S.folds : 0);
+      bctx.save(); bctx.rotate(a);
+      bctx.globalAlpha = f;
+      bctx.beginPath();
+      bctx.moveTo(0, 0);
+      bctx.bezierCurveTo(-rr*.62, -rr*.42, -rr*.46, -rr*.95, 0, -rr*1.34);
+      bctx.bezierCurveTo(rr*.46, -rr*.95, rr*.62, -rr*.42, 0, 0);
+      bctx.stroke();
+      bctx.restore();
+    }
+  }
+  bctx.globalAlpha = 1;
+  bctx.restore();
+
+  const v = bctx.createRadialGradient(S.cx, S.cy, Math.min(w,h)*.28, S.cx, S.cy, Math.max(w,h)*.80);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
+  bctx.fillStyle = v; bctx.fillRect(0, 0, w, h);
+
+  bctx.fillStyle = 'rgba(255,214,150,.045)';                 /* grain */
+  for (let i = 0; i < 900; i++){
+    bctx.fillRect((Math.random()*w)|0, (Math.random()*h)|0, 1, 1);
+  }
+}
+
+/* ----------------------------------------------------------------- layout */
+function layout(preserve){
+  const w = Math.round(window.innerWidth);
+  const h = Math.round(document.documentElement.clientHeight || window.innerHeight);
+  const d = Math.min(window.devicePixelRatio || 1, 2.5);
+  if (w === S.w && h === S.h && d === S.dpr) return;
+
+  let snap = null;
+  const oldW = S.w, oldH = S.h, oldCx = S.cx, oldCy = S.cy, oldR = S.R;
+  if (preserve && S.w){
+    snap = document.createElement('canvas');
+    snap.width = art.width; snap.height = art.height;
+    snap.getContext('2d').drawImage(art, 0, 0);
+  }
+
+  S.w = w; S.h = h; S.dpr = d;
+  for (const c of [bg, art]){
+    c.width = Math.round(w*d); c.height = Math.round(h*d);
+    c.style.width = w+'px'; c.style.height = h+'px';
+  }
+
+  const ar = art.getBoundingClientRect();
+  S.rectL = ar.left; S.rectT = ar.top;
+  const topH   = document.querySelector('.top').getBoundingClientRect().height;
+  const trayTop = document.getElementById('tray').getBoundingClientRect().top;
+  S.trayTop = Math.min(trayTop, h);
+  S.cx = w/2;
+  S.cy = Math.round((topH + Math.min(trayTop, h)) / 2);
+  S.R  = Math.max(70, Math.min(w*0.47, (Math.min(trayTop, h) - topH)/2 * 0.97));
+
+  actx.setTransform(d, 0, 0, d, 0, 0);
+  actx.lineCap = 'round'; actx.lineJoin = 'round';
+
+  /* keep her drawing: re-centre it and rescale it with the mandala itself,
+     so a rotation or a resize never loses or lops off what she has made */
+  if (snap && oldR > 0){
+    const sc = S.R / oldR;
+    actx.save(); actx.setTransform(1, 0, 0, 1, 0, 0);
+    actx.globalCompositeOperation = 'source-over';
+    actx.drawImage(snap, (S.cx - oldCx*sc)*d, (S.cy - oldCy*sc)*d, oldW*sc*d, oldH*sc*d);
+    actx.restore();
+  }
+  paintBG();
+  placeHint();
+}
+
+function placeHint(){
+  const hint = document.getElementById('hint');
+  hint.style.left = S.cx + 'px';
+  hint.style.top  = Math.round(Math.min(S.cy + S.R + 30, S.trayTop - 22)) + 'px';
+}
+
+/* --------------------------------------------------------- stroke engine */
+const P = { x:new Float32Array(4096), y:new Float32Array(4096), n:0 };   /* pending points, reused */
+const stroke = {
+  active:false, t:0, lastX:0, lastY:0, lastT:0, w:12, tw:12,
+  stampAcc:0, prevX:0, prevY:0, hasPrev:false
+};
+const STAMP = { x:new Float32Array(256), y:new Float32Array(256), a:new Float32Array(256), s:new Float32Array(256), n:0 };
+
+/* Every stroke is remembered (as fractions of the mandala radius) so that
+   turning the fold dial can re-form the whole drawing, not just the next
+   mark. Replay only ever happens on a deliberate tap — never per frame.   */
+const REC = [], REC_CAP = 60000;
+let recTotal = 0, recCur = null, replaying = false;
+function recBegin(t){
+  recCur = (replaying || recTotal > REC_CAP) ? null : { brush:S.brush, t0:stroke.t, p:[] };
+}
+function recPoint(x, y, t){
+  if (!recCur) return;
+  recCur.p.push((x - S.cx)/S.R, (y - S.cy)/S.R, t);
+  recTotal++;
+}
+function recEnd(){
+  if (recCur && recCur.p.length >= 6) REC.push(recCur);
+  recCur = null;
+}
+function replayAll(){
+  if (!REC.length) return;
+  if (S.drawing){ S.drawing = false; endStroke(); }
+  replaying = true;
+  clearArt(false);
+  const keepBrush = S.brush, keepT = stroke.t;
+  for (let s = 0; s < REC.length; s++){
+    const r = REC[s], p = r.p, n = p.length/3;
+    S.brush = r.brush; stroke.t = r.t0;
+    beginStroke(S.cx + p[0]*S.R, S.cy + p[1]*S.R, p[2]);
+    for (let i = 1; i < n; i++){
+      addPoint(S.cx + p[i*3]*S.R, S.cy + p[i*3+1]*S.R, p[i*3+2]);
+      if (i % 12 === 0) flush();
+    }
+    endStroke();
+  }
+  S.brush = keepBrush; stroke.t = keepT;
+  replaying = false;
+}
+
+function beginStroke(x, y, t){
+  stroke.active = true;
+  stroke.lastX = x; stroke.lastY = y; stroke.lastT = t;
+  stroke.prevX = x; stroke.prevY = y; stroke.hasPrev = false;
+  stroke.stampAcc = 1e9;                       /* stamp immediately at the start */
+  stroke.w = stroke.tw = baseWidth();
+  P.n = 0; pushPoint(x, y);
+  recBegin(t); recPoint(x, y, t);
+}
+function baseWidth(){
+  return Math.max(5, S.R * 0.042) * BRUSHES[S.brush].w;
+}
+function pushPoint(x, y){
+  if (P.n >= 4090) flush();
+  P.x[P.n] = x; P.y[P.n] = y; P.n++;
+}
+function addPoint(x, y, t){
+  if (!stroke.active) return;
+  const dx = x - stroke.lastX, dy = y - stroke.lastY;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 0.7) return;
+  recPoint(x, y, t);
+  const dt = Math.max(6, t - stroke.lastT);
+  const speed = dist / dt;                                    /* px per ms */
+  const target = baseWidth() * (0.42 + 1.05/(1 + speed*1.5));
+  stroke.tw = target;
+  /* interpolate so a fast flick never leaves a gap in the stamp trail */
+  const step = 3.5;
+  if (dist > step*1.6){
+    const n = Math.min(60, Math.floor(dist/step));
+    for (let i = 1; i <= n; i++){
+      pushPoint(stroke.lastX + dx*(i/n), stroke.lastY + dy*(i/n));
+    }
+  } else pushPoint(x, y);
+  stroke.lastX = x; stroke.lastY = y; stroke.lastT = t;
+  stroke.t += dist;
+  schedule();
+}
+
+function flush(){
+  if (P.n < 1 || !stroke.active) { P.n = 0; return; }
+  const b = BRUSHES[S.brush];
+  const cx = S.cx, cy = S.cy, d = S.dpr, folds = S.folds;
+  const copies = folds * (S.mirror ? 2 : 1);
+  stroke.w += (stroke.tw - stroke.w) * 0.18;
+  const w = stroke.w;
+
+  /* ---- build the path once, in mandala-local coordinates, and reuse that
+     one object for every copy — the only object made per frame */
+  const path = new Path2D();
+  const sx = stroke.hasPrev ? stroke.prevX : P.x[0], sy = stroke.hasPrev ? stroke.prevY : P.y[0];
+  path.moveTo(sx - cx, sy - cy);
+  for (let i = 0; i < P.n; i++){
+    const x = P.x[i], y = P.y[i];
+    if (i < P.n - 1){
+      const mx = (x + P.x[i+1]) * .5, my = (y + P.y[i+1]) * .5;
+      path.quadraticCurveTo(x - cx, y - cy, mx - cx, my - cy);
+    } else path.lineTo(x - cx, y - cy);
+  }
+
+  /* ---- collect stamps along this batch */
+  STAMP.n = 0;
+  if (b.sprite){
+    let px = sx, py = sy;
+    const fat = w / baseWidth();                    /* slow, fat strokes get bigger motifs */
+    const spacing = S.R * b.spacing * (0.72 + 0.46*fat);
+    const msize   = S.R * b.size    * (0.74 + 0.50*fat);
+    for (let i = 0; i < P.n; i++){
+      const x = P.x[i], y = P.y[i];
+      const dx = x - px, dy = y - py, dd = Math.sqrt(dx*dx + dy*dy);
+      stroke.stampAcc += dd;
+      if (stroke.stampAcc >= spacing && STAMP.n < 250){
+        stroke.stampAcc = 0;
+        const lx = x - cx, ly = y - cy;
+        let ang;
+        if (b.orient === 'radial') ang = Math.atan2(ly, lx) + Math.PI/2;
+        else if (b.orient === 'travel') ang = Math.atan2(dy, dx) + Math.PI/2;
+        else ang = 0;
+        const k = STAMP.n++;
+        STAMP.x[k] = lx; STAMP.y[k] = ly;
+        const j = jitter(lx, ly);                 /* deterministic wobble, not random */
+        STAMP.a[k] = ang + (j - .5)*0.18;
+        STAMP.s[k] = Math.max(12, Math.min(96, msize)) * (0.86 + jitter(ly, lx)*0.28);
+      }
+      px = x; py = y;
+    }
+  }
+
+  /* ---- lay it down, once per symmetry copy */
+  const hb = hueIdx(stroke.t * DRIFT);              /* colour drifts slowly along the stroke */
+  const spread = 30;                                /* petals drift apart in colour */
+  /* with a lot of folds there is a lot of drawing to do every frame, so the
+     quieter passes step aside — you cannot see them under 24 copies anyway  */
+  const halo = copies <= 16, ink = copies <= 24;
+
+  for (let c = 0; c < copies; c++){
+    const k = c >> (S.mirror ? 1 : 0);
+    const mir = S.mirror && (c & 1);
+    actx.setTransform(d, 0, 0, d, cx*d, cy*d);
+    actx.rotate(k / folds * Math.PI * 2);
+    if (mir) actx.scale(1, -1);
+
+    const hu = (hb + Math.round(k / folds * spread)) % HUES;
+    const col = CSTR[hu];
+
+    actx.globalCompositeOperation = 'lighter';                 /* soft halo */
+    if (halo){ actx.lineWidth = w*4.2*b.glow; actx.strokeStyle = col[0]; actx.stroke(path); }
+    actx.lineWidth = w*2.3*b.glow; actx.strokeStyle = col[1]; actx.stroke(path);
+    /* inked outline slips *underneath* what's already there, so it never
+       cuts a dark seam across the ribbon she has already laid down */
+    if (ink){
+      actx.globalCompositeOperation = 'destination-over';
+      actx.lineWidth = w*1.75; actx.strokeStyle = INK; actx.stroke(path);
+    }
+    actx.globalCompositeOperation = 'source-over';             /* the ribbon itself */
+    actx.lineWidth = w;      actx.strokeStyle = col[2];   actx.stroke(path);
+    actx.lineWidth = w*0.36; actx.strokeStyle = WSTR[hu]; actx.stroke(path);
+
+    for (let i = 0; i < STAMP.n; i++){
+      const s = STAMP.s[i];
+      actx.save();
+      actx.translate(STAMP.x[i], STAMP.y[i]);
+      actx.rotate(STAMP.a[i]);
+      actx.globalCompositeOperation = 'lighter';
+      actx.fillStyle = col[4];
+      actx.beginPath(); actx.arc(0, 0, s*0.42, 0, 6.284); actx.fill();
+      actx.globalCompositeOperation = 'source-over';
+      actx.drawImage(b.sprite, -s/2, -s/2, s, s);
+      actx.restore();
+    }
+  }
+  actx.setTransform(d, 0, 0, d, 0, 0);
+  actx.globalCompositeOperation = 'source-over';
+
+  stroke.prevX = P.x[P.n-1]; stroke.prevY = P.y[P.n-1]; stroke.hasPrev = true;
+  P.n = 0;
+}
+function endStroke(){
+  if (!stroke.active) return;
+  flush();
+  stroke.active = false;
+  stroke.hasPrev = false;
+  recEnd();
+  stroke.t += STEP;                  /* the next stroke picks up a new colour */
+}
+
+/* ------------------------------------------------------------ rAF pumping */
+let pendingFlush = false;
+function schedule(){
+  if (pendingFlush || STILL || S.hidden) return;
+  pendingFlush = true;
+  S.raf = requestAnimationFrame(tick);
+}
+function tick(){
+  pendingFlush = false; S.raf = 0;
+  flush();
+  if (S.demo) demoStep();
+}
+document.addEventListener('visibilitychange', () => {
+  S.hidden = document.hidden;
+  if (S.hidden && S.raf){ cancelAnimationFrame(S.raf); S.raf = 0; pendingFlush = false; }
+  else if (!S.hidden && S.demo) schedule();
+});
+
+/* -------------------------------------------------------------- pointers */
+/* the canvas rect is cached in layout(), so a fast finger allocates nothing */
+art.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  e.preventDefault();
+  try { art.setPointerCapture(e.pointerId); } catch(_){}
+  firstTouch();
+  S.drawing = true;
+  beginStroke(e.clientX - S.rectL, e.clientY - S.rectT, e.timeStamp);
+  schedule();
+});
+art.addEventListener('pointermove', e => {
+  if (!S.drawing) return;
+  e.preventDefault();
+  if (e.getCoalescedEvents){
+    const evs = e.getCoalescedEvents();
+    for (let i = 0; i < evs.length; i++){
+      const c = evs[i];
+      addPoint(c.clientX - S.rectL, c.clientY - S.rectT, c.timeStamp || e.timeStamp);
+    }
+  } else {
+    addPoint(e.clientX - S.rectL, e.clientY - S.rectT, e.timeStamp);
+  }
+}, { passive:false });
+function up(e){
+  if (!S.drawing) return;
+  S.drawing = false;
+  endStroke();
+}
+art.addEventListener('pointerup', up);
+art.addEventListener('pointercancel', up);
+art.addEventListener('pointerleave', e => { if (S.drawing && e.pointerType === 'mouse') up(e); });
+document.addEventListener('touchmove', e => { if (S.drawing) e.preventDefault(); }, { passive:false });
+document.addEventListener('gesturestart', e => e.preventDefault());
+
+function firstTouch(){
+  if (S.demoArt){                                /* the demo bows out, canvas is hers */
+    stopDemo(); clearArt(false);
+    REC.length = 0; recTotal = 0; recCur = null; stroke.t = 0;
+    S.demoArt = false;
+  }
+  if (!S.drew){
+    S.drew = true;
+    document.getElementById('hint').classList.add('gone');
+  }
+  clearTimeout(idleTimer);
+}
+
+/* ------------------------------------------------------------------ demo */
+/* If she never touches it, it draws itself a bloom so the page is never blank */
+let idleTimer = 0;
+function armDemo(){
+  if (STILL || STAGE !== null) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(startDemo, 4000);
+}
+function startDemo(){
+  if (S.drew || S.drawing) return;
+  const seq = [
+    { gen:['spiral', 0.5, 0.15, 0.36, 1.5],        brush:0 },
+    { gen:['petal', 0.5, 0.18, 0.58, 0.36],        brush:2 },
+    { gen:['ring', 0.76, 1.0, 0.06, 1, 0.5],       brush:1 },
+    { gen:['ring', 0.94, 1.0, 0.02, 1, 0.5],       brush:4 }
+  ];
+  S.demo = { seq, i:-1, pts:null, k:0, t:0, brushBefore:S.brush };
+  S.demoArt = true;
+  nextDemoStroke();
+  schedule();
+}
+function nextDemoStroke(){
+  const d = S.demo; if (!d) return;
+  d.i++;
+  if (d.i >= d.seq.length){ endStroke(); S.brush = d.brushBefore; syncChips(); S.demo = null; return; }
+  const item = d.seq[d.i];
+  S.brush = item.brush; syncChips();
+  d.pts = genPath(item.gen, 1000 + d.i*37);
+  d.k = 0; d.t = performance.now();
+  beginStroke(d.pts[0], d.pts[1], d.t);
+}
+function demoStep(){
+  const d = S.demo; if (!d) return;
+  const perFrame = REDUCED ? 40 : 5;      /* a gentle, unhurried bloom */
+  for (let i = 0; i < perFrame && d.k < d.pts.length/2 - 1; i++){
+    d.k++; d.t += 15;
+    addPoint(d.pts[d.k*2], d.pts[d.k*2+1], d.t);
+  }
+  if (d.k >= d.pts.length/2 - 1){ endStroke(); nextDemoStroke(); }
+  schedule();
+}
+function stopDemo(){
+  if (!S.demo) return;
+  endStroke();
+  S.brush = S.demo.brushBefore; syncChips();      /* she gets her own brush back */
+  S.demo = null;
+}
+
+/* ---------------------------------------------------- synthesised strokes */
+/* Build a plausible hand-drawn path (flat [x0,y0,x1,y1,...] in screen coords).
+   Angles are measured in "tiles" — one tile is the slice of the circle the
+   symmetry repeats — so a stroke of 1 tile wraps the mandala exactly once.
+   kinds: ring | petal | spiral | ray | swoop                                */
+function genPath(spec, seed){
+  const R = S.R, cx = S.cx, cy = S.cy;
+  const tile = Math.PI*2 / S.folds / (S.mirror ? 2 : 1);
+  const A0 = -Math.PI/2;
+  const kind = spec[0];
+  const out = [];
+  const N = 200;
+  const wob = (u, f, a) => Math.sin(u*f + seed*0.13)*a + Math.sin(u*f*2.3 + seed*0.37)*a*0.42;
+  for (let i = 0; i <= N; i++){
+    const u = i/N;
+    let r, th;
+    if (kind === 'ring'){            /* rFrac, sweepTiles, waveAmp, waves, offTiles */
+      const sw = spec[2]*tile, amp = spec[3]||0, wn = spec[4]||1, off = (spec[5]||0)*tile;
+      th = A0 + off + sw*u;
+      r  = R*spec[1]*(1 + amp*Math.sin(wn*Math.PI*2*u));
+    } else if (kind === 'petal'){    /* offTiles, r0, r1, spreadTiles */
+      const off = (spec[1]||0)*tile, r0 = spec[2]*R, r1 = spec[3]*R, sp = (spec[4]||0.34)*tile;
+      r  = r0 + (r1-r0)*Math.pow(Math.sin(Math.PI*u), 0.7);
+      th = A0 + off + Math.sin(Math.PI*2*u)*sp;
+    } else if (kind === 'spiral'){   /* offTiles, r0, r1, sweepTiles */
+      const off = (spec[1]||0)*tile;
+      r  = spec[2]*R + (spec[3]-spec[2])*R*u;
+      th = A0 + off + spec[4]*tile*u;
+    } else if (kind === 'ray'){      /* offTiles, r0, r1 */
+      const off = (spec[1]||0)*tile;
+      r  = spec[2]*R + (spec[3]-spec[2])*R*u;
+      th = A0 + off + Math.sin(Math.PI*u)*tile*0.08;
+    } else {                         /* swoop: offTiles, sweepTiles, r0, r1 */
+      const off = (spec[1]||0)*tile;
+      th = A0 + off + spec[2]*tile*u;
+      r  = spec[3]*R + (spec[4]-spec[3])*R*Math.sin(Math.PI*u*0.8);
+    }
+    r  += wob(u, 9.4, R*0.013);
+    th += wob(u, 6.7, tile*0.035);
+    out.push(cx + Math.cos(th)*r, cy + Math.sin(th)*r);
+  }
+  return out;
+}
+
+/* feed a generated path through the real pipeline, synchronously */
+function drawSynth(spec, brush, seed, speed){
+  S.brush = brush; syncChips();
+  const pts = genPath(spec, seed);
+  let t = 0;
+  beginStroke(pts[0], pts[1], t);
+  const n = pts.length/2;
+  for (let i = 1; i < n; i++){
+    const dx = pts[i*2]-pts[(i-1)*2], dy = pts[i*2+1]-pts[(i-1)*2+1];
+    const d = Math.sqrt(dx*dx+dy*dy);
+    /* hand slows at the ends of a stroke -> fatter there, like a real finger */
+    const ease = 0.34 + 0.66*Math.sin(Math.PI*(i/n));
+    t += d / (speed*ease);
+    addPoint(pts[i*2], pts[i*2+1], t);
+    if (i % 12 === 0) flush();
+  }
+  endStroke();
+}
+
+function synthStage(n){
+  const A = [   /* the first marks: a swirl in the middle and a ring of petals */
+    { spec:['spiral', 0.5, 0.15, 0.38, 1.5],        brush:0, seed:11, speed:1.10, folds:8,  mirror:true },
+    { spec:['petal', 0.5, 0.18, 0.58, 0.36],        brush:2, seed:23, speed:0.70, folds:8,  mirror:true }
+  ];
+  const B = [   /* then she keeps going: glow underneath, little creatures on top */
+    { spec:['petal', 0.5, 0.32, 0.58, 0.11],        brush:0, seed:37, speed:1.35, folds:8,  mirror:true },
+    { spec:['ring', 0.74, 1.02, 0.06, 1, 0],        brush:0, seed:51, speed:1.20, folds:8,  mirror:true },
+    { spec:['ring', 0.66, 1.0, 0.04, 1, 0.5],       brush:1, seed:67, speed:0.85, folds:8,  mirror:true },
+    { spec:['ring', 0.92, 1.0, 0.02, 1, 0.5],       brush:3, seed:83, speed:0.95, folds:8,  mirror:true },
+    { spec:['ring', 0.80, 1.0, 0.0, 1, 0.5],        brush:4, seed:97, speed:1.00, folds:12, mirror:true }
+  ];
+  const list = n === 1 ? A : A.concat(B);
+  for (const it of list){
+    S.folds = it.folds; S.mirror = it.mirror;
+    drawSynth(it.spec, it.brush, it.seed, it.speed);
+  }
+  S.drew = true;
+  document.getElementById('hint').classList.add('gone');
+  syncChips(); syncBeads(); paintBG();
+}
+
+/* ----------------------------------------------------------------- clear */
+function clearArt(animated){
+  const doIt = () => {
+    actx.save(); actx.setTransform(1,0,0,1,0,0);
+    actx.clearRect(0, 0, art.width, art.height); actx.restore();
+    art.classList.remove('wiping');
+  };
+  if (animated && !REDUCED && !STILL){
+    art.classList.add('wiping');
+    setTimeout(doIt, 230);
+  } else doIt();
+}
+
+/* -------------------------------------------------------------------- UI */
+const brushWrap = document.getElementById('brushes');
+BRUSHES.forEach((b, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'chip'; btn.type = 'button';
+  btn.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+  btn.setAttribute('aria-label', b.label + ' brush');
+  const peb = document.createElement('span'); peb.className = 'pebble';
+  const c = document.createElement('canvas'); c.width = c.height = 96;
+  const g = c.getContext('2d');
+  if (b.sprite) g.drawImage(b.sprite, 4, 4, 88, 88);
+  else {
+    const rg = g.createRadialGradient(48,48,2,48,48,42);
+    rg.addColorStop(0,'#fff6dd'); rg.addColorStop(.35,'#ffd06a');
+    rg.addColorStop(.68,'rgba(213,87,22,.65)'); rg.addColorStop(1,'rgba(213,87,22,0)');
+    g.fillStyle = rg; g.beginPath(); g.arc(48,48,44,0,6.284); g.fill();
+    g.strokeStyle = 'rgba(255,240,200,.85)'; g.lineWidth = 5; g.lineCap='round';
+    g.beginPath(); g.moveTo(22,66); g.quadraticCurveTo(42,20,74,32); g.stroke();
+  }
+  peb.appendChild(c);
+  const lbl = document.createElement('span'); lbl.className = 'lbl'; lbl.textContent = b.label;
+  btn.appendChild(peb); btn.appendChild(lbl);
+  btn.addEventListener('click', () => {
+    stopDemo(); clearTimeout(idleTimer);         /* she's picked one up; demo stands down */
+    S.brush = i; syncChips();
+  });
+  brushWrap.appendChild(btn);
+});
+function syncChips(){
+  const kids = brushWrap.children;
+  for (let i = 0; i < kids.length; i++) kids[i].setAttribute('aria-pressed', i === S.brush ? 'true' : 'false');
+}
+
+const FOLDS = [4, 6, 8, 12, 16];
+const beadWrap = document.getElementById('beads');
+FOLDS.forEach(f => {
+  const b = document.createElement('button');
+  b.className = 'bead'; b.type = 'button'; b.textContent = f;
+  b.setAttribute('aria-pressed', f === S.folds ? 'true' : 'false');
+  b.setAttribute('aria-label', f + ' folds');
+  b.addEventListener('click', () => {
+    if (S.folds === f) return;
+    stopDemo(); clearTimeout(idleTimer);
+    S.folds = f; syncBeads(); paintBG();
+    replayAll();                       /* the whole mandala re-forms, live */
+  });
+  beadWrap.appendChild(b);
+});
+function syncBeads(){
+  const kids = beadWrap.querySelectorAll('.bead');
+  kids.forEach(k => k.setAttribute('aria-pressed', +k.textContent === S.folds ? 'true' : 'false'));
+}
+const mirrorBtn = document.getElementById('mirror');
+mirrorBtn.addEventListener('click', () => {
+  stopDemo(); clearTimeout(idleTimer);
+  S.mirror = !S.mirror;
+  mirrorBtn.setAttribute('aria-pressed', S.mirror ? 'true' : 'false');
+  replayAll();
+});
+
+document.getElementById('overBtn').addEventListener('click', startOver);
+document.getElementById('overBtn2').addEventListener('click', () => { closeKeep(); startOver(); });
+document.getElementById('againBtn').addEventListener('click', closeKeep);
+document.getElementById('keepBtn').addEventListener('click', openKeep);
+
+function startOver(){
+  stopDemo();
+  clearArt(true);
+  REC.length = 0; recTotal = 0; recCur = null;
+  S.drew = false; S.demoArt = false;
+  stroke.t = 0;
+  document.getElementById('hint').classList.remove('gone');
+  armDemo();
+}
+
+/* ------------------------------------------------------------- keepsake */
+const KW = 900, KH = 1260, KS = 1.6;              /* poster proportions */
+function renderKeepsake(){
+  const c = document.createElement('canvas');
+  c.width = KW*KS; c.height = KH*KS;
+  const g = c.getContext('2d');
+  g.scale(KS, KS);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+
+  /* --- warm poster field ------------------------------------------------ */
+  const bgg = g.createLinearGradient(0, 0, 0, KH);
+  bgg.addColorStop(0, '#c9c23c'); bgg.addColorStop(.14, '#dca92c');
+  bgg.addColorStop(.40, '#d4611b'); bgg.addColorStop(.74, '#c8460f');
+  bgg.addColorStop(1, '#96300d');
+  g.fillStyle = bgg; g.fillRect(0, 0, KW, KH);
+  const rad = g.createRadialGradient(KW/2, KH*0.78, 40, KW/2, KH*0.78, KW*0.8);
+  rad.addColorStop(0, 'rgba(255,214,110,.30)'); rad.addColorStop(1, 'rgba(120,30,6,.22)');
+  g.fillStyle = rad; g.fillRect(0, 0, KW, KH);
+
+  /* --- outer art-nouveau band ------------------------------------------ */
+  g.strokeStyle = '#5e1c07'; g.lineWidth = 3;
+  roundRect(g, 13, 13, KW-26, KH-26, 12); g.stroke();
+  g.strokeStyle = '#aab839'; g.lineWidth = 9;
+  roundRect(g, 22, 22, KW-44, KH-44, 10); g.stroke();
+  g.strokeStyle = '#5e1c07'; g.lineWidth = 2.4;
+  roundRect(g, 31, 31, KW-62, KH-62, 8); g.stroke();
+
+  /* --- art panel -------------------------------------------------------- */
+  const M = 58, PX = M, PY = M, PW = KW - M*2, PH = PW;
+  g.save();
+  roundRect(g, PX, PY, PW, PH, 6); g.clip();
+  const pg = g.createRadialGradient(PX+PW/2, PY+PH/2, 0, PX+PW/2, PY+PH/2, PW*0.78);
+  pg.addColorStop(0, '#4d1d0c'); pg.addColorStop(.35, '#3a1208');
+  pg.addColorStop(.72, '#210a05'); pg.addColorStop(1, '#120403');
+  g.fillStyle = pg; g.fillRect(PX, PY, PW, PH);
+  /* her mandala, framed by its own radius rather than by the phone's shape,
+     and clipped to whatever of that square actually exists on the canvas */
+  const side = S.R * 2.32, sx = S.cx - side/2, sy = S.cy - side/2, k = PW / side;
+  const ax = Math.max(0, sx), ay = Math.max(0, sy);
+  const bx = Math.min(S.w, sx + side), by = Math.min(S.h, sy + side);
+  if (bx > ax && by > ay){
+    g.drawImage(art,
+      ax*S.dpr, ay*S.dpr, (bx-ax)*S.dpr, (by-ay)*S.dpr,
+      PX + (ax-sx)*k, PY + (ay-sy)*k, (bx-ax)*k, (by-ay)*k);
+  }
+  g.restore();
+
+  nouveauBorder(g, PX, PY, PW, PH);
+
+  /* --- caption, typeset like the poster --------------------------------- */
+  const capY = PY + PH;
+  moonRow(g, KW/2, capY + 44, 7, 12);
+
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  g.fillStyle = 'rgba(78,22,4,.9)';
+  g.font = '500 17px Rubik, system-ui, sans-serif';
+  spaced(g, 'CONNECTION, COMMUNITY, AND CELEBRATION', KW/2, capY + 100, 4.4);
+
+  arcText(g, 'our yoga trip', KW/2, capY + 192, 620, 74, "Modak, fantasy, cursive", 1.09);
+
+  g.fillStyle = '#481403';
+  g.font = '700 29px Rubik, system-ui, sans-serif';
+  spaced(g, (CONFIG.volume + '   ·   ' + CONFIG.eventDate).toUpperCase(), KW/2, capY + 300, 3.6);
+
+  g.fillStyle = 'rgba(72,20,4,.82)';
+  g.font = "700 34px Caveat, cursive";
+  g.fillText('a mandala by ' + CONFIG.herName.toLowerCase(), KW/2, capY + 352);
+
+  /* --- paper grain ------------------------------------------------------ */
+  g.fillStyle = 'rgba(90,30,8,.05)';
+  for (let i = 0; i < 1600; i++) g.fillRect((Math.random()*KW)|0, (Math.random()*KH)|0, 1.2, 1.2);
+
+  return c.toDataURL('image/png');
+}
+function roundRect(g, x, y, w, h, r){
+  g.beginPath();
+  g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r);
+  g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath();
+}
+function nouveauBorder(g, x, y, w, h){
+  g.save();
+  g.strokeStyle = '#5e1c07'; g.lineWidth = 7; roundRect(g, x-4, y-4, w+8, h+8, 10); g.stroke();
+  g.strokeStyle = '#f0d78d'; g.lineWidth = 2.4; roundRect(g, x-12, y-12, w+24, h+24, 14); g.stroke();
+  g.strokeStyle = 'rgba(94,28,7,.75)'; g.lineWidth = 1.6; roundRect(g, x-19, y-19, w+38, h+38, 18); g.stroke();
+
+  /* corner whiplash — a curl and its mirror across the diagonal */
+  const curl = gg => {
+    gg.beginPath();
+    gg.moveTo(104, 14);
+    gg.bezierCurveTo(62, 14, 36, 30, 32, 58);
+    gg.bezierCurveTo(29, 78, 46, 88, 59, 77);
+    gg.bezierCurveTo(70, 68, 61, 55, 50, 60);
+    gg.stroke();
+  };
+  for (let i = 0; i < 4; i++){
+    g.save();
+    g.translate(i & 1 ? x + w : x, i & 2 ? y + h : y);
+    g.scale(i & 1 ? -1 : 1, i & 2 ? -1 : 1);
+    g.strokeStyle = '#5e1c07'; g.lineWidth = 4.6;
+    g.beginPath();
+    g.moveTo(-13, 104); g.bezierCurveTo(-13, 32, 32, -13, 104, -13);
+    g.stroke();
+    g.strokeStyle = '#f2dc9a'; g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(-4, 90); g.bezierCurveTo(-4, 32, 32, -4, 90, -4);
+    g.stroke();
+    g.strokeStyle = '#5e1c07'; g.lineWidth = 3.4;
+    curl(g);
+    g.save(); g.transform(0, 1, 1, 0, 0, 0); curl(g); g.restore();
+    g.fillStyle = '#e8c959';
+    g.beginPath(); g.arc(56, 56, 7, 0, 6.284); g.fill();
+    g.strokeStyle = '#5e1c07'; g.lineWidth = 2; g.stroke();
+    g.restore();
+  }
+  /* edge sprigs, top & bottom middles */
+  for (let s = 0; s < 2; s++){
+    g.save();
+    g.translate(x + w/2, s ? y + h : y); g.scale(1, s ? -1 : 1);
+    g.strokeStyle = '#5e1c07'; g.lineWidth = 3.4; g.fillStyle = '#e8c959';
+    g.beginPath();
+    g.moveTo(-64, -13); g.bezierCurveTo(-30, -34, -12, -34, 0, -22);
+    g.bezierCurveTo(12, -34, 30, -34, 64, -13);
+    g.stroke();
+    g.beginPath(); g.ellipse(0, -26, 8, 12, 0, 0, Math.PI*2); g.fill();
+    g.strokeStyle = '#5e1c07'; g.lineWidth = 2; g.stroke();
+    g.restore();
+  }
+  g.restore();
+}
+function moonRow(g, cx, cy, n, r){
+  const gap = r*3.6, x0 = cx - gap*(n-1)/2;
+  const lit = document.createElement('canvas');
+  lit.width = lit.height = Math.ceil(r*2)+4;
+  const q = lit.getContext('2d');
+  for (let i = 0; i < n; i++){
+    const x = x0 + i*gap;
+    const p = 0.12 + (i/(n-1))*0.76;          /* crescent -> full -> crescent */
+    g.save(); g.translate(x, cy);
+    g.beginPath(); g.arc(0, 0, r, 0, 6.284);
+    g.fillStyle = 'rgba(84,24,4,.42)'; g.fill();
+    g.strokeStyle = 'rgba(94,28,7,.85)'; g.lineWidth = 1.5; g.stroke();
+    /* the lit part: a disc with an offset disc carved out of it */
+    const c0 = lit.width/2;
+    q.setTransform(1,0,0,1,0,0); q.clearRect(0,0,lit.width,lit.height);
+    q.globalCompositeOperation = 'source-over';
+    q.fillStyle = '#f7e5a8';
+    q.beginPath(); q.arc(c0, c0, r, 0, 6.284); q.fill();
+    q.globalCompositeOperation = 'destination-out';
+    const s = p <= .5 ? 2*r*(p*2) : 2*r*(2 - p*2);
+    q.beginPath(); q.arc(c0 + (p <= .5 ? -s : s), c0, r*1.01, 0, 6.284); q.fill();
+    g.drawImage(lit, -c0, -c0);
+    g.restore();
+  }
+}
+function spaced(g, str, cx, y, sp){
+  let total = 0;
+  for (const ch of str) total += g.measureText(ch).width + sp;
+  total -= sp;
+  let x = cx - total/2;
+  const al = g.textAlign; g.textAlign = 'left';
+  for (const ch of str){ g.fillText(ch, x, y); x += g.measureText(ch).width + sp; }
+  g.textAlign = al;
+}
+function arcText(g, str, cx, cy, radius, size, font, squeeze){
+  g.save();
+  g.font = size + 'px ' + font;
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  const widths = [];
+  let total = 0;
+  for (const ch of str){ const w = g.measureText(ch).width * squeeze; widths.push(w); total += w; }
+  /* built around the origin so every letter carries the gradient with it */
+  const grad = g.createLinearGradient(0, -size*0.78, 0, size*0.22);
+  grad.addColorStop(0, '#ffe487'); grad.addColorStop(.45, '#f0a52c'); grad.addColorStop(1, '#d8410a');
+  let a = -Math.PI/2 - (total/radius)/2;
+  g.translate(cx, cy + radius);
+  for (let i = 0; i < str.length; i++){
+    const w = widths[i];
+    a += (w/2)/radius;
+    g.save();
+    g.rotate(a + Math.PI/2);
+    g.translate(0, -radius);
+    g.lineJoin = 'round';
+    g.lineWidth = size*0.19; g.strokeStyle = '#fdeec6'; g.strokeText(str[i], 0, 0);
+    g.lineWidth = size*0.085; g.strokeStyle = '#5d1a05'; g.strokeText(str[i], 0, 0);
+    g.fillStyle = grad; g.fillText(str[i], 0, 0);
+    g.restore();
+    a += (w/2)/radius;
+  }
+  g.restore();
+}
+
+const keepPane = document.getElementById('keep');
+function openKeep(){
+  stopDemo(); endStroke();
+  document.getElementById('keepImg').src = renderKeepsake();
+  keepPane.classList.add('on');
+  clearTimeout(idleTimer);
+}
+function closeKeep(){ keepPane.classList.remove('on'); }
+
+/* ------------------------------------------------------------------ boot */
+function boot(){
+  layout(false);
+  syncChips(); syncBeads();
+  mirrorBtn.setAttribute('aria-pressed', S.mirror ? 'true' : 'false');
+
+  if (STAGE !== null){
+    if (STAGE >= 1) synthStage(STAGE >= 2 ? 2 : 1);
+    if (STAGE === 3) openKeep();
+  }
+  if (STILL){
+    document.body.classList.add('still');
+    if (S.raf) cancelAnimationFrame(S.raf);
+  } else armDemo();
+}
+
+let rt = 0;
+function onResize(){
+  clearTimeout(rt);
+  rt = setTimeout(() => layout(true), 90);
+}
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', onResize);
+
+if (document.fonts && document.fonts.ready){
+  Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1400))]).then(boot);
+} else boot();
+</script>
+</body>
+</html>
