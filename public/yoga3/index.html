@@ -808,7 +808,6 @@ function applyTheme(el, m){
 /* the fan: a gentle arc where the tilt is softer than the spread, so five cards
    still fit across a narrow phone without anyone's corner falling off the edge */
 let geo = { dx: 50, rot: 5.5, dip: 7, s: .44, w: 130, fy: 0, push: 78, py: 100 };
-function isWide(){ return innerWidth >= 1180 && innerHeight >= 740; }
 function readGeo(){
   const cs2 = getComputedStyle(document.documentElement);
   geo.dx  = parseFloat(cs2.getPropertyValue('--fanDx'))  || 50;
