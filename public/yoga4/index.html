@@ -43,8 +43,12 @@
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0;height:100%;overflow:hidden;overscroll-behavior:none}
 body{
-  background:#170604; color:var(--ink); font-family:var(--ui);
-  width:100%; height:100dvh; position:fixed; inset:0;
+  /* the same tone the background canvas fades out to, so if the phone's URL
+     bar slides away and uncovers a sliver below the canvas, nothing shows */
+  background:#120403; color:var(--ink); font-family:var(--ui);
+  /* svh, not dvh: the small viewport never moves, so the page does not
+     re-lay-out on every frame of the URL bar's slide */
+  width:100%; height:100svh; position:fixed; inset:0;
   -webkit-user-select:none; user-select:none;
   -webkit-touch-callout:none;
 }
@@ -174,7 +178,7 @@ canvas{display:block}
 }
 #keep.on{display:flex}
 #keep .frame{
-  max-height:min(74dvh, 700px); max-width:min(92vw,520px); width:auto; height:auto;
+  max-height:min(74svh, 700px); max-width:min(92vw,520px); width:auto; height:auto;
   border-radius:3px; transform:rotate(-1.1deg);
   -webkit-touch-callout:default;      /* so a long press can save it to her camera roll */
   -webkit-user-select:auto; user-select:auto;
@@ -210,7 +214,7 @@ canvas{display:block}
   .chip canvas{width:40px;height:40px}
   .whimsy{font-size:18px}
   #hint{font-size:27px}
-  #keep .frame{max-height:82dvh; max-width:min(46vw,520px)}
+  #keep .frame{max-height:82svh; max-width:min(46vw,520px)}
 }
 @media (max-height:700px) and (max-width:819px){
   .chip .pebble{width:46px;height:46px}
@@ -252,7 +256,7 @@ canvas{display:block}
   }
   #hint{font-size:20px}
   #keep{gap:6px}
-  #keep .frame{max-height:66dvh}
+  #keep .frame{max-height:66svh}
   #keep .save{display:none}
 }
 
@@ -563,11 +567,29 @@ function paintBG(){
 }
 
 /* ----------------------------------------------------------------- layout */
-function layout(preserve){
+/* A phone's URL bar slides in and out during ordinary scrolls and swipes and
+   fires a resize on every frame while it moves — only the height changes.
+   Re-laying out there would re-cut both canvases (which *erases* them),
+   rescale her drawing through a lossy resample and re-roll the background
+   grain, sixty times a second. So a height-only wobble inside the toolbar's
+   range is ignored outright: nothing moves, nothing is redrawn, and her
+   mandala is never touched. Real changes — a rotation, a window drag, a new
+   pixel ratio — still come through.                                        */
+const TOOLBAR = COARSE ? 180 : 0;      /* px of height a toolbar may steal */
+function viewport(){
   const w = Math.round(window.innerWidth);
   const h = Math.round(document.documentElement.clientHeight || window.innerHeight);
   const d = Math.min(window.devicePixelRatio || 1, 2.5);
-  if (w === S.w && h === S.h && d === S.dpr) return;
+  if (w === S.w && d === S.dpr && (h === S.h || (S.w > 0 && Math.abs(h - S.h) <= TOOLBAR))) return null;
+  return { w:w, h:h, d:d };
+}
+function layout(preserve){
+  const V = viewport();
+  if (!V) return;
+  const w = V.w, h = V.h, d = V.d;
+
+  /* commit anything still in flight under the geometry it was drawn in */
+  if (stroke.active) flush();
 
   let snap = null;
   const oldW = S.w, oldH = S.h, oldCx = S.cx, oldCy = S.cy, oldR = S.R;
@@ -603,6 +625,13 @@ function layout(preserve){
     actx.globalCompositeOperation = 'source-over';
     actx.drawImage(snap, (S.cx - oldCx*sc)*d, (S.cy - oldCy*sc)*d, oldW*sc*d, oldH*sc*d);
     actx.restore();
+    /* if her finger is still down, carry the live stroke across with the rest
+       of the drawing so the ribbon continues from where she actually is */
+    if (stroke.active){
+      stroke.prevX = S.cx + (stroke.prevX - oldCx)*sc; stroke.prevY = S.cy + (stroke.prevY - oldCy)*sc;
+      stroke.lastX = S.cx + (stroke.lastX - oldCx)*sc; stroke.lastY = S.cy + (stroke.lastY - oldCy)*sc;
+      stroke.w *= sc; stroke.tw *= sc;
+    }
   }
   paintBG();
   placeHint();
@@ -1310,8 +1339,9 @@ function boot(){
 
 let rt = 0;
 function onResize(){
+  if (!viewport()) return;           /* toolbar wobble — not a real resize */
   clearTimeout(rt);
-  rt = setTimeout(() => layout(true), 90);
+  rt = setTimeout(() => layout(true), 160);
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
