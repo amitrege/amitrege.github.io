@@ -1,0 +1,1258 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2a0f08">
+<meta property="og:title" content="Breathe With Me · OUR YOGA TRIP">
+<meta property="og:description" content="A lotus that breathes with you. Hold to inhale, let go to exhale — and stay a while. Vol. 1, September 27.">
+<meta name="description" content="A lotus that breathes with you. Hold to inhale, let go to exhale. OUR YOGA TRIP, Vol. 1, September 27.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%AA%B7%3C/text%3E%3C/svg%3E">
+<title>breathe with me · our yoga trip</title>
+
+<!--
+  ─────────────────────────────────────────────────────────────────────────────
+  BREATHE WITH ME  ·  a gift for Katie  ·  OUR YOGA TRIP, Vol. 1
+  ─────────────────────────────────────────────────────────────────────────────
+  URL FLAGS (for capture / review):
+
+    ?s=0   first inhale beginning — folded lotus, title card, calm night palette
+    ?s=1   full expansion at peak bloom — petals open, colour rings mid-flight
+    ?s=2   "in sync" achieved — maximum colour, poster psychedelia, butterflies gathered
+    ?s=3   the invitation — flower rises and shrinks, payoff card blooms in beneath it
+
+    ?still=1   freeze: warm the world up, render exactly one frame, stop rAF,
+               and pause every CSS animation. Combine, e.g. ?s=2&still=1
+
+  Everything here is drawn (canvas 2D + CSS/SVG). No WebGL, no frameworks,
+  no build step, no audio. poster.jpg is never used as an image.
+  ─────────────────────────────────────────────────────────────────────────────
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Chicle&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --hot:#d55716; --red:#d43b08; --lime:#aab839; --gold:#e8c959; --wgold:#dfb049;
+    --lorange:#e47d40; --leaf:#488252; --maroon:#713024; --brown:#77491c;
+    --teal:#1c7a76; --turq:#49bdb2; --mag:#e0559b; --pink:#f4b0d2; --ink:#2a0f08;
+
+    --f-display:'Shrikhand', 'Cooper Black', Georgia, serif;
+    --f-groovy:'Chicle', 'Shrikhand', Georgia, serif;
+    --f-body:'Quicksand', ui-rounded, 'Avenir Next', system-ui, sans-serif;
+
+    /* live values, written from JS */
+    --open:0; --bloom:0; --sync:0; --inv:0;
+    --mx:50vw; --my:44vh; --mr:140px;
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    overflow:hidden; overscroll-behavior:none;
+    background:#160806; color:#f6e2bf;
+    font-family:var(--f-body);
+  }
+  body{ position:fixed; inset:0; }
+
+  #world{ position:fixed; inset:0; height:100dvh; width:100vw; overflow:hidden; isolation:isolate; }
+
+  /* ── background strata ─────────────────────────────────────────────── */
+  .bg{ position:absolute; inset:0; pointer-events:none; }
+
+  /* night water — always there */
+  #bgBase{
+    background:
+      radial-gradient(135% 62% at 50% 116%, #14514f 0%, #12403a 22%, rgba(18,52,46,.55) 46%, rgba(18,52,46,0) 74%),
+      radial-gradient(105% 74% at 50% 40%, #4e2312 0%, #351510 46%, #1e0b08 80%, #170806 100%);
+  }
+  /* the poster field — floods in with --bloom */
+  #bgHeat{
+    background:linear-gradient(178deg,
+      rgba(186,198,60,.56) 0%, rgba(226,146,32,.74) 11%, rgba(213,87,22,.88) 31%,
+      rgba(212,59,8,.84) 57%, rgba(152,56,32,.64) 76%, rgba(26,112,110,.62) 93%, rgba(16,74,80,.68) 100%);
+    opacity:calc(var(--bloom)*0.9);
+  }
+  /* warm sun behind the flower, breathes with --open */
+  #bgSun{
+    inset:-10%;
+    background:radial-gradient(closest-side circle at 50% 44%,
+      rgba(255,236,168,.62) 0%, rgba(232,201,89,.44) 26%, rgba(213,87,22,.34) 52%, rgba(212,59,8,0) 76%);
+    transform:scale(calc(0.66 + var(--open)*0.48));
+    opacity:calc(0.40 + var(--open)*0.46 + var(--bloom)*0.16);
+    will-change:transform,opacity;
+  }
+  /* psychedelic concentric wash */
+  #bgRings{
+    inset:-8%;
+    background:repeating-radial-gradient(circle at 50% 44%,
+      rgba(255,150,50,.55) 0 3.6%,
+      rgba(255,214,110,.50) 3.6% 6.4%,
+      rgba(186,206,66,.44) 6.4% 9.4%,
+      rgba(60,150,96,.36) 9.4% 12.2%,
+      rgba(40,150,150,.38) 12.2% 15.2%,
+      rgba(232,72,30,.46) 15.2% 18.4%);
+    -webkit-mask-image:radial-gradient(circle at 50% 44%, #000 6%, rgba(0,0,0,.9) 30%, rgba(0,0,0,.45) 60%, transparent 86%);
+    mask-image:radial-gradient(circle at 50% 44%, #000 6%, rgba(0,0,0,.9) 30%, rgba(0,0,0,.45) 60%, transparent 86%);
+    mix-blend-mode:screen;
+    opacity:calc(0.10 + var(--bloom)*0.42 + var(--open)*0.14);
+    transform:scale(calc(0.84 + var(--open)*0.26));
+    will-change:transform,opacity;
+  }
+  /* hue field for saturation */
+  #bgWash{
+    background:conic-gradient(from 200deg at 50% 44%,
+      rgba(213,87,22,.55), rgba(232,201,89,.42), rgba(170,184,57,.48),
+      rgba(28,122,118,.44), rgba(224,85,155,.38), rgba(212,59,8,.55), rgba(213,87,22,.55));
+    mix-blend-mode:overlay;
+    opacity:calc(var(--bloom)*0.55);
+  }
+  /* lotus water at the base */
+  #bgWater{
+    background:radial-gradient(160% 46% at 50% 106%,
+      rgba(238,110,175,.44) 0%, rgba(40,140,138,.36) 40%, rgba(28,122,118,0) 76%);
+    opacity:calc(0.42 + var(--bloom)*0.58);
+  }
+  /* the soft breathing vignette */
+  #bgVig{
+    background:radial-gradient(circle at 50% 45%,
+      rgba(24,9,6,0) 22%, rgba(24,9,6,.18) 50%, rgba(20,7,5,.58) 82%, rgba(16,6,4,.84) 100%);
+    transform:scale(calc(1.05 - var(--open)*0.08));
+    opacity:calc(0.92 - var(--bloom)*0.34);
+    will-change:transform,opacity;
+  }
+
+  #c{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+
+  /* ── art nouveau frame ─────────────────────────────────────────────── */
+  #frame{
+    position:absolute;
+    top:calc(env(safe-area-inset-top,0px) + 7px);
+    bottom:calc(env(safe-area-inset-bottom,0px) + 7px);
+    left:calc(env(safe-area-inset-left,0px) + 7px);
+    right:calc(env(safe-area-inset-right,0px) + 7px);
+    border-radius:26px;
+    border:1.5px solid rgba(255,224,140,calc(0.26 + var(--bloom)*0.5));
+    box-shadow:
+      inset 0 0 0 4px rgba(26,9,6,.34),
+      inset 0 0 0 5.5px rgba(196,214,70,calc(0.16 + var(--bloom)*0.42)),
+      inset 0 0 52px rgba(213,87,22,calc(0.10 + var(--bloom)*0.22));
+    pointer-events:none;
+  }
+  .corner{ position:absolute; width:68px; height:68px; opacity:calc(0.44 + var(--bloom)*0.56); pointer-events:none; }
+  .corner svg{ width:100%; height:100%; display:block; overflow:visible; }
+  #cTL{ top:3px; left:3px; }
+  #cTR{ top:3px; right:3px; transform:scaleX(-1); }
+  #cBL{ bottom:3px; left:3px; transform:scaleY(-1); }
+  #cBR{ bottom:3px; right:3px; transform:scale(-1,-1); }
+
+  /* ── overlay type ──────────────────────────────────────────────────── */
+  #ui{ position:absolute; inset:0; pointer-events:none; }
+  .center{ position:absolute; left:50%; transform:translateX(-50%); width:min(94%, 640px); text-align:center; }
+
+  #moons{ top:calc(env(safe-area-inset-top,0px) + 18px); }
+  #moons svg{ width:min(74%, 470px); height:auto; display:inline-block; overflow:visible;
+    opacity:calc((0.6 + var(--bloom)*0.4) * (1 - var(--inv))); }
+
+  #title{
+    top:calc(env(safe-area-inset-top,0px) + 62px); margin:0;
+    font-family:var(--f-display); font-weight:400;
+    font-size:clamp(27px, 8.6vw, 48px); line-height:1.06;
+    color:#ffd88a;
+    text-shadow:0 2px 0 #7a2a0c, 0 0 30px rgba(213,87,22,.65), 0 0 66px rgba(232,201,89,.3);
+    will-change:opacity,transform;
+  }
+  #title .sub{
+    display:block; margin-top:11px;
+    font-family:var(--f-body); font-weight:500;
+    font-size:clamp(10.5px,2.9vw,12.5px); letter-spacing:.32em; text-transform:uppercase;
+    color:rgba(246,222,178,.6); text-shadow:none;
+  }
+
+  #guide{
+    top:calc(var(--my) + var(--mr) * 1.34);
+    font-family:var(--f-groovy);
+    font-size:clamp(26px, 7.6vw, 42px); line-height:1.1;
+    color:#ffdd93;
+    text-shadow:0 2px 0 rgba(112,36,10,.9), 0 0 26px rgba(213,87,22,.66), 0 0 60px rgba(255,200,90,.34);
+    white-space:nowrap; will-change:opacity,transform;
+  }
+  #aside{
+    top:calc(var(--my) + var(--mr) * 1.34 + clamp(38px, 10.2vw, 56px));
+    font-family:var(--f-body); font-weight:500;
+    font-size:clamp(12px,3.4vw,15px); letter-spacing:.12em;
+    color:rgba(250,232,196,.85);
+    text-shadow:0 1px 14px rgba(30,10,6,.95), 0 0 26px rgba(30,10,6,.8);
+    white-space:nowrap;
+  }
+  #hint{
+    bottom:calc(env(safe-area-inset-bottom,0px) + 40px);
+    font-family:var(--f-body); font-weight:600;
+    font-size:clamp(11px,3.1vw,13px); letter-spacing:.2em;
+    color:rgba(250,232,196,.9);
+    text-shadow:0 1px 14px rgba(30,10,6,.95);
+  }
+  #hint em{ display:block; margin-top:6px; font-style:normal; font-weight:500;
+    font-size:.86em; letter-spacing:.18em; color:rgba(250,232,196,.6); }
+  #hint b{ color:#ffd88a; }
+  #hint .dot{
+    display:block; margin:0 auto 13px; width:9px; height:9px; border-radius:50%;
+    background:radial-gradient(circle at 40% 34%, #ffeeb4, #d55716 62%, #7a2a0c);
+    animation:ping 3.6s cubic-bezier(.4,0,.2,1) infinite;
+  }
+  @keyframes ping{
+    0%{ box-shadow:0 0 0 0 rgba(255,214,120,.5); transform:scale(1); }
+    62%{ box-shadow:0 0 0 19px rgba(255,214,120,0); transform:scale(1.4); }
+    100%{ box-shadow:0 0 0 0 rgba(255,214,120,0); transform:scale(1); }
+  }
+
+  /* ── the payoff ────────────────────────────────────────────────────── */
+  #scrim{
+    position:absolute; inset:0; pointer-events:none; opacity:0;
+    background:radial-gradient(125% 86% at 50% 18%,
+      rgba(26,9,6,0) 0%, rgba(26,9,6,.14) 36%, rgba(22,8,5,.44) 70%, rgba(20,7,5,.56) 100%);
+    transition:opacity 1.6s ease;
+  }
+  #invite{
+    position:absolute; left:50%; top:58%;
+    transform:translate(-50%,-42%) scale(.93);
+    width:min(90vw, 430px);
+    max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 34px);
+    overflow:auto; -webkit-overflow-scrolling:touch;
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:opacity 1.5s ease, transform 1.7s cubic-bezier(.19,1,.22,1), visibility 0s linear 1.7s;
+    padding:clamp(17px,4.6vw,26px) clamp(16px,4.4vw,26px) clamp(15px,4vw,22px);
+    border-radius:22px; text-align:center;
+    background:
+      radial-gradient(120% 90% at 50% 0%, rgba(255,214,120,.18), rgba(255,214,120,0) 56%),
+      linear-gradient(176deg, #55200f 0%, #3a1309 48%, #2a0f08 100%);
+    border:1.5px solid rgba(255,224,140,.66);
+    box-shadow:
+      0 0 0 4px rgba(26,9,6,.6), 0 0 0 5.5px rgba(196,214,70,.45),
+      0 26px 74px rgba(0,0,0,.66), inset 0 0 46px rgba(213,87,22,.26);
+  }
+  #invite.on{ opacity:1; visibility:visible; pointer-events:auto;
+    transform:translate(-50%,-50%) scale(1); transition-delay:0s,0s,0s; }
+  #scrim.on{ opacity:1; }
+
+  #invite .joke{
+    font-family:var(--f-display); font-size:clamp(24px,7vw,34px); line-height:1.14;
+    color:#ffd070; text-shadow:0 2px 0 #7a2a0c, 0 0 32px rgba(213,87,22,.62);
+  }
+  #invite .joke em{ font-style:normal; display:block; color:#f9b8d8;
+    text-shadow:0 2px 0 #7a2a0c, 0 0 30px rgba(224,85,155,.55); }
+  #invite .rule{ margin:13px auto 12px; width:100%; height:15px; }
+  #invite .rule svg{ width:100%; height:100%; display:block; overflow:visible; }
+  #invite .come{
+    font-family:var(--f-body); font-weight:500;
+    font-size:clamp(12px,3.4vw,14px); letter-spacing:.16em;
+    color:rgba(250,232,196,.82);
+  }
+  #invite .name{
+    display:block; margin:6px auto 0;
+    font-family:var(--f-display); font-size:clamp(30px,9.2vw,44px); line-height:1.04;
+    background:linear-gradient(178deg,#ffe89a 0%,#f6ad3c 40%,#dd4c0b 76%,#bd330a 100%);
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent; color:#f6ad3c;
+    filter:drop-shadow(0 2px 0 rgba(112,36,10,.95)) drop-shadow(0 0 28px rgba(213,87,22,.6));
+  }
+  #invite .when{
+    margin-top:6px; font-family:var(--f-groovy); font-size:clamp(15px,4.4vw,20px);
+    color:#c2d24a; text-shadow:0 1px 0 rgba(38,58,18,.85);
+  }
+  #invite .three{
+    margin-top:8px; font-family:var(--f-body); font-weight:600;
+    font-size:clamp(9.5px,2.7vw,11px); letter-spacing:.24em; text-transform:uppercase;
+    color:rgba(249,184,216,.92);
+  }
+  #invite .note{
+    margin:14px auto 0; max-width:33ch;
+    font-family:var(--f-body); font-weight:500;
+    font-size:clamp(12.5px,3.6vw,15px); line-height:1.58;
+    color:rgba(250,235,204,.95);
+  }
+  #invite .sig{ margin-top:8px; font-family:var(--f-groovy); font-size:clamp(15px,4.2vw,18px); color:#f9b8d8; }
+  #again{
+    margin-top:15px; display:inline-block;
+    font-family:var(--f-body); font-weight:600; font-size:12px;
+    letter-spacing:.18em; color:rgba(250,232,196,.82);
+    background:rgba(255,214,120,.1); border:1px solid rgba(255,214,120,.42);
+    border-radius:999px; padding:9px 18px; cursor:pointer; touch-action:manipulation;
+    transition:background .3s ease, color .3s ease, border-color .3s ease;
+  }
+  #again:hover,#again:focus-visible{ background:rgba(255,214,120,.22); color:#ffe6ae;
+    border-color:rgba(255,214,120,.8); outline:none; }
+
+  /* ── hold target ───────────────────────────────────────────────────── */
+  #hold{
+    position:absolute; inset:0; touch-action:none;
+    -webkit-user-select:none; user-select:none; cursor:grab;
+    background:transparent; border:0; padding:0; margin:0; color:inherit; font:inherit;
+    -webkit-appearance:none; appearance:none;
+  }
+  #hold:active{ cursor:grabbing; }
+  #hold:focus-visible{ outline:2px solid rgba(255,214,120,.55); outline-offset:-12px; border-radius:26px; }
+  #world.invited #hold{ pointer-events:none; }
+
+  /* short / landscape phones: tighten everything so nothing ever collides */
+  @media (max-height: 560px){
+    #moons{ top:calc(env(safe-area-inset-top,0px) + 10px); }
+    #moons svg{ width:min(54%, 300px); }
+    #title{ top:calc(env(safe-area-inset-top,0px) + 40px); font-size:clamp(22px,6.4vh,30px); }
+    #title .sub{ margin-top:5px; font-size:9.5px; letter-spacing:.26em; }
+    #guide{ font-size:clamp(20px,6.2vh,28px); }
+    #aside{ display:none; }
+    #hint{ bottom:calc(env(safe-area-inset-bottom,0px) + 12px); font-size:10.5px; letter-spacing:.16em; }
+    #hint .dot{ display:none; }
+    #hint em{ margin-top:3px; }
+    #invite{ top:50%; width:min(84vw,470px); padding:14px 20px 12px; border-radius:16px; }
+    #invite .joke{ font-size:clamp(19px,5.6vh,26px); }
+    #invite .rule{ margin:7px auto 7px; height:11px; }
+    #invite .come{ font-size:11px; }
+    #invite .name{ font-size:clamp(24px,7.4vh,34px); }
+    #invite .when{ font-size:14px; margin-top:3px; }
+    #invite .three{ font-size:9px; margin-top:5px; }
+    #invite .note{ margin-top:9px; font-size:12px; line-height:1.42; max-width:46ch; }
+    #invite .sig{ margin-top:5px; font-size:14px; }
+    #again{ margin-top:10px; padding:7px 15px; font-size:11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    #hint .dot{ animation:none; }
+    #invite{ transition-duration:.4s,.4s,0s; }
+  }
+  html.still *, html.still *::before, html.still *::after{
+    animation-play-state:paused !important; transition:none !important;
+  }
+</style>
+
+<div id="world">
+  <div class="bg" id="bgBase"></div>
+  <div class="bg" id="bgHeat"></div>
+  <div class="bg" id="bgSun"></div>
+  <div class="bg" id="bgRings"></div>
+  <div class="bg" id="bgWash"></div>
+  <div class="bg" id="bgWater"></div>
+  <canvas id="c"></canvas>
+  <div class="bg" id="bgVig"></div>
+
+  <div id="frame"></div>
+  <div class="corner" id="cTL"></div><div class="corner" id="cTR"></div>
+  <div class="corner" id="cBL"></div><div class="corner" id="cBR"></div>
+
+  <div id="ui">
+    <div class="center" id="moons"></div>
+    <h1 class="center" id="title">breathe with me<span class="sub">just for a minute</span></h1>
+    <div class="center" id="guide">breathe in&hellip;</div>
+    <div class="center" id="aside"></div>
+    <div class="center" id="hint"><i class="dot"></i>press &amp; <b>hold</b> to breathe in<em>let go to breathe out</em></div>
+  </div>
+
+  <div id="scrim"></div>
+  <button id="hold" type="button" aria-label="Press and hold to breathe in, release to breathe out"></button>
+
+  <div id="invite" role="dialog" aria-label="An invitation">
+    <div class="joke">you just did yoga.<em>technically.</em></div>
+    <div class="rule" id="ruleA"></div>
+    <div class="come">so come do the real thing &mdash;</div>
+    <div class="name">our yoga trip</div>
+    <div class="when" id="when">Vol. 1 &nbsp;&#10022;&nbsp; September 27</div>
+    <div class="three">connection, community &amp; celebration</div>
+    <p class="note" id="note"></p>
+    <div class="sig" id="sig"></div>
+    <button id="again" type="button">&#8634; breathe some more</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const CONFIG = { herName: "Katie", eventDate: "September 27", volume: "Vol. 1" };
+
+/* ── flags ──────────────────────────────────────────────────────────── */
+const Q = new URLSearchParams(location.search);
+const HAS_STAGE = Q.has('s');
+const STAGE = Math.max(0, Math.min(3, parseInt(Q.get('s') || '0', 10) || 0));
+const STILL = Q.get('still') === '1';
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (STILL) document.documentElement.classList.add('still');
+
+/* ── palette (sampled from the poster) ──────────────────────────────── */
+const P = {
+  hot:'#d55716', red:'#d43b08', lime:'#aab839', gold:'#e8c959', wgold:'#dfb049',
+  lorange:'#e47d40', leaf:'#488252', maroon:'#713024', brown:'#77491c',
+  teal:'#1c7a76', turq:'#49bdb2', mag:'#e0559b', pink:'#f4b0d2', pinkDk:'#b13a6e'
+};
+const RING_A = ['#ff8a2a','#ffd66e','#b9cf3f','#3fae7e','#2fb5b0','#f0491a','#f76fb4','#ff9f4d'];
+const RING_B = ['#ffd66e','#b9cf3f','#2fb5b0','#ffd66e','#f76fb4','#ffb547','#ffd66e','#b9cf3f'];
+
+/* ── elements ───────────────────────────────────────────────────────── */
+const root = document.documentElement;
+const world = document.getElementById('world');
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d', { alpha:true });
+const elTitle = document.getElementById('title');
+const elGuide = document.getElementById('guide');
+const elAside = document.getElementById('aside');
+const elHint  = document.getElementById('hint');
+const elInv   = document.getElementById('invite');
+const elScrim = document.getElementById('scrim');
+const holdEl  = document.getElementById('hold');
+
+document.getElementById('when').innerHTML = CONFIG.volume + ' &nbsp;&#10022;&nbsp; ' + CONFIG.eventDate;
+document.getElementById('note').textContent =
+  'come exactly as you are. there will be mats, mangoes, very good people and a genuinely silly amount of joy.';
+document.getElementById('sig').textContent = 'xx ' + CONFIG.herName;
+
+/* ── static ornaments ───────────────────────────────────────────────── */
+(function moons(){
+  const n = 9, w = 400, h = 40, r = 10.5, y = h/2, pad = 22;
+  let s = `<svg viewBox="0 0 ${w} ${h}" aria-hidden="true">`;
+  for (let i=0;i<n;i++){
+    const x = pad + (w-pad*2)*(i/(n-1));
+    const ph = (i/(n-1))*2 - 1, k = Math.abs(ph), sweep = ph < 0 ? 1 : 0;
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="#2a0f08" stroke="${P.wgold}" stroke-opacity=".5" stroke-width="1.1"/>`;
+    if (k < 0.985)
+      s += `<path d="M${x},${y-r} A${r},${r} 0 0 1 ${x},${y+r} A${(k*r).toFixed(2)},${r} 0 0 ${sweep} ${x},${y-r} Z" fill="${P.gold}"/>`;
+    s += `<circle cx="${x}" cy="${y}" r="${r}" fill="none" stroke="${P.hot}" stroke-opacity=".5" stroke-width="1.3"/>`;
+  }
+  s += `<path d="M14,${y+r+8} C ${w*0.3},${y+r+14} ${w*0.7},${y+r+2} ${w-14},${y+r+8}"
+         fill="none" stroke="${P.lime}" stroke-opacity=".55" stroke-width="1.3"/>`;
+  document.getElementById('moons').innerHTML = s + `</svg>`;
+})();
+
+const CORNER = `<svg viewBox="0 0 100 100" aria-hidden="true">
+  <g fill="none" stroke-linecap="round">
+    <path d="M4,96 C4,58 10,30 32,14 C50,1 76,4 86,20 C94,33 88,48 74,49 C63,50 56,41 61,32 C64,26 73,25 77,31"
+          stroke="${P.gold}" stroke-opacity=".85" stroke-width="3"/>
+    <path d="M13,96 C13,62 19,37 37,24 C53,13 71,16 78,27" stroke="${P.lime}" stroke-opacity=".72" stroke-width="2"/>
+    <path d="M4,74 C22,72 30,62 32,48" stroke="${P.hot}" stroke-opacity=".85" stroke-width="2.2"/>
+  </g>
+  <path d="M32,48 c-7,-4 -12,1 -10,7 c2,6 11,7 15,2 c4,-6 1,-13 -5,-9 z" fill="${P.hot}" fill-opacity=".9"/>
+  <circle cx="70" cy="35" r="4.2" fill="${P.mag}" fill-opacity=".9"/>
+  <circle cx="20" cy="82" r="3" fill="${P.gold}" fill-opacity=".9"/>
+</svg>`;
+for (const id of ['cTL','cTR','cBL','cBR']) document.getElementById(id).innerHTML = CORNER;
+
+document.getElementById('ruleA').innerHTML = `<svg viewBox="0 0 300 15" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M4,8 C60,8 76,2 106,2 C124,2 132,8 150,8 C168,8 176,2 194,2 C224,2 240,8 296,8"
+        fill="none" stroke="${P.gold}" stroke-opacity=".8" stroke-width="1.6"/>
+  <circle cx="150" cy="8" r="3.4" fill="${P.mag}"/>
+  <circle cx="106" cy="4" r="2" fill="${P.lime}"/><circle cx="194" cy="4" r="2" fill="${P.lime}"/>
+</svg>`;
+
+/* ── sprites: authored in LOGICAL px, rasterised at SS ──────────────── */
+let W=0, H=0, DPR=1, CX=0, CY=0, R=140, SS=2;
+
+function makeSprite(lw, lh, draw, ss){
+  const s = ss || SS;
+  const c = document.createElement('canvas');
+  c.width = Math.max(2, Math.round(lw*s));
+  c.height = Math.max(2, Math.round(lh*s));
+  const g = c.getContext('2d');
+  g.scale(s, s);
+  draw(g, lw, lh);
+  c.lw = lw; c.lh = lh;
+  return c;
+}
+
+function petalPath(g, w, h, belly, waist){
+  const cx = w/2;
+  g.beginPath();
+  g.moveTo(cx, h);
+  g.bezierCurveTo(cx - w*belly*0.5, h*0.74, cx - w*0.5*belly, h*waist*0.42, cx, 0);
+  g.bezierCurveTo(cx + w*0.5*belly, h*waist*0.42, cx + w*belly*0.5, h*0.74, cx, h);
+  g.closePath();
+}
+function paintPetal(g, w, h, cols, o){
+  const cx = w/2, belly = o.belly ?? 0.98, waist = o.waist ?? 0.5;
+  petalPath(g, w, h, belly, waist);
+  const grd = g.createLinearGradient(0, h, 0, 0);
+  grd.addColorStop(0, cols[0]); grd.addColorStop(0.5, cols[1]); grd.addColorStop(1, cols[2]);
+  g.fillStyle = grd; g.fill();
+
+  g.save(); g.clip();
+  const g2 = g.createLinearGradient(0, h, 0, h*0.14);
+  g2.addColorStop(0, 'rgba(56,14,6,.5)'); g2.addColorStop(1, 'rgba(56,14,6,0)');
+  g.fillStyle = g2; g.fillRect(0,0,w,h);
+  g.lineCap = 'round';
+  g.strokeStyle = o.vein || 'rgba(90,28,12,.5)';
+  g.lineWidth = Math.max(0.8, w*0.028);
+  g.beginPath(); g.moveTo(cx, h*0.94); g.lineTo(cx, h*0.16); g.stroke();
+  g.beginPath(); g.moveTo(cx, h*0.80); g.quadraticCurveTo(cx - w*0.20, h*0.56, cx - w*0.10, h*0.30); g.stroke();
+  g.beginPath(); g.moveTo(cx, h*0.80); g.quadraticCurveTo(cx + w*0.20, h*0.56, cx + w*0.10, h*0.30); g.stroke();
+  g.strokeStyle = o.hi || 'rgba(255,232,170,.5)';
+  g.lineWidth = Math.max(0.8, w*0.038);
+  g.beginPath(); g.moveTo(cx - w*0.15, h*0.52); g.quadraticCurveTo(cx - w*0.05, h*0.24, cx, h*0.09); g.stroke();
+  g.restore();
+
+  petalPath(g, w, h, belly, waist);
+  g.lineJoin = 'round';
+  g.strokeStyle = o.line || '#5b1f10';
+  g.lineWidth = Math.max(1, w*0.062);
+  g.stroke();
+}
+
+function paintFeather(g, w, h){
+  const cx = w/2, eyeY = h*0.25, eyeR = w*0.31;
+  g.lineCap = 'round';
+  for (let i=0;i<32;i++){
+    const t = i/31;
+    const y = h*0.97 - t*(h*0.97 - eyeY*1.05);
+    const spread = Math.sin(t*Math.PI*0.86) * w*0.44 * (0.26 + t*0.9);
+    g.strokeStyle = i%2 ? 'rgba(26,124,120,.88)' : 'rgba(78,142,86,.82)';
+    g.lineWidth = Math.max(0.7, w*0.030);
+    g.beginPath(); g.moveTo(cx, y); g.quadraticCurveTo(cx - spread*0.55, y - h*0.03, cx - spread, y - h*0.055); g.stroke();
+    g.beginPath(); g.moveTo(cx, y); g.quadraticCurveTo(cx + spread*0.55, y - h*0.03, cx + spread, y - h*0.055); g.stroke();
+  }
+  g.strokeStyle = '#3f7a3f'; g.lineWidth = Math.max(1, w*0.05);
+  g.beginPath(); g.moveTo(cx, h); g.lineTo(cx, eyeY); g.stroke();
+
+  const rings = [
+    [1.00, P.teal,   'rgba(12,66,66,.9)'],
+    [0.78, P.wgold,  'rgba(93,52,12,.9)'],
+    [0.55, P.red,    'rgba(88,24,8,.9)'],
+    [0.30, '#4a1410','rgba(28,8,6,.9)']
+  ];
+  for (const [k, fill, line] of rings){
+    g.beginPath(); g.ellipse(cx, eyeY, eyeR*k*0.86, eyeR*k, 0, 0, Math.PI*2);
+    g.fillStyle = fill; g.fill();
+    g.strokeStyle = line; g.lineWidth = Math.max(0.7, w*0.026); g.stroke();
+  }
+  g.beginPath(); g.ellipse(cx - eyeR*0.15, eyeY - eyeR*0.24, eyeR*0.19, eyeR*0.12, -0.5, 0, Math.PI*2);
+  g.fillStyle = 'rgba(255,236,178,.88)'; g.fill();
+  g.beginPath(); g.ellipse(cx, eyeY, eyeR*1.02, eyeR*1.16, 0, 0, Math.PI*2);
+  g.strokeStyle = 'rgba(18,58,52,.8)'; g.lineWidth = Math.max(0.8, w*0.032); g.stroke();
+}
+
+function paintCurl(g, w, h){
+  g.lineCap='round'; g.lineJoin='round';
+  g.strokeStyle = P.gold; g.lineWidth = Math.max(1.1, w*0.10);
+  g.beginPath();
+  g.moveTo(w*0.5, h);
+  g.bezierCurveTo(w*0.5, h*0.62, w*0.06, h*0.56, w*0.16, h*0.28);
+  g.bezierCurveTo(w*0.24, h*0.06, w*0.62, h*0.06, w*0.66, h*0.30);
+  g.bezierCurveTo(w*0.69, h*0.46, w*0.48, h*0.52, w*0.46, h*0.38);
+  g.stroke();
+  g.strokeStyle = P.lime; g.lineWidth = Math.max(0.8, w*0.065);
+  g.beginPath();
+  g.moveTo(w*0.5, h*0.96);
+  g.bezierCurveTo(w*0.80, h*0.74, w*0.98, h*0.52, w*0.88, h*0.24);
+  g.stroke();
+  g.fillStyle = P.hot;
+  g.beginPath(); g.arc(w*0.88, h*0.20, Math.max(1.2, w*0.085), 0, Math.PI*2); g.fill();
+}
+
+function paintChecker(g, w, h){
+  const cx = w/2, cy = h/2, rOut = w*0.5 - 1, SEC = 24, BANDS = 3, rIn = rOut*0.44;
+  for (let b=0;b<BANDS;b++){
+    const r0 = rIn + (rOut-rIn)*(b/BANDS), r1 = rIn + (rOut-rIn)*((b+1)/BANDS);
+    for (let s=0;s<SEC;s++){
+      const a0 = (s/SEC)*Math.PI*2, a1 = ((s+1)/SEC)*Math.PI*2;
+      g.beginPath(); g.arc(cx,cy,r1,a0,a1); g.arc(cx,cy,r0,a1,a0,true); g.closePath();
+      g.fillStyle = ((s+b)&1) ? P.red : '#2b0f0a'; g.fill();
+    }
+  }
+  g.strokeStyle = P.gold; g.lineWidth = Math.max(1, w*0.016);
+  for (const rr of [rIn, rOut]){ g.beginPath(); g.arc(cx,cy,rr,0,Math.PI*2); g.stroke(); }
+  g.strokeStyle = P.lime; g.lineWidth = Math.max(0.8, w*0.011);
+  g.beginPath(); g.arc(cx,cy,rOut - w*0.028, 0, Math.PI*2); g.stroke();
+
+  const grd = g.createRadialGradient(cx, cy - rIn*0.3, rIn*0.08, cx, cy, rIn);
+  grd.addColorStop(0,'#fff0bc'); grd.addColorStop(0.55, P.gold); grd.addColorStop(1,'#c8871d');
+  g.beginPath(); g.arc(cx,cy,rIn*0.985,0,Math.PI*2); g.fillStyle = grd; g.fill();
+  g.strokeStyle = 'rgba(90,32,10,.9)'; g.lineWidth = Math.max(1, w*0.016); g.stroke();
+
+  const u = rIn;
+  g.save(); g.translate(cx, cy + u*0.30);
+  g.fillStyle = '#5c2010'; g.strokeStyle = '#5c2010'; g.lineCap='round'; g.lineJoin='round';
+  g.beginPath(); g.ellipse(0, -u*0.05, u*0.62, u*0.19, 0, 0, Math.PI*2); g.fill();
+  g.beginPath();
+  g.moveTo(-u*0.23, -u*0.10);
+  g.quadraticCurveTo(-u*0.19, -u*0.68, 0, -u*0.76);
+  g.quadraticCurveTo(u*0.19, -u*0.68, u*0.23, -u*0.10);
+  g.closePath(); g.fill();
+  g.lineWidth = Math.max(1.2, u*0.10);
+  g.beginPath();
+  g.moveTo(-u*0.36, -u*0.32); g.quadraticCurveTo(-u*0.30, -u*0.60, 0, -u*0.64);
+  g.quadraticCurveTo(u*0.30, -u*0.60, u*0.36, -u*0.32);
+  g.stroke();
+  g.beginPath(); g.arc(0, -u*0.94, u*0.19, 0, Math.PI*2); g.fill();
+  g.restore();
+}
+
+function softDot(d, r, g_, b){
+  return makeSprite(d, d, (gg, ww) => {
+    const grd = gg.createRadialGradient(ww/2, ww/2, 0, ww/2, ww/2, ww/2);
+    grd.addColorStop(0, `rgba(${r},${g_},${b},1)`);
+    grd.addColorStop(0.3, `rgba(${r},${g_},${b},.6)`);
+    grd.addColorStop(1, `rgba(${r},${g_},${b},0)`);
+    gg.fillStyle = grd; gg.beginPath(); gg.arc(ww/2,ww/2,ww/2,0,Math.PI*2); gg.fill();
+  });
+}
+
+/* one monarch half-wing: body edge at x=0, painted with a proper heavy black
+   margin so it still reads as a butterfly against a hot orange field */
+function paintWing(g, w, h){
+  const cy = h/2;
+  const fore = g.createLinearGradient(0, 0, w, h*0.5);
+  fore.addColorStop(0, '#ffc25c'); fore.addColorStop(0.5, '#f78c2c'); fore.addColorStop(1, '#e85a0c');
+  g.lineJoin = 'round'; g.lineCap = 'round';
+
+  const upper = () => {
+    g.beginPath();
+    g.moveTo(0, cy*0.92);
+    g.bezierCurveTo(w*0.28, -h*0.04, w*1.00, h*0.06, w*0.92, h*0.40);
+    g.bezierCurveTo(w*0.84, h*0.55, w*0.32, h*0.56, 0, cy*1.04);
+    g.closePath();
+  };
+  const lower = () => {
+    g.beginPath();
+    g.moveTo(0, cy*1.02);
+    g.bezierCurveTo(w*0.28, h*0.64, w*0.80, h*0.74, w*0.68, h*0.96);
+    g.bezierCurveTo(w*0.58, h*1.06, w*0.16, h*1.02, 0, cy*1.14);
+    g.closePath();
+  };
+
+  lower(); g.fillStyle = '#ef6a12'; g.fill();
+  upper(); g.fillStyle = fore; g.fill();
+
+  // black margins (stroked wide, half sits inside the wing)
+  g.strokeStyle = '#220d04';
+  g.lineWidth = Math.max(0.9, w*0.095); lower(); g.stroke();
+  g.lineWidth = Math.max(1.0, w*0.105); upper(); g.stroke();
+
+  // black veins
+  g.strokeStyle = 'rgba(38,16,10,.9)'; g.lineWidth = Math.max(0.5, w*0.036);
+  for (let i=0;i<3;i++){
+    g.beginPath(); g.moveTo(w*0.04, cy*0.99);
+    g.quadraticCurveTo(w*0.46, h*(0.17 + i*0.11), w*0.80, h*(0.13 + i*0.15)); g.stroke();
+  }
+  g.beginPath(); g.moveTo(w*0.04, cy*1.06);
+  g.quadraticCurveTo(w*0.38, h*0.80, w*0.60, h*0.94); g.stroke();
+
+  // the little white spots along the margins
+  g.fillStyle = '#fff6e4';
+  const dots = [[0.84,0.10],[0.93,0.24],[0.90,0.37],[0.72,0.05],[0.62,0.95],[0.44,1.00],[0.78,0.86]];
+  for (let i=0;i<dots.length;i++){
+    g.beginPath(); g.arc(w*dots[i][0], h*dots[i][1], Math.max(0.55, w*0.05), 0, Math.PI*2); g.fill();
+  }
+}
+
+const SPR = {};
+function buildSprites(){
+  SS = Math.min(2.4, (window.devicePixelRatio || 1) * Math.max(1, R/150) * 1.05);
+
+  SPR.petalGreen = makeSprite(58, 150, (g,w,h)=>paintPetal(g,w,h,
+    ['#2c5a28', P.leaf, '#b6c848'], { belly:0.84, line:'#20401c', vein:'rgba(28,60,24,.55)', hi:'rgba(230,244,158,.45)' }));
+  SPR.petalPink  = makeSprite(72, 128, (g,w,h)=>paintPetal(g,w,h,
+    [P.pinkDk, P.mag, '#ffc9e4'], { belly:1.0, line:'#7d2450', vein:'rgba(125,36,80,.5)', hi:'rgba(255,238,250,.6)' }));
+  SPR.petalGold  = makeSprite(60, 96, (g,w,h)=>paintPetal(g,w,h,
+    ['#a83c0c', P.hot, '#ffdd80'], { belly:0.96, line:'#6d2409', vein:'rgba(109,36,9,.5)', hi:'rgba(255,244,200,.62)' }));
+  SPR.petalFlame = makeSprite(44, 112, (g,w,h)=>paintPetal(g,w,h,
+    ['#8d2d0a', P.red, '#f79a52'], { belly:0.7, waist:0.34, line:'#5b1c07', vein:'rgba(91,28,7,.45)', hi:'rgba(255,226,156,.5)' }));
+  SPR.feather = makeSprite(96, 180, paintFeather);
+  SPR.curl    = makeSprite(46, 56, paintCurl);
+  SPR.checker = makeSprite(180, 180, paintChecker);
+  SPR.wing    = makeSprite(26, 30, paintWing);
+
+  SPR.pollen  = softDot(24, 255, 228, 156);
+  SPR.pollenG = softDot(24, 196, 224, 124);
+  SPR.pollenP = softDot(24, 248, 172, 214);
+  SPR.spark   = softDot(28, 255, 238, 176);
+  SPR.aura    = makeSprite(300, 300, (g,w)=>{
+    const grd = g.createRadialGradient(w/2,w/2,w*0.10, w/2,w/2,w/2);
+    grd.addColorStop(0,   'rgba(255,226,152,.58)');
+    grd.addColorStop(0.34,'rgba(226,110,30,.32)');
+    grd.addColorStop(0.68,'rgba(212,59,8,.11)');
+    grd.addColorStop(1,   'rgba(212,59,8,0)');
+    g.fillStyle = grd; g.beginPath(); g.arc(w/2,w/2,w/2,0,Math.PI*2); g.fill();
+  });
+  SPR.pad = makeSprite(150, 120, (g,w,h)=>{
+    g.beginPath();
+    g.ellipse(w/2, h/2, w*0.47, h*0.42, 0, 0.36, Math.PI*2 - 0.36);
+    g.lineTo(w/2, h/2); g.closePath();
+    const grd = g.createLinearGradient(0,0,0,h);
+    grd.addColorStop(0,'#6fae60'); grd.addColorStop(0.6, P.leaf); grd.addColorStop(1,'#295530');
+    g.fillStyle = grd; g.fill();
+    g.strokeStyle = '#1d3d1c'; g.lineWidth = Math.max(1, w*0.018); g.lineJoin='round'; g.stroke();
+    g.strokeStyle = 'rgba(178,214,120,.55)'; g.lineWidth = Math.max(0.7, w*0.012);
+    for (let i=0;i<9;i++){
+      const a = 0.5 + (i/8)*(Math.PI*2 - 1.0);
+      g.beginPath(); g.moveTo(w/2, h/2);
+      g.lineTo(w/2 + Math.cos(a)*w*0.43, h/2 + Math.sin(a)*h*0.38); g.stroke();
+    }
+  });
+}
+
+/* ── mandala rings ──────────────────────────────────────────────────── */
+const RINGS = [
+  { spr:'petalGreen', n:18, r0:0.44, r1:0.58, l0:0.38, l1:0.56, tilt:0.30, spin:-0.030, off:0.0 },
+  { spr:'feather',    n:12, r0:0.33, r1:0.45, l0:0.38, l1:0.55, tilt:0.16, spin: 0.022, off:0.5 },
+  { spr:'petalFlame', n:24, r0:0.26, r1:0.35, l0:0.27, l1:0.41, tilt:0.22, spin:-0.018, off:0.25 },
+  { spr:'petalPink',  n:14, r0:0.17, r1:0.26, l0:0.34, l1:0.47, tilt:0.34, spin: 0.014, off:0.0 },
+  { spr:'petalGold',  n:10, r0:0.10, r1:0.15, l0:0.23, l1:0.32, tilt:0.40, spin:-0.010, off:0.5 }
+];
+
+/* ── pools ──────────────────────────────────────────────────────────── */
+const MOBILE = matchMedia('(max-width: 700px)').matches;
+const N_POLLEN = RM ? 28 : (MOBILE ? 56 : 80);
+const N_FLY    = RM ? 6  : (MOBILE ? 12 : 13);
+const N_PAD    = 11, N_RING = 10, N_SPARK = 28;
+
+const pollen = [], flies = [], pads = [], ringsPool = [], sparks = [];
+let seed = 20250927;
+function rnd(){ seed = (seed*1664525 + 1013904223) & 0x7fffffff; return seed / 0x7fffffff; }
+
+for (let i=0;i<N_POLLEN;i++) pollen.push({x:0,y:0,vx:0,vy:0,r:0,a:0,ph:0,sp:0,kind:0});
+for (let i=0;i<N_FLY;i++)    flies.push({x:0,y:0,vx:0,vy:0,ph:0,fs:0,sc:0,ang:0,orb:0,orbA:0,orbS:0,a:0});
+for (let i=0;i<N_PAD;i++)    pads.push({x:0,y:0,sc:0,ph:0,sp:0,rot:0});
+for (let i=0;i<N_RING;i++)   ringsPool.push({live:false,t:0,dur:0,r0:0,r1:0,ci:0,k:0,amp:0,ph:0,w:0});
+for (let i=0;i<N_SPARK;i++)  sparks.push({a:0,rr:0,ph:0,sp:0});
+
+function seedParticles(){
+  for (const p of pollen){
+    p.x = rnd()*W; p.y = rnd()*H;
+    p.r = 1.4 + rnd()*3.4; p.a = 0.3 + rnd()*0.6;
+    p.ph = rnd()*Math.PI*2; p.sp = 0.25 + rnd()*0.7;
+    p.vy = -(5 + rnd()*15); p.vx = (rnd()-0.5)*8;
+    p.kind = rnd() < 0.6 ? 0 : (rnd() < 0.55 ? 1 : 2);
+  }
+  for (const f of flies){
+    f.x = rnd()*W; f.y = H*0.12 + rnd()*H*0.78;
+    f.vx = (rnd()-0.5)*24; f.vy = (rnd()-0.5)*14;
+    f.ph = rnd()*Math.PI*2; f.fs = 5.2 + rnd()*3.4;
+    f.sc = 0.68 + rnd()*0.5; f.ang = rnd()*6.28;
+    f.orbS = (rnd()<0.5?-1:1)*(0.14+rnd()*0.2);
+    f.orb = 1.12 + rnd()*0.36; f.a = 0.2;
+  }
+  for (let i=0;i<N_FLY;i++) flies[i].orbA = (i/N_FLY)*Math.PI*2 + rnd()*0.35;
+  for (let i=0;i<N_PAD;i++){
+    const p = pads[i];
+    p.x = (i + 0.5)/N_PAD*W + (rnd()-0.5)*W*0.14;
+    p.y = H*(0.70 + rnd()*0.34);
+    p.sc = 0.26 + rnd()*0.34; p.ph = rnd()*Math.PI*2; p.sp = 0.12 + rnd()*0.2;
+    p.rot = (rnd()-0.5)*0.6;
+  }
+  for (let i=0;i<N_SPARK;i++){
+    const s = sparks[i];
+    s.a = (i/N_SPARK)*Math.PI*2 + rnd()*0.2;
+    s.rr = 1.02 + rnd()*0.32;
+    s.ph = rnd()*Math.PI*2; s.sp = 0.9 + rnd()*1.6;
+  }
+}
+
+/* ── breath ─────────────────────────────────────────────────────────── */
+const PH_IN = 4.0, PH_HOLD = 2.0, PH_OUT = 6.0, CYCLE = PH_IN + PH_HOLD + PH_OUT;
+const easeInOutSine = u => 0.5 - 0.5*Math.cos(Math.PI*u);
+
+const G = { name:'in', u:0, v:0 };            /* reused — nothing allocates per frame */
+function guideAt(gt){
+  const c = ((gt % CYCLE) + CYCLE) % CYCLE;
+  if (c < PH_IN){
+    G.name = 'in'; G.u = c/PH_IN; G.v = easeInOutSine(G.u);
+  } else if (c < PH_IN + PH_HOLD){
+    G.name = 'hold'; G.u = (c - PH_IN)/PH_HOLD;
+    G.v = 0.985 + 0.015*Math.cos(G.u*Math.PI*2);
+  } else {
+    G.name = 'out'; G.u = (c - PH_IN - PH_HOLD)/PH_OUT;
+    G.v = 1 - easeInOutSine(G.u);
+  }
+  return G;
+}
+
+const S = {
+  t:0, gt:0, open:0, guideOpen:0, userOpen:0, ctrl:0,
+  holding:false, everHeld:false, heldTotal:0, lastInput:-999,
+  sync:0, syncBest:0, bloom:0, bloomFloor:0, breaths:0, up:false,
+  phase:'in', phaseIdx:0, asideIdx:0,
+  invited:false, inv:0, titleA:1, hintA:0, emitT:0, autoInvite:true
+};
+
+const ASIDES = ['', 'nothing to do but this', 'let the shoulders go', 'soften the jaw',
+  'there you are', 'yes — just like that', 'the flower is doing it too', 'stay a little longer'];
+
+/* keep the drifting things where they were when the window changes shape
+   instead of scattering them again */
+function reflowParticles(ow, oh){
+  const kx = W/(ow || W), ky = H/(oh || H);
+  for (const p of pollen){ p.x *= kx; p.y *= ky; }
+  for (const f of flies){ f.x *= kx; f.y *= ky; }
+  for (const p of pads){ p.x *= kx; p.y *= ky; }
+}
+
+/* ── layout ─────────────────────────────────────────────────────────── */
+let seeded = false;
+function resize(){
+  const ow = W, oh = H;
+  W = window.innerWidth; H = window.innerHeight;
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+
+  const SHORT = H < 560;
+  CX = W/2;
+  CY = H*(SHORT ? 0.46 : 0.442);
+  R  = Math.min(W*0.368, H*(SHORT ? 0.21 : 0.262), 290);
+
+  root.style.setProperty('--mx', CX + 'px');
+  root.style.setProperty('--my', CY + 'px');
+  root.style.setProperty('--mr', R + 'px');
+
+  buildSprites();
+  if (!seeded){ seedParticles(); seeded = true; }
+  else reflowParticles(ow, oh);
+}
+
+/* ── colour rings ───────────────────────────────────────────────────── */
+let ringCol = 0;
+function emitRing(){
+  for (const r of ringsPool){
+    if (r.live) continue;
+    r.live = true; r.t = 0;
+    r.dur = (RM ? 6.4 : 4.8) + rnd()*1.3;
+    r.r0 = R*0.52; r.r1 = R*(2.0 + rnd()*0.8);
+    r.ci = (ringCol++) % RING_A.length;
+    r.k = 5 + ((ringCol*3) % 4);
+    r.amp = RM ? 0.010 : (0.022 + rnd()*0.038);
+    r.ph = rnd()*Math.PI*2;
+    r.w = 1.7 + rnd()*2.4;
+    return;
+  }
+}
+
+/* ── update ─────────────────────────────────────────────────────────── */
+function update(dt){
+  S.t += dt; S.gt += dt;
+  if (S.holding) S.lastInput = S.t;
+
+  const g = guideAt(S.gt);
+  S.guideOpen = g.v;
+
+  if (g.name !== S.phase){
+    S.phase = g.name;
+    if (g.name === 'in'){
+      S.phaseIdx++;
+      S.asideIdx = (S.phaseIdx > 1) ? 1 + ((S.phaseIdx - 2) % (ASIDES.length - 1)) : 0;
+    }
+  }
+
+  /* her own breath follows the same S-curve the guide does — slow at the
+     turns, full in the middle — so playing along actually lines up */
+  const v = S.userOpen;
+  const swing = Math.sqrt(v*(1 - v) > 0 ? v*(1 - v) : 0) + 0.13;
+  if (S.holding){
+    S.userOpen += dt * 0.58 * swing;
+    S.heldTotal += dt;
+    if (S.userOpen > 1) S.userOpen = 1;
+  } else {
+    S.userOpen -= dt * 0.39 * swing;
+    if (S.userOpen < 0.004) S.userOpen = 0;
+  }
+
+  const idle = S.t - S.lastInput;
+  const want = (S.everHeld && idle < 13 && !S.invited) ? 1 : 0;
+  S.ctrl += (want - S.ctrl) * Math.min(1, dt*(want ? 2.4 : 0.5));
+
+  const prev = S.open;
+  S.open = S.guideOpen + (S.userOpen - S.guideOpen)*S.ctrl;
+
+  /* the in-sync glow: quick to earn, slow to lose, and once she's had it
+     most of it stays — reward for playing along, never a penalty */
+  if (S.ctrl > 0.5){
+    const d = Math.abs(S.userOpen - S.guideOpen);
+    S.sync += dt * (d < 0.28 ? 0.10*(1 - d) + 0.045 : -0.035);
+  } else S.sync += dt * -0.02;
+  S.sync = S.sync < 0 ? 0 : (S.sync > 1 ? 1 : S.sync);
+  if (S.sync > S.syncBest) S.syncBest = S.sync;
+  else if (S.ctrl > 0.5 && S.sync < S.syncBest*0.6) S.sync = S.syncBest*0.6;
+
+  if (!S.up && S.open > 0.70) S.up = true;
+  if (S.up && S.open < 0.20){ S.up = false; S.breaths++; }
+
+  const target = Math.max(S.bloomFloor, Math.min(1, S.breaths/3));
+  S.bloom += (target - S.bloom)*Math.min(1, dt*0.55);
+  S.inv   += ((S.invited ? 1 : 0) - S.inv)*Math.min(1, dt*1.15);
+
+  S.emitT -= dt;
+  if (S.open > prev + 0.0004 && S.emitT <= 0){
+    emitRing();
+    S.emitT = RM ? 1.6 : (0.78 - 0.26*S.bloom);
+  }
+  for (const r of ringsPool){ if (r.live && (r.t += dt) >= r.dur) r.live = false; }
+
+  const drift = 0.55 + S.open*0.95;
+  for (const p of pollen){
+    p.ph += dt*p.sp;
+    p.x += (p.vx*0.4 + Math.sin(p.ph)*10)*dt*drift;
+    p.y += p.vy*dt*drift;
+    if (p.y < -20){ p.y = H + 16; p.x = rnd()*W; }
+    if (p.x < -20) p.x = W + 16; else if (p.x > W + 20) p.x = -16;
+  }
+
+  const gather = Math.min(1, S.sync*0.8 + S.bloom*0.45);
+  const fcx = CX, fcy = CY + (H*0.175 - CY)*S.inv, fr = R*(1 - 0.52*S.inv);
+  for (const f of flies){
+    f.ph += dt*f.fs*(0.55 + 0.45*S.open);
+    f.a += ((0.12 + 0.88*Math.min(1, S.bloom*1.25 + gather)) - f.a)*Math.min(1, dt*0.8);
+    if (gather > 0.05){
+      f.orbA += dt*f.orbS*(0.6 + S.open*0.6);
+      const rr = fr*(f.orb + 0.14*Math.sin(f.ph*0.22))*(0.80 + S.open*0.32)*(1 + 0.45*S.inv);
+      const tx = fcx + Math.cos(f.orbA)*rr*0.74;
+      const ty = fcy + Math.sin(f.orbA)*rr*(1.02 - 0.35*S.inv);
+      const k = dt*(0.5 + gather*2.4);
+      f.vx += (tx - f.x)*k*1.5; f.vy += (ty - f.y)*k*1.5;
+    } else {
+      f.vx += (Math.sin(f.ph*0.13 + f.orbA)*16 - f.vx)*dt*0.5;
+      f.vy += (Math.cos(f.ph*0.09)*11 - f.vy)*dt*0.5;
+    }
+    f.vx *= (1 - dt*1.7); f.vy *= (1 - dt*1.7);
+    f.x += f.vx*dt*6; f.y += f.vy*dt*6;
+    if (f.x < -50) f.x = W + 36; else if (f.x > W + 50) f.x = -36;
+    if (f.y < -50) f.y = H + 36; else if (f.y > H + 50) f.y = -36;
+    if (Math.abs(f.vx) + Math.abs(f.vy) > 0.4){
+      let d = Math.atan2(f.vy, f.vx) - f.ang;
+      while (d > Math.PI) d -= Math.PI*2;
+      while (d < -Math.PI) d += Math.PI*2;
+      f.ang += d*Math.min(1, dt*3);
+    }
+  }
+
+  for (const p of pads){ p.ph += dt*p.sp; p.x += Math.sin(p.ph*0.5)*3*dt; }
+  for (const s of sparks) s.ph += dt*s.sp;
+
+  const tGone = S.everHeld ? 1 : (S.t > 5.2 ? Math.min(1, (S.t - 5.2)/1.6) : 0);
+  S.titleA += ((1 - tGone) - S.titleA)*Math.min(1, dt*2.2);
+  const wantHint = (S.heldTotal > 1.8 || S.invited) ? 0 : (S.t > 2.6 ? 1 : 0);
+  S.hintA += (wantHint - S.hintA)*Math.min(1, dt*1.5);
+
+  if (!S.invited && S.autoInvite){
+    const enough = S.breaths >= (S.sync > 0.85 ? 3 : 4) || S.t > 115;
+    if (enough && S.bloom > 0.86 && (S.phase === 'out' || S.t > 130)) showInvite();
+  }
+}
+
+/* ── DOM ────────────────────────────────────────────────────────────── */
+let lastTxt = '', lastAside = -1;
+function syncDOM(){
+  root.style.setProperty('--open',  S.open.toFixed(3));
+  root.style.setProperty('--bloom', S.bloom.toFixed(3));
+  root.style.setProperty('--sync',  S.sync.toFixed(3));
+  root.style.setProperty('--inv',   S.inv.toFixed(3));
+
+  elTitle.style.opacity = S.titleA.toFixed(3);
+  elTitle.style.transform = 'translateX(-50%) translateY(' + ((1-S.titleA)*-14).toFixed(2) + 'px)';
+  elHint.style.opacity = (S.hintA*0.95).toFixed(3);
+
+  const g = guideAt(S.gt);
+  const dur = g.name === 'in' ? PH_IN : g.name === 'hold' ? PH_HOLD : PH_OUT;
+  const el = g.u*dur;
+  const fin = Math.min(1, el/0.6);
+  const fout = Math.min(1, (dur - el)/(g.name === 'hold' ? 0.45 : 0.8));
+  let a = Math.min(fin, fout); a = a*a*(3 - 2*a);
+  const hide = 1 - S.inv;
+
+  const txt = g.name === 'in' ? 'breathe in…' : g.name === 'hold' ? 'hold…' : 'and out…';
+  if (txt !== lastTxt){ elGuide.textContent = txt; lastTxt = txt; }
+  const grow = g.name === 'hold' ? 1.07 : (0.94 + g.v*0.13);
+  elGuide.style.opacity = (a*hide).toFixed(3);
+  elGuide.style.transform = 'translateX(-50%) scale(' + grow.toFixed(3) + ') translateY(' + ((1-a)*7).toFixed(2) + 'px)';
+
+  if (S.asideIdx !== lastAside){ elAside.textContent = ASIDES[S.asideIdx] || ''; lastAside = S.asideIdx; }
+  elAside.style.opacity = ((g.name === 'in' ? 0 : a*0.85)*hide).toFixed(3);
+}
+
+/* ── draw ───────────────────────────────────────────────────────────── */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const o = S.open, bl = S.bloom, sy = S.sync, inv = S.inv;
+  const mCX = CX, mCY = CY + (H*0.175 - CY)*inv, mR = R*(1 - 0.52*inv);
+  const q = mR/150;
+
+  /* lily pads — a suggestion in the dark water, full leaves once it blooms */
+  {
+    ctx.globalAlpha = Math.min(1, 0.10 + bl*0.64);
+    for (const p of pads){
+      const sc = p.sc*(0.72 + bl*0.3)*(R/150);
+      const w = SPR.pad.lw*sc, h = SPR.pad.lh*sc;
+      ctx.save();
+      ctx.translate(p.x, p.y + Math.sin(p.ph)*4);
+      ctx.rotate(p.rot + Math.sin(p.ph*0.7)*0.05);
+      ctx.drawImage(SPR.pad, -w/2, -h/2, w, h);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* psychedelic breath rings */
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.translate(mCX, mCY);
+  for (const r of ringsPool){
+    if (!r.live) continue;
+    const u = r.t/r.dur;
+    const e = 1 - Math.pow(1 - u, 2.4);
+    const rad = (r.r0 + (r.r1 - r.r0)*e)*(1 - 0.52*inv);
+    const a = Math.sin(Math.min(1, u*3.4)*Math.PI*0.5)*(1 - u)*(0.42 + 0.34*bl + 0.2*o)*(1 - 0.45*inv);
+    if (a <= 0.005) continue;
+    const seg = RM ? 40 : 72;
+    ctx.beginPath();
+    for (let i=0;i<=seg;i++){
+      const th = (i/seg)*Math.PI*2;
+      const rr = rad*(1 + r.amp*Math.sin(th*r.k + r.ph + S.t*0.35));
+      const x = Math.cos(th)*rr, y = Math.sin(th)*rr*0.985;
+      if (i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    const lw = r.w*(1 + e*1.25)*q;
+    ctx.globalAlpha = a*0.34; ctx.lineWidth = lw*2.8; ctx.strokeStyle = RING_A[r.ci]; ctx.stroke();
+    ctx.globalAlpha = a*0.80; ctx.lineWidth = lw*1.05; ctx.strokeStyle = RING_B[r.ci]; ctx.stroke();
+    ctx.globalAlpha = a*0.50; ctx.lineWidth = Math.min(1.4, lw*0.26); ctx.strokeStyle = '#fff4d4'; ctx.stroke();
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  /* aura */
+  {
+    const w = mR*2*(1.02 + o*0.62 + bl*0.2);
+    ctx.globalAlpha = 0.3 + o*0.4 + bl*0.22;
+    ctx.drawImage(SPR.aura, mCX - w/2, mCY - w/2, w, w);
+    ctx.globalAlpha = 1;
+  }
+
+  /* mandala */
+  ctx.save();
+  ctx.translate(mCX, mCY);
+
+  { /* art-nouveau curls, a whiplash halo riding just outside the petals */
+    const cl = SPR.curl.lw, ch = SPR.curl.lh;
+    const k = (mR*0.235)/ch;
+    const rr = mR*(0.80 + o*0.30);
+    const rot = S.t*0.035*(RM ? 0.35 : 1);
+    ctx.globalAlpha = 0.36 + bl*0.44;
+    for (let i=0;i<16;i++){
+      const a = (i/16)*Math.PI*2 + rot;
+      ctx.save(); ctx.rotate(a); ctx.translate(0, -rr);
+      ctx.drawImage(SPR.curl, -cl*k/2, -ch*k, cl*k, ch*k);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  for (let ri=0; ri<RINGS.length; ri++){
+    const cfg = RINGS[ri], spr = SPR[cfg.spr];
+    const baseR = mR*(cfg.r0 + (cfg.r1 - cfg.r0)*o);
+    const len   = mR*(cfg.l0 + (cfg.l1 - cfg.l0)*o);
+    const k     = len/spr.lh;
+    const wpx   = spr.lw*k;
+    const spin  = S.t*cfg.spin*(RM ? 0.4 : 1) + cfg.off;
+    const fold  = (1 - o)*cfg.tilt;
+    for (let i=0;i<cfg.n;i++){
+      const a = (i/cfg.n)*Math.PI*2 + spin;
+      const flut = RM ? 0 : Math.sin(S.t*1.1 + i*1.7 + ri)*0.018*(0.35 + o);
+      ctx.save();
+      ctx.rotate(a);
+      ctx.translate(0, -baseR);
+      ctx.rotate(fold*(i%2 ? 1 : -1)*0.34 + flut);
+      ctx.scale(1 - fold*0.22, 1);
+      ctx.drawImage(spr, -wpx/2, -len, wpx, len);
+      ctx.restore();
+    }
+  }
+
+  { /* checkerboard heart */
+    const w = mR*(0.25 + o*0.14)*2;
+    ctx.save();
+    ctx.rotate(-S.t*0.026*(RM ? 0.3 : 1));
+    ctx.drawImage(SPR.checker, -w/2, -w/2, w, w);
+    ctx.restore();
+  }
+  ctx.restore();
+
+  /* colour temperature: cool on the fold, warm on the swell.
+     source-atop only touches pixels already drawn, so no clip is needed. */
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-atop';
+  const cool = (1 - o)*0.28*(1 - bl*0.4);
+  if (cool > 0.006){
+    ctx.globalAlpha = cool; ctx.fillStyle = '#12405c';
+    ctx.fillRect(mCX - mR*1.9, mCY - mR*1.9, mR*3.8, mR*3.8);
+  }
+  const warm = o*(0.12 + bl*0.14) + sy*0.11;
+  if (warm > 0.006){
+    ctx.globalAlpha = warm; ctx.fillStyle = sy > 0.4 ? '#ffd873' : '#ff9a3c';
+    ctx.fillRect(mCX - mR*1.9, mCY - mR*1.9, mR*3.8, mR*3.8);
+  }
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  /* in-sync shimmer */
+  if (sy > 0.02){
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const s of sparks){
+      const tw = 0.5 + 0.5*Math.sin(s.ph*2.2);
+      const a = sy*(0.22 + tw*0.78);
+      if (a < 0.02) continue;
+      const rr = mR*s.rr*(0.76 + o*0.42);
+      const x = mCX + Math.cos(s.a + S.t*0.05)*rr;
+      const y = mCY + Math.sin(s.a + S.t*0.05)*rr*0.96;
+      const w = SPR.spark.lw*(0.55 + tw*0.75)*q;
+      ctx.globalAlpha = a;
+      ctx.drawImage(SPR.spark, x - w/2, y - w/2, w, w);
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  /* pollen */
+  for (const p of pollen){
+    const spr = p.kind === 0 ? SPR.pollen : p.kind === 1 ? SPR.pollenG : SPR.pollenP;
+    const w = p.r*2.1*(0.75 + o*0.4);
+    ctx.globalAlpha = p.a*(0.4 + bl*0.34)*(0.5 + 0.5*Math.sin(p.ph*1.7));
+    ctx.drawImage(spr, p.x - w/2, p.y - w/2, w, w);
+  }
+  ctx.globalAlpha = 1;
+
+  /* butterflies */
+  {
+    const ww = SPR.wing.lw, wh = SPR.wing.lh;
+    for (const f of flies){
+      if (f.a < 0.03) continue;
+      const flap = RM ? 0.86 : (0.54 + 0.46*Math.abs(Math.sin(f.ph)));
+      const sc = f.sc*(R/150)*1.12;
+      ctx.save();
+      ctx.translate(f.x, f.y);
+      ctx.rotate(f.ang + Math.PI/2);
+      ctx.globalAlpha = f.a*(0.55 + 0.45*Math.min(1, bl + sy));
+      ctx.save(); ctx.scale(flap*sc, sc); ctx.drawImage(SPR.wing, 0, -wh/2, ww, wh); ctx.restore();
+      ctx.save(); ctx.scale(-flap*sc, sc); ctx.drawImage(SPR.wing, 0, -wh/2, ww, wh); ctx.restore();
+      ctx.fillStyle = '#2c0f06';
+      ctx.beginPath();
+      ctx.ellipse(0, wh*sc*0.02, Math.max(0.7, 1.4*sc), wh*sc*0.33, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+/* ── payoff ─────────────────────────────────────────────────────────── */
+function showInvite(){
+  if (S.invited) return;
+  S.invited = true;
+  world.classList.add('invited');
+  elScrim.classList.add('on');
+  elInv.classList.add('on');
+}
+function hideInvite(){
+  S.invited = false;
+  world.classList.remove('invited');
+  elScrim.classList.remove('on');
+  elInv.classList.remove('on');
+  /* she asked for more, so the world keeps its colour and the flower
+     simply comes back to the middle and breathes on */
+  S.breaths = 0; S.up = false; S.t = 0; S.lastInput = -999; S.heldTotal = 3;
+  S.bloomFloor = 0.88; S.sync = Math.min(S.sync, 0.5); S.syncBest = S.sync;
+  try { holdEl.focus({ preventScroll:true }); } catch(_){}
+}
+document.getElementById('again').addEventListener('click', e => { e.preventDefault(); hideInvite(); });
+
+/* ── input ──────────────────────────────────────────────────────────── */
+function down(e){
+  if (S.invited) return;
+  S.holding = true; S.everHeld = true; S.lastInput = S.t;
+  if (e && e.pointerId !== undefined && holdEl.setPointerCapture){
+    try { holdEl.setPointerCapture(e.pointerId); } catch(_){}
+  }
+  if (e && e.preventDefault) e.preventDefault();
+}
+function up(e){
+  if (!S.holding) return;
+  S.holding = false; S.lastInput = S.t;
+  if (e && e.pointerId !== undefined && holdEl.releasePointerCapture){
+    try { holdEl.releasePointerCapture(e.pointerId); } catch(_){}
+  }
+}
+holdEl.addEventListener('pointerdown', down);
+holdEl.addEventListener('pointerup', up);
+holdEl.addEventListener('pointercancel', up);
+holdEl.addEventListener('lostpointercapture', up);
+holdEl.addEventListener('contextmenu', e => e.preventDefault());
+holdEl.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) down(e); });
+holdEl.addEventListener('keyup',   e => { if (e.key === ' ' || e.key === 'Enter') up(e); });
+window.addEventListener('blur', () => up(null));
+
+/* ── loop ───────────────────────────────────────────────────────────── */
+let raf = 0, last = 0;
+function frame(now){
+  raf = requestAnimationFrame(frame);
+  let dt = (now - last)/1000; last = now;
+  if (!(dt > 0)) dt = 1/60;
+  if (dt > 0.1) dt = 0.1;   /* absorb hitches without letting the breath lurch */
+  update(dt); syncDOM(); draw();
+}
+function start(){ if (!raf){ last = performance.now(); raf = requestAnimationFrame(frame); } }
+function stop(){ if (raf){ cancelAnimationFrame(raf); raf = 0; } }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stop(); else if (!STILL) start();
+});
+
+let rzT = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(rzT);
+  rzT = setTimeout(() => { resize(); if (STILL){ syncDOM(); draw(); } }, 140);
+});
+
+/* ── stages ─────────────────────────────────────────────────────────── */
+function warm(sec, holding){
+  const was = S.holding;
+  if (holding !== undefined) S.holding = holding;
+  const step = 1/60;
+  for (let i=0, n=Math.round(sec*60); i<n; i++) update(step);
+  S.holding = was;
+}
+function applyStage(){
+  S.autoInvite = false;
+  if (STAGE === 0){
+    S.gt = 0.1; warm(0.4);
+    S.t = 0.6; S.titleA = 1; S.hintA = 0.85;
+  }
+  if (STAGE >= 1){
+    S.breaths = 1; S.bloom = 0.34;
+    S.gt = CYCLE*2;
+    warm(PH_IN + 0.8);                    /* ride a full inhale into the hold */
+    S.titleA = 0; S.hintA = 0.55; S.t = 26; S.bloom = 0.36;
+  }
+  if (STAGE >= 2){
+    S.breaths = 3; S.bloom = 1; S.sync = 1;
+    S.everHeld = true; S.heldTotal = 12; S.ctrl = 1;
+    S.gt = CYCLE*3 - 0.2; S.userOpen = 0; S.lastInput = S.t;
+    warm(5.0, true);                      /* she inhales with the guide */
+    S.bloom = 1; S.sync = 1; S.breaths = 3; S.titleA = 0; S.hintA = 0;
+    S.asideIdx = 4;                       /* "there you are" */
+  }
+  if (STAGE >= 3){
+    S.breaths = 4;
+    showInvite();
+    warm(1.6);
+    S.inv = 1; S.sync = 1; S.bloom = 1;
+    if (STILL){
+      elInv.style.transition = 'none'; elScrim.style.transition = 'none';
+      elInv.classList.add('on'); elScrim.classList.add('on');
+    }
+  }
+  if (!STILL) S.autoInvite = true;
+}
+
+/* ── go ─────────────────────────────────────────────────────────────── */
+resize();
+if (HAS_STAGE) applyStage();
+else { warm(1.2); S.t = 0; S.gt = 0; S.breaths = 0; S.bloom = 0; S.up = false; S.sync = 0; }
+syncDOM(); draw();
+if (!STILL) start();
+
+})();
+</script>
