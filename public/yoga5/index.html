@@ -64,7 +64,12 @@ body{
 
 #stage{
   position:fixed; inset:0; width:100%;
-  height:100vh; height:100dvh;
+  /* deliberately NOT dvh.  iOS Safari slides its URL bar all the way through a
+     swipe, and dvh would drag the stage — and with it every layer's perspective
+     maths, the canvas backing store and all five blurred crops — along with it,
+     re-rasterising on every frame of the bar's animation.  The large
+     (toolbar-hidden) height never moves; boot() then pins it in exact pixels. */
+  height:100vh; height:100lvh;
   overflow:hidden; touch-action:none;
   cursor:grab; user-select:none; -webkit-user-select:none;
   isolation:isolate;
@@ -865,19 +870,33 @@ const BEATS = [
 
 /* ─────────────────────── viewport metrics ─────────────────── */
 let VW = 0, VH = 0, fitContain = 1, fitCover = 1, ctx = null;
-function measure(){
-  VW = stage.clientWidth || window.innerWidth;
-  VH = stage.clientHeight || window.innerHeight;
+const fxCanvas = document.getElementById("fx");
+let mW = -1, mH = -1, mDpr = -1;
+
+/* measure() is the expensive one: it reads layout, re-solves the responsive
+   rule of every layer, and can throw away the canvas backing store.  It is
+   therefore idempotent — call it as often as you like, it only does work when
+   something it depends on has actually moved. */
+function measure(force){
+  const w = stage.clientWidth || window.innerWidth;
+  const h = stage.clientHeight || window.innerHeight;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (!force && w === mW && h === mH && dpr === mDpr) return;
+  mW = w; mH = h; mDpr = dpr;
+  VW = w; VH = h;
   /* the sheet is fitted with room left under it for the "come closer" line */
   fitContain = Math.min(VW * 0.88 / PW, (VH - 150) * 0.92 / PH);
   fitCover = Math.min(Math.max(VW / PW, VH / PH), 1.62);
   for (let i = 0; i < LAYERS.length; i++) if (LAYERS[i].resp) LAYERS[i].resp(LAYERS[i]);
-  const c = document.getElementById("fx");
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  c.width = Math.round(VW * dpr); c.height = Math.round(VH * dpr);
-  c.style.width = VW + "px"; c.style.height = VH + "px";
-  ctx = c.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const c = fxCanvas;
+  const cw = Math.round(VW * dpr), ch = Math.round(VH * dpr);
+  /* assigning either dimension wipes the canvas even when the value is
+     unchanged — which reads as a one-frame hole through the whole particle
+     field — so only ever touch it when the size has genuinely changed */
+  if (c.width !== cw || c.height !== ch){ c.width = cw; c.height = ch; ctx = null; }
+  if (c.style.width !== VW + "px") c.style.width = VW + "px";
+  if (c.style.height !== VH + "px") c.style.height = VH + "px";
+  if (!ctx){ ctx = c.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
 }
 
 /* ─────────────────────── camera state ─────────────────────── */
@@ -909,7 +928,9 @@ function onDown(e){
   if (pid !== null) return;
   pid = e.pointerId; dragging = true; dragStations = 0; moved = 0; flick = 0;
   startY = lastY = e.clientY; startX = e.clientX; lastT = performance.now();
-  stage.classList.add("dragging");
+  /* the class only exists to swap the cursor — skip the style invalidation
+     entirely on touch, where there is no cursor to swap */
+  if (e.pointerType !== "touch" && e.pointerType !== "pen") stage.classList.add("dragging");
   try { stage.setPointerCapture(pid); } catch (err) {}
   kick();
 }
@@ -932,6 +953,8 @@ function onUp(e){
   else if (dragStations > 0.26) goto(station + 1);
   else if (dragStations < -0.26) goto(station - 1);
   dragStations = 0;
+  /* any viewport change that arrived mid-swipe was parked; apply it now */
+  if (pendingVP){ const v = pendingVP; pendingVP = null; commitViewport(v[0], v[1]); }
   kick();
 }
 stage.addEventListener("pointerdown", onDown);
@@ -963,8 +986,68 @@ window.addEventListener("keydown", function(e){
   else if (k === "End"){ e.preventDefault(); goto(LAST); }
 });
 document.getElementById("again").addEventListener("click", function(e){ e.stopPropagation(); goto(0); });
-window.addEventListener("resize", function(){ measure(); kick(); });
-if (window.visualViewport) window.visualViewport.addEventListener("resize", function(){ measure(); kick(); });
+
+/* ───────────────── viewport lock (the mobile fix) ──────────────
+   iOS Safari collapses and expands its URL bar *during* a swipe and fires
+   resize / visualViewport-resize on every frame of that animation.  Left
+   alone, each one relayouts the stage, re-solves the perspective of 31 depth
+   layers, and reallocates a full-resolution canvas — five blurred and four
+   blended layers re-rasterising, mid-gesture, which is exactly the flicker.
+
+   So: the stage is pinned to the *large* (toolbar-hidden) viewport, which the
+   bar cannot move; a pure bar slide is recognised and dropped; anything that
+   survives is coalesced into one rAF; and nothing is ever committed while a
+   finger is down. */
+let lockW = 0, lockH = 0, settleT = 0, measureRaf = 0, pendingVP = null;
+
+/* the layout viewport — on iOS this is the large viewport, so it is already
+   independent of the toolbar; on desktop it is simply the window */
+function viewW(){ return Math.round(document.documentElement.clientWidth || window.innerWidth || 0); }
+function viewH(){ return Math.round(document.documentElement.clientHeight || window.innerHeight || 0); }
+
+function requestMeasure(){
+  if (measureRaf) return;
+  measureRaf = requestAnimationFrame(function(){ measureRaf = 0; measure(); kick(); });
+}
+function commitViewport(w, h){
+  if (dragging){ pendingVP = [w, h]; return; }   /* never relayout mid-swipe */
+  lockW = w; lockH = h;
+  stage.style.height = h + "px";
+  requestMeasure();
+}
+function lockViewport(){
+  const w = viewW(), h = viewH();
+  if (w) lockW = w;
+  if (h){ lockH = h; stage.style.height = h + "px"; }
+}
+function onViewportChange(){
+  if (!dragging) pendingVP = null;      /* a fresh reading supersedes a parked one */
+  const w = viewW(), h = viewH();
+  if (!w || !h) return;
+  if (w === lockW && h === lockH) return;                       /* nothing moved */
+  if (w === lockW && Math.abs(h - lockH) <= Math.max(160, h * 0.22)){
+    /* height-only, and no bigger than a browser chrome bar: assume it is the
+       URL bar sliding.  Do no work now — just look again once it has settled,
+       so a genuine slow window drag on desktop is still honoured. */
+    clearTimeout(settleT);
+    settleT = setTimeout(function(){
+      settleT = 0;
+      const w2 = viewW(), h2 = viewH();
+      if (w2 && h2 && (w2 !== lockW || h2 !== lockH)) commitViewport(w2, h2);
+    }, 360);
+    return;
+  }
+  clearTimeout(settleT); settleT = 0;
+  commitViewport(w, h);
+}
+window.addEventListener("resize", onViewportChange);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", onViewportChange);
+window.addEventListener("orientationchange", function(){
+  setTimeout(function(){
+    const w = viewW(), h = viewH();
+    if (w && h){ clearTimeout(settleT); settleT = 0; lockW = -1; commitViewport(w, h); }
+  }, 120);
+});
 
 /* ─────────────────── canvas atmosphere ────────────────────── */
 const DUST = [], PETAL = [], BFLY = [], EYES = [];
@@ -1287,7 +1370,8 @@ document.addEventListener("visibilitychange", function(){
 
 /* ───────────────────────── boot ───────────────────────────── */
 function boot(){
-  measure(); buildSprites(); seedParticles();
+  lockViewport();            /* pin the stage height before anything measures it */
+  measure(true); buildSprites(); seedParticles();
   if (STILL) renderStill();
   else { prevT = performance.now(); running = true; raf = requestAnimationFrame(frame); }
   requestAnimationFrame(function(){ veil.classList.add("gone"); });
