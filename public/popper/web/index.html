@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>popper · the 3-minute story</title>
+<style>
+  :root { color-scheme: dark; }
+  .viz-root {
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink-1:#ffffff; --ink-2:#c3c2b7; --ink-3:#898781;
+    --ring:rgba(255,255,255,0.10); --grid:#2c2c2a;
+    --blue:#3987e5; --orange:#d95926; --good:#0ca30c; --crit:#d03b3b;
+    --warn:#fab219; --violet:#9085e9; --aqua:#199e70;
+  }
+  :root[data-theme="light"] .viz-root {
+    color-scheme: light;
+    --page:#f9f9f7; --surface:#fcfcfb;
+    --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+    --ring:rgba(11,11,11,0.10); --grid:#e1e0d9;
+    --blue:#2a78d6; --orange:#eb6834; --good:#0ca30c; --crit:#d03b3b;
+    --warn:#eda100; --violet:#4a3aa7; --aqua:#1baf7a;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body.viz-root {
+    background: var(--page); color: var(--ink-1); overflow: hidden;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .scene { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 5vh 7vw;
+    opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+  .scene.here { opacity: 1; pointer-events: auto; }
+  .inner { width: min(940px, 100%); }
+  .center { text-align: center; }
+  [data-step] { opacity: 0; transform: translateY(14px); transition: opacity .45s ease, transform .45s ease; }
+  [data-step].on { opacity: 1; transform: none; }
+
+  .kicker { font-size: clamp(13px, 1.4vw, 16px); letter-spacing: .14em; text-transform: uppercase;
+            color: var(--ink-3); margin-bottom: 16px; font-weight: 600; }
+  h1.hero { font-size: clamp(40px, 6.2vw, 76px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+  .lead { font-size: clamp(20px, 2.6vw, 31px); line-height: 1.32; font-weight: 550; }
+  .lead b { color: var(--blue); }
+  .sub { font-size: clamp(14px, 1.6vw, 18px); color: var(--ink-2); line-height: 1.45; }
+  .gap { margin-top: 22px; } .gap-s { margin-top: 12px; }
+
+  .feed { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: clamp(13px, 1.5vw, 16px);
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 14px;
+    padding: 14px 20px; height: 190px; overflow: hidden; position: relative; text-align: left; }
+  .feed .row { display: flex; gap: 10px; padding: 2.5px 0; color: var(--ink-2); }
+  .feed .row .ok { color: var(--good); font-weight: 700; }
+  .feed .row .bad { color: var(--crit); font-weight: 800; }
+  .feed .row .tag { color: var(--ink-3); font-size: .82em; border: 1px solid var(--ring);
+                    border-radius: 5px; padding: 0 5px; align-self: center; }
+  .feed .counter { position: absolute; top: 12px; right: 16px; font-size: clamp(15px, 1.8vw, 19px);
+                   color: var(--ink-1); font-variant-numeric: tabular-nums; font-weight: 700; }
+
+  .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 16px;
+    padding: 20px 26px; box-shadow: 0 10px 40px rgba(0,0,0,.25); position: relative; text-align: left; }
+  .card .big { font-size: clamp(19px, 2.5vw, 28px); font-weight: 700; letter-spacing: -0.01em; }
+  .stamp { position: absolute; top: -15px; right: 20px; transform: rotate(4deg);
+    font-weight: 800; font-size: clamp(13px, 1.6vw, 18px); letter-spacing: .06em;
+    padding: 5px 13px; border-radius: 9px; color: #fff; }
+  .stamp.bad { background: var(--crit); } .stamp.good { background: var(--good); }
+  .stamp.info { background: var(--blue); }
+
+  .predict { border: 1.5px solid var(--blue); border-radius: 14px; padding: 15px 22px;
+    background: var(--surface); font-family: ui-monospace, Menlo, monospace;
+    font-size: clamp(14px, 1.8vw, 19px); text-align: left; }
+  .predict .lbl { font-family: system-ui, sans-serif; font-size: .72em; letter-spacing: .1em;
+                  text-transform: uppercase; color: var(--blue); font-weight: 700; }
+  .predict .cite { color: var(--ink-3); font-size: .82em; }
+  .miss-flash { color: var(--crit); font-weight: 800; }
+  .hit-flash { color: var(--good); font-weight: 800; }
+
+  .belief { display: flex; align-items: center; gap: 14px; background: var(--surface);
+    border: 1px solid var(--ring); border-radius: 12px; padding: 10px 16px; text-align: left;
+    transition: all .4s ease; }
+  .belief + .belief { margin-top: 8px; }
+  .belief .bid { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: var(--ink-3); min-width: 118px; }
+  .belief .cl { flex: 1; font-size: clamp(14px, 1.6vw, 16.5px); }
+  .belief .pill { font-size: 11.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+                  border: 1.5px solid var(--good); color: var(--good); white-space: nowrap; }
+  .belief.dead { border-color: var(--crit); }
+  .belief.dead .cl { text-decoration: line-through; text-decoration-color: var(--crit);
+                     text-decoration-thickness: 2px; color: var(--ink-3); }
+  .belief.dead .pill { border-color: var(--crit); color: var(--crit); }
+  .belief.new { border-color: var(--aqua); }
+  .belief.new .pill { border-color: var(--aqua); color: var(--aqua); }
+
+  .meter { display:flex; align-items:center; gap: 12px; }
+  .meter .track { flex:1; height: 11px; border-radius: 7px; background: var(--grid); overflow: hidden; }
+  .meter .fill { height: 100%; width: 0%; border-radius: 7px; background: var(--blue);
+                 transition: width .8s ease, background .4s ease; }
+  .meter .val { font-variant-numeric: tabular-nums; font-weight: 800; min-width: 60px;
+                font-size: clamp(15px, 1.9vw, 20px); }
+
+  .days { display: grid; grid-template-columns: 105px repeat(5, 1fr) 150px; gap: 8px; align-items: stretch; }
+  .days .who { display:flex; align-items:center; font-weight: 700; font-size: clamp(13px,1.5vw,16px); }
+  .day { background: var(--surface); border: 1.5px solid var(--ring); border-radius: 12px;
+    padding: 9px 6px; text-align: center; opacity: 0; transform: scale(.92); transition: all .35s ease; }
+  .day.on { opacity: 1; transform: none; }
+  .day .d { font-size: 10.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .08em; }
+  .day .n { font-size: clamp(15px, 1.9vw, 21px); font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0 1px; }
+  .day .n small { color: var(--ink-3); font-weight: 600; }
+  .day.bad { border-color: var(--crit); } .day.bad .n { color: var(--crit); }
+  .day .m { font-size: 10.5px; color: var(--ink-3); }
+  .tot { display:flex; flex-direction:column; justify-content:center; padding: 0 10px;
+         border-left: 1px solid var(--grid); opacity:0; transition: opacity .5s ease; }
+  .tot.on { opacity:1; }
+  .tot .t1 { font-weight: 800; font-size: clamp(14px,1.7vw,18px); font-variant-numeric: tabular-nums;}
+  .tot .t2 { font-size: 11.5px; color: var(--ink-3); }
+
+  .bars { display: flex; align-items: flex-end; gap: 7vw; justify-content: center; height: 270px; }
+  .barcol { display:flex; flex-direction: column; align-items: center; gap: 10px; width: 150px; }
+  .barcol .bv { font-size: clamp(26px, 3.6vw, 44px); font-weight: 800; font-variant-numeric: tabular-nums;
+                opacity: 0; transition: opacity .4s ease; }
+  .barcol .bar2 { width: 100%; border-radius: 10px 10px 4px 4px; height: 0;
+                  transition: height .8s cubic-bezier(.2,.8,.2,1); }
+  .barcol .bl { font-size: clamp(13px, 1.5vw, 15.5px); color: var(--ink-2); text-align:center; line-height:1.3;}
+
+  .duo { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .mini { border-radius: 14px; border: 1.5px solid var(--ring); padding: 15px 18px; background: var(--surface); text-align:center; }
+  .mini .t { font-size: 11.5px; letter-spacing:.1em; text-transform: uppercase; color: var(--ink-3); font-weight:700;}
+  .mini .v { font-size: clamp(20px, 2.8vw, 31px); font-weight: 800; margin-top: 5px; font-variant-numeric: tabular-nums;}
+  .mini.bad { border-color: var(--crit); } .mini.bad .v { color: var(--crit); }
+  .mini.good { border-color: var(--good); } .mini.good .v { color: var(--good); }
+
+  .loops { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .looprow { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .loopcap { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 700; }
+  .loopo { display: flex; align-items: center; gap: 10px; font-size: clamp(14px, 1.8vw, 19px);
+           font-weight: 650; color: var(--ink-3); }
+  .loopo .node { border: 1.5px solid var(--ring); background: var(--surface); border-radius: 11px;
+                 padding: 8px 16px; color: var(--ink-1); }
+  .loopo.repair .node { border-color: var(--violet); }
+  .loops .link { color: var(--crit); font-weight: 750; font-size: clamp(12px, 1.5vw, 15px); padding: 2px 0; }
+
+  .why { border: 1px solid var(--ring); border-radius: 14px; overflow: hidden; background: var(--surface); }
+  .why .wboth { padding: 10px 16px; text-align: center; color: var(--ink-2); font-weight: 650;
+                border-bottom: 1px solid var(--grid); font-size: clamp(14px, 1.7vw, 17px); }
+  .why .wrow { display: grid; grid-template-columns: 120px 1fr auto; gap: 14px; align-items: center;
+               padding: 12px 16px; font-size: clamp(14px, 1.7vw, 17px); }
+  .why .wrow + .wrow { border-top: 1px solid var(--grid); }
+  .why .wname { font-weight: 800; }
+  .why .wact { color: var(--ink-2); }
+  .why .wact b { color: var(--ink-1); }
+  .why .wchip { font-weight: 800; font-variant-numeric: tabular-nums; padding: 4px 12px;
+                border-radius: 9px; border: 1.5px solid; white-space: nowrap; }
+  .why .lose .wchip { color: var(--crit); border-color: var(--crit); }
+  .why .win .wchip { color: var(--good); border-color: var(--good); }
+
+  .videos { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .vid { border-radius: 14px; border: 1.5px solid var(--ring); overflow: hidden; background: var(--surface); }
+  .vid video { width: 100%; display: block; }
+  .vid .cap { padding: 8px 12px; font-size: 13px; color: var(--ink-2); display:flex; justify-content:space-between; }
+
+  .dots { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 7px; z-index: 5; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--grid); transition: background .3s; }
+  .dots i.here { background: var(--blue); }
+  .hint { position: fixed; bottom: 14px; right: 18px; color: var(--ink-3); font-size: 13px; z-index: 5; transition: opacity .6s; }
+  .typing { white-space: pre-wrap; }
+</style>
+</head>
+<body class="viz-root">
+
+<!-- 0 · TITLE -->
+<section class="scene"><div class="inner center">
+  <div class="kicker" data-step="0">why you can't leave an AI agent working alone</div>
+  <h1 class="hero" data-step="0">popper</h1>
+  <p class="lead gap" data-step="1">Agents don't just fail.<br>They fail <b>silently</b>, and report success.</p>
+  <p class="sub gap" data-step="2">Everything you're about to see is a real recorded run. Unedited.</p>
+</div></section>
+
+<!-- 1 · THE LIE (plays) -->
+<section class="scene"><div class="inner">
+  <p class="lead" data-step="0" style="margin-bottom:6px">We gave an agent a simple job. Process today's 14 invoices.</p>
+  <p class="sub" data-step="0" style="margin-bottom:14px">Each time it finishes one, the system replies <b style="color:var(--good)">done ✓</b>. That's how it knows the work happened.</p>
+  <div class="feed" data-step="0"><div class="counter" id="lieCounter"></div><div id="lieFeed"></div></div>
+  <div class="gap" data-step="1">
+    <div class="card"><span class="stamp info">AGENT REPORT</span>
+      <div class="big">“<span id="lieNotes"></span>”</div>
+      <div class="sub gap-s" id="lieMoney"></div>
+    </div>
+  </div>
+  <div class="gap" data-step="2">
+    <div class="card" style="border-color:var(--crit)"><span class="stamp bad">FALSE COMPLETION</span>
+      <div class="big">The company's records: <span style="color:var(--crit)" id="truthCount"></span> processed
+        · <span style="color:var(--crit)" id="truthMoney"></span></div>
+      <div class="sub gap-s">A hidden bug: the system said done ✓ every time, but nothing was ever saved.
+        The agent had no way to notice. You find out <b>next week</b>.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 2 · THE LONG-HORIZON BIND -->
+<section class="scene"><div class="inner center">
+  <div class="kicker" data-step="0">the long-horizon bind</div>
+  <p class="lead" data-step="0">Nothing outside the agent checked anything.<br>It judged its work by re-reading its <b>own context</b>.</p>
+  <p class="lead gap" data-step="1">You could <b>wipe the context</b> and start over.<br>
+    <span class="sub">But long-horizon work is one long trajectory. Wipe it and the agent loses what it learned.
+    And some mistakes only surface deep into the run.</span></p>
+  <p class="lead gap" data-step="2">So the memory stays. <b>The mistakes can't.</b></p>
+</div></section>
+
+<!-- 3 · IDEA 1: THE REPAIR LOOP -->
+<section class="scene"><div class="inner center">
+  <div class="kicker" data-step="0">idea 1 · repair instead of reset</div>
+  <p class="lead" data-step="0">Keep the memory. Add a second loop<br>whose only job is to <b>repair it</b>.</p>
+  <div class="loops gap" data-step="1">
+    <div class="looprow"><span class="loopcap">work loop · every step</span>
+      <div class="loopo"><span class="node">act</span><span class="arr">→</span>
+        <span class="node">observe</span><span class="arr">→</span>
+        <span class="node">remember</span><span class="arr">↺</span></div></div>
+    <div class="link" style="color:var(--ink-3)">when something is wrong ↓</div>
+    <div class="looprow"><span class="loopcap">repair loop · runs only when needed</span>
+      <div class="loopo repair"><span class="node">quarantine the bad belief</span><span class="arr">→</span>
+        <span class="node">fix the world-model</span><span class="arr">→</span>
+        <span class="node">re-test later</span><span class="arr">↺</span></div></div>
+  </div>
+  <p class="sub gap" data-step="1">On the bad day, this removes one wrong belief and writes the correct one.<br>Everything else the agent knows survives. Nothing is wiped.</p>
+  <p class="lead gap" data-step="2">One question left. <b>Who decides when something is wrong?</b><br>
+    <span class="sub">Not the agent. Grading its own work is how we got here.</span></p>
+</div></section>
+
+<!-- 4 · IDEA 2: SURPRISE -->
+<section class="scene"><div class="inner center">
+  <div class="kicker" data-step="0">idea 2 · surprise</div>
+  <h1 class="hero" data-step="0" style="font-size:clamp(30px,4.4vw,54px)">Before every action,<br><b style="color:var(--blue)">predict</b> what happens next.</h1>
+  <div class="gap" data-step="1" style="max-width:680px;margin-left:auto;margin-right:auto">
+    <div class="predict">
+      <div class="lbl">every action now carries a prediction</div>
+      <div class="gap-s">process invoice #7 → “if I check later, its record will say <b>processed</b>”</div>
+    </div>
+    <p class="sub gap-s">Checked against what actually happens. A failed prediction can't be faked,<br>and it names the exact belief that was wrong.</p>
+  </div>
+  <div class="loops gap" data-step="2">
+    <div class="looprow">
+      <div class="loopo"><span class="node">act</span><span class="arr">→</span>
+        <span class="node">predict</span><span class="arr">→</span>
+        <span class="node">check</span><span class="arr">↺</span></div></div>
+    <div class="link">a prediction fails → the repair loop fires, at that belief</div>
+  </div>
+  <p class="sub gap-s" data-step="2">Surprise is the trigger. Reality is the judge. Watch it work.</p>
+</div></section>
+
+<!-- 3 · THE CATCH (plays) -->
+<section class="scene"><div class="inner">
+  <div class="kicker" data-step="0">same job · same hidden bug · popper agent</div>
+  <div data-step="0">
+    <div class="belief"><span class="bid">b3_writes_persist</span><span class="cl">A write persists: a later read will show it.</span><span class="pill">✓ trusted</span></div>
+    <div class="belief"><span class="bid">b4_200_ok</span><span class="cl">“OK” on a write means it really worked.</span><span class="pill">✓ trusted</span></div>
+  </div>
+  <div class="feed gap" data-step="1" style="height:104px"><div class="counter" id="ackCounter"></div><div id="ackFeed"></div></div>
+  <div class="gap" data-step="2">
+    <div class="predict">
+      <div class="lbl">spot-check · predict your own total</div>
+      <div class="gap-s">“I've processed 14, so the records must show <b>at least 14</b>.”
+        <span class="gap-s" id="cpResult" style="display:block"></span></div>
+    </div>
+    <div class="meter gap-s"><span class="sub">surprise</span><div class="track"><div class="fill" id="surpFill"></div></div><span class="val" id="surpVal">0%</span></div>
+  </div>
+  <div class="gap" data-step="3" id="readbacks" style="font-family:ui-monospace,Menlo,monospace;font-size:clamp(13px,1.6vw,16px)"></div>
+  <div class="gap" data-step="4">
+    <div class="belief dead"><span class="bid">b3_writes_persist</span><span class="cl">A write persists: a later read will show it.</span><span class="pill">✕ QUARANTINED 0/4</span></div>
+    <div class="belief new"><span class="bid">learned</span><span class="cl" id="newBeliefText"></span><span class="pill">new belief</span></div>
+  </div>
+</div></section>
+
+<!-- 4 · HONEST REPORT -->
+<section class="scene"><div class="inner">
+  <div class="kicker" data-step="0">the report, this time</div>
+  <div class="card" data-step="0"><span class="stamp good">HONEST</span>
+    <div class="big">“<span id="honestNotes"></span>”</div>
+  </div>
+  <div class="duo gap" data-step="1">
+    <div class="mini bad"><div class="t">the normal agent claimed</div><div class="v" id="cmpLie"></div></div>
+    <div class="mini good"><div class="t">popper reported</div><div class="v" id="cmpTrue"></div></div>
+  </div>
+  <p class="lead gap center" data-step="1">Same 14 done-checkmarks. One believed them. One tested them.<br>Caught in <b id="detSteps"></b> steps, for <b>seven cents</b>.</p>
+</div></section>
+
+<!-- 5 · FIVE DAYS (plays) -->
+<section class="scene"><div class="inner">
+  <p class="lead" data-step="0" style="margin-bottom:16px">Agents live for weeks. Bugs ship, formats change.<br><b>This one never resets.</b></p>
+  <div class="days" data-step="1" id="rowReset"></div>
+  <div style="height:12px"></div>
+  <div class="days" data-step="2" id="rowPopper"></div>
+  <p class="sub gap" data-step="2">Its beliefs carry over: quarantined when the world breaks, restored when it heals.</p>
+</div></section>
+
+<!-- 6 · RESULTS (plays) -->
+<section class="scene"><div class="inner center">
+  <div class="kicker" data-step="0">125 recorded workdays, five different worlds</div>
+  <p class="lead" data-step="0" style="margin-bottom:22px">How often is the final report <b>badly wrong</b>?</p>
+  <div class="bars" data-step="0" id="bars"></div>
+  <div class="duo gap" data-step="2" style="grid-template-columns:repeat(3,1fr);max-width:860px;margin-left:auto;margin-right:auto">
+    <div class="mini"><div class="t">failures detected in</div><div class="v" id="detTile"></div></div>
+    <div class="mini"><div class="t">on the cheapest model</div><div class="v" id="costTile"></div></div>
+    <div class="mini good"><div class="t">also caught on a live public service we didn't build</div><div class="v" id="rwTile"></div></div>
+  </div>
+</div></section>
+
+<!-- 7 · BROWSER (videos play) -->
+<section class="scene"><div class="inner">
+  <div class="kicker" data-step="0">the same kind of day, on a screen</div>
+  <p class="lead" data-step="0" style="margin-bottom:14px">Here the agent works a web page: click <b>Mark paid</b> on 12 invoices.
+    Mid-run the page updates. Clicks still say <b style="color:var(--good)">Saved ✓</b>. The books stop changing.</p>
+  <div class="videos" data-step="0">
+    <div class="vid"><video id="vidL" src="media/reset.mp4" muted loop playsinline preload="auto"></video>
+      <div class="cap"><span>normal agent</span></div></div>
+    <div class="vid"><video id="vidR" src="media/popper.mp4" muted loop playsinline preload="auto"></video>
+      <div class="cap"><span>popper</span></div></div>
+  </div>
+  <div class="why gap" data-step="1">
+    <div class="wboth">Both clicked all 12. Both saw <b style="color:var(--good)">Saved ✓</b> every time, every row turn green.</div>
+    <div class="wrow lose" data-step="1"><span class="wname">normal agent</span>
+      <span class="wact"><b>believed the screen</b></span>
+      <span class="wchip" id="bChipL"></span></div>
+    <div class="wrow win" data-step="2"><span class="wname">popper</span>
+      <span class="wact"><b>tested it</b>. “The books must show 12 paid.” They showed <b style="color:var(--crit)">5</b>. Belief falsified.</span>
+      <span class="wchip" id="bChipR"></span></div>
+  </div>
+</div></section>
+
+<!-- 9 · CLOSER -->
+<section class="scene"><div class="inner center">
+  <h1 class="hero" data-step="0">Surprise is a free verifier.</h1>
+  <p class="lead gap" data-step="1">predict → check → quarantine → repair<br>
+    <span class="sub">no answer key · no resets · any domain · real, unedited runs</span></p>
+</div></section>
+
+<div class="dots" id="dots"></div>
+<div class="hint" id="hint">→ to advance</div>
+
+<script src="story_data.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const scenes = [...document.querySelectorAll('.scene')];
+const STEPS = scenes.map(sc => 1 + Math.max(0, ...[...sc.querySelectorAll('[data-step]')].map(e => +e.dataset.step)));
+let S = 0, P = 0;
+const timers = [];
+function clearTimers(){ while(timers.length) clearTimeout(timers.pop()); }
+function after(ms, fn){ timers.push(setTimeout(fn, ms)); }
+const fmt$ = x => x == null ? '—' : '$' + Number(x).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2});
+
+function apply() {
+  scenes.forEach((sc, i) => {
+    sc.classList.toggle('here', i === S);
+    if (i === S) sc.querySelectorAll('[data-step]').forEach(el =>
+      el.classList.toggle('on', +el.dataset.step <= P));
+  });
+  document.querySelectorAll('#dots i').forEach((d, i) => d.classList.toggle('here', i === S));
+  $('#hint').style.opacity = (S === 0 && P === 0) ? 1 : 0;
+  runBeat(S, P);
+}
+
+function buildDays(rowEl, op, who, anim) {
+  rowEl.innerHTML = `<div class="who">${who}</div>` + op.episodes.map(e => {
+    const cls = e.gross ? 'bad' : '';
+    return `<div class="day ${cls}"><div class="d">day ${e.ep}</div>
+      <div class="n">${e.claimed}<small>/${e.actual}</small></div>
+      <div class="m">claimed/real</div></div>`;
+  }).join('') + `<div class="tot"><div class="t1">${op.totals.claimed} claimed · ${op.totals.actual} real</div>
+    <div class="t2">${fmt$(op.totals.claimedAmt)} claimed</div></div>`;
+  const days = [...rowEl.querySelectorAll('.day')];
+  if (anim) {
+    days.forEach((d, i) => after(200 + i * 380, () => d.classList.add('on')));
+    after(200 + 5 * 380 + 150, () => rowEl.querySelector('.tot').classList.add('on'));
+  } else {
+    days.forEach(d => d.classList.add('on'));
+    rowEl.querySelector('.tot').classList.add('on');
+  }
+}
+
+const FINALS = {
+  '1:0': () => {
+    const feed = $('#lieFeed'); feed.innerHTML = '';
+    const w = STORY.lie.writes;
+    w.slice(-5).forEach(x => feed.insertAdjacentHTML('beforeend',
+      `<div class="row"><span>process invoice #${x.id}</span><span class="ok">→ done ✓</span></div>`));
+    $('#lieCounter').textContent = `finished ${w.length}/${w.length}`;
+  },
+  '1:1': () => {
+    $('#lieNotes').textContent = STORY.lie.report.notes;
+    $('#lieMoney').textContent = `${STORY.lie.report.processed} invoices · ${fmt$(STORY.lie.report.amount)}. Submitted with budget to spare.`;
+  },
+  '1:2': () => {
+    $('#truthCount').textContent = STORY.lie.truth.processed;
+    $('#truthMoney').textContent = fmt$(STORY.lie.truth.amount);
+  },
+  '5:1': () => {
+    const feed = $('#ackFeed'); feed.innerHTML = '';
+    for (let i = 0; i < 2; i++) feed.insertAdjacentHTML('beforeend',
+      `<div class="row"><span>process invoice → done ✓</span><span class="tag">a "done ✓" proves nothing</span></div>`);
+    $('#ackCounter').textContent = `${STORY.catch.acks}/${STORY.catch.acks} look perfect`;
+  },
+  '5:2': () => {
+    const cp = STORY.catch.checkpoint;
+    $('#cpResult').innerHTML =
+      `the records show <span class="miss-flash">${cp.actual}</span> → <span class="miss-flash">PREDICTION FAILED</span>`;
+    $('#surpFill').style.width = '46%'; $('#surpFill').style.background = 'var(--crit)';
+    $('#surpVal').textContent = '46%';
+  },
+  '5:3': () => {
+    const rb = $('#readbacks'); rb.innerHTML = '';
+    STORY.catch.readbacks.forEach(r => rb.insertAdjacentHTML('beforeend',
+      `<div>checked an invoice it "finished": expected <b>"${r.expect.value}"</b>, record says <span class="miss-flash">"${r.actual}"</span> ✕</div>`));
+    $('#surpFill').style.width = '88%'; $('#surpVal').textContent = '88%';
+  },
+  '5:4': () => { $('#newBeliefText').textContent = STORY.catch.new_belief.claim.slice(0, 110) + '…'; },
+  '6:0': () => { $('#honestNotes').textContent = STORY.catch.report.notes.slice(0, 150) + '…'; },
+  '6:1': () => {
+    $('#cmpLie').textContent = `${STORY.lie.report.processed} · ${fmt$(STORY.lie.report.amount)}`;
+    $('#cmpTrue').textContent = `${STORY.catch.report.processed} (the truth)`;
+  },
+  '7:1': () => buildDays($('#rowReset'), STORY.op_reset, 'normal agent', false),
+  '7:2': () => buildDays($('#rowPopper'), STORY.op_popper, 'popper', false),
+};
+
+function runBeat(s, p) {
+  clearTimers();
+  for (let q = 0; q < p; q++) { const f = FINALS[s + ':' + q]; if (f) f(); }
+
+  if (s === 1 && p === 0) {
+    const feed = $('#lieFeed'); feed.innerHTML = ''; $('#lieCounter').textContent = '';
+    STORY.lie.writes.forEach((w, i) => after(200 + i * 260, () => {
+      feed.insertAdjacentHTML('beforeend',
+        `<div class="row"><span>process invoice #${w.id}</span><span class="ok">→ done ✓</span></div>`);
+      if (feed.children.length > 5) feed.removeChild(feed.firstChild);
+      $('#lieCounter').textContent = `finished ${i+1}/${STORY.lie.writes.length}`;
+    }));
+  }
+  if (s === 1 && p === 1) FINALS['1:1']();
+  if (s === 1 && p === 2) FINALS['1:2']();
+  if (s === 5 && p === 1) {
+    const feed = $('#ackFeed'); feed.innerHTML = '';
+    const n = STORY.catch.acks;
+    for (let i = 0; i < n; i++) after(120 + i * 130, () => {
+      feed.insertAdjacentHTML('beforeend',
+        `<div class="row"><span>process invoice → done ✓</span><span class="tag">a "done ✓" proves nothing</span></div>`);
+      if (feed.children.length > 2) feed.removeChild(feed.firstChild);
+      $('#ackCounter').textContent = `${i+1}/${n} look perfect`;
+    });
+  }
+  if (s === 5 && p === 2) {
+    $('#cpResult').innerHTML = '';
+    $('#surpFill').style.width = '4%'; $('#surpFill').style.background = 'var(--blue)';
+    $('#surpVal').textContent = '4%';
+    after(650, FINALS['5:2']);
+  }
+  if (s === 5 && p === 3) {
+    const rb = $('#readbacks'); rb.innerHTML = '';
+    STORY.catch.readbacks.forEach((r, i) => after(250 + i * 550, () => {
+      rb.insertAdjacentHTML('beforeend',
+        `<div>checked an invoice it "finished": expected <b>"${r.expect.value}"</b>, record says <span class="miss-flash">"${r.actual}"</span> ✕</div>`);
+      const v = 46 + (i + 1) * 14;
+      $('#surpFill').style.width = v + '%'; $('#surpVal').textContent = v + '%';
+    }));
+  }
+  if (s === 5 && p === 4) FINALS['5:4']();
+  if (s === 6) { FINALS['6:0'](); if (p >= 1) FINALS['6:1'](); $('#detSteps').textContent = (STORY.catch.detect_step - 1); }
+  if (s === 7 && p === 1) buildDays($('#rowReset'), STORY.op_reset, 'normal agent', true);
+  if (s === 7 && p === 2) buildDays($('#rowPopper'), STORY.op_popper, 'popper', true);
+  if (s === 8) {
+    const b = STORY.bars;
+    const rows = [
+      { v: b.reset, label: 'normal agent<br>(fresh start daily)', color: 'var(--orange)' },
+      { v: b.naive, label: 'agent that keeps<br>its own notes', color: 'var(--aqua)' },
+      { v: b.popper, label: '<b>popper</b><br>(checks its predictions)', color: 'var(--blue)' },
+    ];
+    const el = $('#bars');
+    if (!el.dataset.built) {
+      el.dataset.built = 1;
+      el.innerHTML = rows.map((r, i) => `<div class="barcol">
+        <div class="bv" id="bv${i}">${r.v}%</div>
+        <div class="bar2" id="bar${i}" style="background:${r.color}"></div>
+        <div class="bl">${r.label}</div></div>`).join('');
+    }
+    const upto = Math.min(p + 1, 3);
+    rows.forEach((r, i) => {
+      const show = i < upto;
+      $('#bar' + i).style.height = show ? Math.max(6, r.v * 2.2) + 'px' : '0px';
+      $('#bv' + i).style.opacity = show ? 1 : 0;
+    });
+    if (p >= 2) {
+      $('#detTile').textContent = '~' + Math.round(b.det_steps) + ' steps';
+      $('#costTile').textContent = '~11¢ / workday';
+      if (STORY.rw) $('#rwTile').textContent = 'same catch';
+    }
+  }
+  const vidScene = scenes.findIndex(sc => sc.querySelector('#vidL'));
+  if (s === vidScene) {
+    ['#vidL', '#vidR'].forEach(sel => {
+      const v = $(sel); if (!v) return;
+      v.playbackRate = 1; if (v.paused) v.play().catch(() => {});
+    });
+  } else {
+    ['#vidL', '#vidR'].forEach(sel => { const v = $(sel); if (v && !v.paused) v.pause(); });
+  }
+}
+
+const EXTRA_STEPS = { 8: 3 };
+function maxStep(s) { return Math.max(STEPS[s], EXTRA_STEPS[s] || 0); }
+function next() { if (P + 1 < maxStep(S)) P++; else if (S + 1 < scenes.length) { S++; P = 0; } apply(); }
+function prev() { if (P > 0) P--; else if (S > 0) { S--; P = maxStep(S) - 1; } apply(); }
+
+document.addEventListener('keydown', e => {
+  if (['ArrowRight', ' ', 'PageDown', 'Enter'].includes(e.key)) { e.preventDefault(); next(); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); prev(); }
+  else if (e.key >= '0' && e.key <= '9') { S = Math.min(scenes.length - 1, +e.key); P = 0; apply(); }
+  else if (e.key === 'r') runBeat(S, P);
+  else if (e.key === 't') {
+    const r = document.documentElement;
+    r.setAttribute('data-theme', r.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+  }
+});
+document.addEventListener('click', () => next());
+
+if (STORY.browser) {
+  $('#bChipL').textContent = `claimed ${STORY.browser.reset.claimed} · real ${STORY.browser.reset.recorded}`;
+  $('#bChipR').textContent = `claimed ${STORY.browser.popper.claimed} ✓ the truth`;
+}
+$('#dots').innerHTML = scenes.map(() => '<i></i>').join('');
+const q = new URLSearchParams(location.search);
+if (q.get('theme')) document.documentElement.setAttribute('data-theme', q.get('theme'));
+if (q.get('s')) { S = Math.min(scenes.length - 1, +q.get('s') || 0); P = +(q.get('p') || 0); }
+apply();
+</script>
+</body>
+</html>
