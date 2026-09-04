@@ -1,4 +1,4 @@
-<title>ARGUS — one-minute pitch</title>
+<title>Recursive Self-Improvement | Claude Meetup</title>
 <style>
 :root {
   --bg:#0B1014; --ink:#F2F5F7; --mut:#7E8C99; --pix:#2FA88E; --jud:#E06A50;
@@ -52,6 +52,695 @@ img.panel { border-radius:10px; background:#fff; border:1px solid var(--rule);
 .loopwrap { width:min(64vw,560px) }
 .closing { font-size:clamp(17px,2vw,24px); color:var(--ink); max-width:42ch }
 .closing em { color:var(--pix); font-style:normal }
+
+/* Editorial opening with real headlines layered like paper clippings. */
+.intro { isolation:isolate; overflow:hidden; background:
+  radial-gradient(circle at 18% 18%,rgba(47,168,142,.12),transparent 28%),
+  radial-gradient(circle at 82% 76%,rgba(224,106,80,.08),transparent 30%),var(--bg) }
+.intro::before { content:""; position:absolute; inset:0; z-index:-1; opacity:.28;
+  background-image:radial-gradient(rgba(242,245,247,.18) .65px,transparent .65px);
+  background-size:7px 7px; mask-image:linear-gradient(to bottom,transparent,#000 25%,#000 75%,transparent) }
+.intro-shell { position:relative; width:min(96vw,1280px); height:min(76vh,650px);
+  display:grid; place-items:center }
+.intro-news,.intro-concept { position:absolute; inset:0; display:grid; place-items:center;
+  opacity:0; transform:translateY(18px) scale(.985);
+  transition:opacity .5s ease,transform .55s cubic-bezier(.2,.75,.2,1) }
+.intro-title,.intro-phrase { max-width:none; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:clamp(38px,6.5vw,92px); font-weight:830; line-height:.98;
+  letter-spacing:-.058em; white-space:nowrap; text-wrap:nowrap }
+.intro-title { position:relative; z-index:0; text-shadow:0 18px 55px rgba(0,0,0,.55) }
+.headline-stack { position:absolute; inset:0; z-index:2; pointer-events:none }
+.headline-card { --tilt:0deg; position:absolute; left:50%; top:50%; z-index:1;
+  width:min(76vw,760px); min-height:105px; padding:17px 26px 16px;
+  display:flex; flex-direction:column; justify-content:center; gap:7px; text-align:left;
+  color:#101417; background:
+    repeating-linear-gradient(0deg,rgba(20,25,27,.025) 0,rgba(20,25,27,.025) 1px,transparent 1px,transparent 4px),
+    linear-gradient(100deg,#f3eee2,#fffdf6 48%,#e9e1d1);
+  clip-path:polygon(1% 4%,12% 1%,23% 3%,37% 0,52% 2%,68% 0,81% 3%,99% 1%,100% 94%,91% 98%,77% 96%,63% 100%,47% 97%,31% 100%,17% 96%,0 99%);
+  box-shadow:0 22px 45px rgba(0,0,0,.34); opacity:0;
+  transform:translate(-50%,calc(-50% + 20px)) rotate(var(--tilt)) scale(.93);
+  transition:opacity .38s ease,transform .55s cubic-bezier(.16,.8,.2,1) }
+.headline-card::before { content:""; position:absolute; left:0; top:0; bottom:0; width:8px;
+  background:var(--accent,var(--pix)) }
+.headline-meta { display:flex; align-items:center; gap:10px;
+  font:750 clamp(9px,.85vw,12px)/1 ui-monospace,"SF Mono",Menlo,monospace;
+  letter-spacing:.13em; text-transform:uppercase; color:#566066 }
+.headline-meta::after { content:""; width:42px; height:1px; background:currentColor; opacity:.5 }
+.headline-card h2 { font:700 clamp(17px,2vw,28px)/1.12 Georgia,"Times New Roman",serif;
+  letter-spacing:-.022em; text-wrap:balance }
+.headline-one { --tilt:-4.5deg; --accent:#d84a3f; top:27%; left:47%; z-index:1 }
+.headline-two { --tilt:3deg; --accent:#f5b642; top:41%; left:53%; z-index:2; width:min(72vw,700px) }
+.headline-three { --tilt:-2deg; --accent:var(--pix); top:56%; left:46%; z-index:3; width:min(74vw,735px) }
+.headline-four { --tilt:4deg; --accent:#cf4d8f; top:69%; left:52%; z-index:4; width:min(70vw,680px) }
+.intro-phrase { display:flex; justify-content:center; align-items:baseline }
+.intro-prefix { display:inline-block; max-width:0; opacity:0; overflow:hidden; color:var(--pix);
+  transition:max-width .55s cubic-bezier(.2,.75,.2,1),opacity .35s ease }
+.intro-copy { position:absolute; left:0; right:0; top:calc(50% + clamp(48px,6vw,78px));
+  color:#aeb8bf; font-size:clamp(16px,1.75vw,22px); line-height:1.35;
+  opacity:0; transform:translateY(12px); transition:opacity .4s ease,transform .4s ease }
+.intro-copy.recursive-copy { top:calc(50% + clamp(83px,9vw,118px)); color:var(--ink) }
+.intro[data-intro-step="0"] .intro-news,
+.intro[data-intro-step="1"] .intro-news,
+.intro[data-intro-step="2"] .intro-news,
+.intro[data-intro-step="3"] .intro-news,
+.intro[data-intro-step="4"] .intro-news { opacity:1; transform:none }
+.intro[data-intro-step="1"] .headline-one,
+.intro[data-intro-step="2"] .headline-one,.intro[data-intro-step="2"] .headline-two,
+.intro[data-intro-step="3"] .headline-one,.intro[data-intro-step="3"] .headline-two,.intro[data-intro-step="3"] .headline-three,
+.intro[data-intro-step="4"] .headline-one,.intro[data-intro-step="4"] .headline-two,.intro[data-intro-step="4"] .headline-three,.intro[data-intro-step="4"] .headline-four {
+  opacity:1; transform:translate(-50%,-50%) rotate(var(--tilt)) scale(1) }
+.intro[data-intro-step="5"] .intro-concept,
+.intro[data-intro-step="6"] .intro-concept,
+.intro[data-intro-step="7"] .intro-concept,
+.intro[data-intro-step="8"] .intro-concept { opacity:1; transform:none }
+.intro[data-intro-step="6"] .self-copy { opacity:1; transform:none }
+.intro[data-intro-step="7"] .intro-prefix,
+.intro[data-intro-step="8"] .intro-prefix { max-width:11ch; margin-right:.14em; opacity:1 }
+.intro[data-intro-step="8"] .recursive-copy { opacity:1; transform:none }
+
+/* The model becomes an agent, then the outer loop improves its harness. */
+.mechanism-slide { overflow:hidden; padding:28px 4vw 46px; background:
+  radial-gradient(circle at 34% 38%,rgba(242,245,247,.055),transparent 23%),
+  radial-gradient(circle at 72% 50%,rgba(47,168,142,.07),transparent 27%),var(--bg) }
+.mechanism-slide::before { content:""; position:absolute; inset:0; opacity:.22;
+  background-image:radial-gradient(rgba(242,245,247,.14) .6px,transparent .6px);
+  background-size:8px 8px; mask-image:radial-gradient(circle,#000,transparent 72%) }
+.mechanism-stage { position:relative; width:min(94vw,1100px); height:min(74vh,620px);
+  min-height:500px }
+.llm-card { position:absolute; z-index:5; left:50%; top:45%; width:clamp(190px,20vw,230px);
+  height:clamp(128px,14vw,152px); transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px;
+  border:1px solid rgba(242,245,247,.28); border-radius:24px;
+  background:radial-gradient(circle at 35% 20%,#29343d,#151c22 68%);
+  box-shadow:0 28px 80px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.06);
+  transition:left .65s cubic-bezier(.2,.78,.2,1),top .65s cubic-bezier(.2,.78,.2,1),
+    box-shadow .45s ease }
+.llm-card::before { content:""; position:absolute; inset:-9px; border-radius:31px;
+  border:1px solid rgba(242,245,247,.07) }
+.llm-name { font:800 clamp(34px,4vw,52px)/1 ui-monospace,"SF Mono",Menlo,monospace;
+  letter-spacing:-.06em }
+.llm-note { color:#aab4bb; font-size:clamp(11px,1vw,14px); letter-spacing:.04em }
+.agent-system { position:absolute; inset:0; z-index:2; opacity:0; transform:scale(.97);
+  transition:opacity .45s ease,transform .6s cubic-bezier(.2,.78,.2,1) }
+.agent-frame { position:absolute; left:6%; right:6%; top:14%; height:60%;
+  border:1.5px dashed rgba(160,173,183,.46); border-radius:50%;
+  box-shadow:inset 0 0 80px rgba(126,140,153,.025) }
+.agent-frame-label { position:absolute; left:11%; top:10%; display:flex; align-items:baseline; gap:12px;
+  color:var(--ink); font:780 clamp(13px,1.35vw,18px)/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.2em }
+.agent-frame-label span { color:var(--mut); font:500 clamp(10px,.95vw,13px)/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:0 }
+.access-lines { position:absolute; inset:0; z-index:1; width:100%; height:100%; overflow:visible }
+.access-path { fill:none; stroke:#89959e; stroke-width:2.2; stroke-linecap:round;
+  stroke-dasharray:8 10; opacity:.76; transition:stroke .45s ease,filter .45s ease }
+.access-arrow-head { fill:#89959e; transition:fill .45s ease }
+.access-stack { position:absolute; z-index:4; left:69%; top:40%; width:min(40vw,390px);
+  transform:translate(-50%,-50%) }
+.access-heading { height:28px; margin-bottom:12px; display:grid; place-items:center;
+  color:var(--mut); font:720 clamp(10px,1vw,13px)/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.16em; white-space:nowrap }
+.access-heading span { grid-area:1/1; transition:opacity .35s ease,transform .45s ease }
+.harness-heading { color:#79d4bd; opacity:0; transform:translateY(8px) }
+.access-cards { position:relative; display:flex; justify-content:center; align-items:center }
+.access-cards::before { content:""; position:absolute; inset:-26px -24px -30px; z-index:-1;
+  border:2px solid transparent; border-radius:34px; background:rgba(47,168,142,0);
+  transform:scale(.93); transition:background .45s ease,border-color .45s ease,
+    box-shadow .45s ease,transform .5s cubic-bezier(.2,.78,.2,1) }
+.access-card { position:relative; width:clamp(112px,12.5vw,145px); height:clamp(98px,11vw,122px);
+  margin:0 -7px; padding:17px 13px; display:flex; flex-direction:column;
+  align-items:flex-start; justify-content:flex-end; color:#d5dce0;
+  background:linear-gradient(145deg,#253038,#171e24); border:1px solid #3a4650;
+  clip-path:polygon(0 0,calc(100% - 19px) 0,100% 19px,100% 100%,0 100%);
+  box-shadow:0 18px 38px rgba(0,0,0,.3);
+  transition:color .45s ease,background .45s ease,border-color .45s ease,box-shadow .45s ease }
+.access-card::after { content:""; position:absolute; right:0; top:0; width:19px; height:19px;
+  background:linear-gradient(225deg,transparent 48%,#53606a 50%); transition:background .45s ease }
+.access-card:nth-child(1) { transform:rotate(-4deg); z-index:1 }
+.access-card:nth-child(2) { transform:translateY(-7px); z-index:2 }
+.access-card:nth-child(3) { transform:rotate(4deg); z-index:1 }
+.access-number { position:absolute; left:13px; top:12px; color:#7f8c95;
+  font:650 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.12em }
+.access-name { font:760 clamp(12px,1.22vw,16px)/1 ui-monospace,Menlo,monospace;
+  letter-spacing:-.025em }
+.outer-loop { position:absolute; inset:0; z-index:3; opacity:0; pointer-events:none;
+  transition:opacity .3s ease }
+.outer-lines { position:absolute; inset:0; width:100%; height:100%; overflow:visible }
+.outer-path { fill:none; stroke:#f0b55f; stroke-width:4.5; stroke-linecap:round;
+  filter:drop-shadow(0 0 10px rgba(240,181,95,.28)); stroke-dasharray:1;
+  stroke-dashoffset:1; transition:stroke-dashoffset 1.05s cubic-bezier(.2,.72,.2,1) }
+.outer-loop-label { position:absolute; left:50%; bottom:11%; transform:translateX(-50%) translateY(8px);
+  padding:10px 16px; border:1px solid rgba(240,181,95,.58); border-radius:999px;
+  background:rgba(11,16,20,.94); color:#f2c57e;
+  font:760 clamp(10px,1vw,13px)/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.15em; white-space:nowrap; opacity:0; transition:opacity .4s .55s ease,transform .4s .55s ease }
+.mechanism-copy { position:absolute; z-index:7; left:50%; bottom:1%; width:min(86vw,720px);
+  transform:translate(-50%,12px); color:var(--ink); font-size:clamp(17px,1.8vw,23px);
+  line-height:1.28; opacity:0; transition:opacity .38s ease,transform .45s cubic-bezier(.2,.75,.2,1) }
+.mechanism-slide[data-mechanism-step="1"] .llm-card,
+.mechanism-slide[data-mechanism-step="2"] .llm-card,
+.mechanism-slide[data-mechanism-step="3"] .llm-card { left:27%; top:40% }
+.mechanism-slide[data-mechanism-step="1"] .agent-system,
+.mechanism-slide[data-mechanism-step="2"] .agent-system,
+.mechanism-slide[data-mechanism-step="3"] .agent-system { opacity:1; transform:none }
+.mechanism-slide[data-mechanism-step="1"] .agent-copy,
+.mechanism-slide[data-mechanism-step="2"] .harness-copy,
+.mechanism-slide[data-mechanism-step="3"] .outer-copy { opacity:1; transform:translate(-50%,0) }
+.mechanism-slide[data-mechanism-step="2"] .access-heading-default,
+.mechanism-slide[data-mechanism-step="3"] .access-heading-default { opacity:0; transform:translateY(-8px) }
+.mechanism-slide[data-mechanism-step="2"] .harness-heading,
+.mechanism-slide[data-mechanism-step="3"] .harness-heading { opacity:1; transform:none }
+.mechanism-slide[data-mechanism-step="2"] .access-path,
+.mechanism-slide[data-mechanism-step="3"] .access-path { stroke:var(--pix); filter:drop-shadow(0 0 5px rgba(47,168,142,.3)) }
+.mechanism-slide[data-mechanism-step="2"] .access-arrow-head,
+.mechanism-slide[data-mechanism-step="3"] .access-arrow-head { fill:var(--pix) }
+.mechanism-slide[data-mechanism-step="2"] .access-cards::before,
+.mechanism-slide[data-mechanism-step="3"] .access-cards::before { background:rgba(47,168,142,.12);
+  border-color:rgba(47,168,142,.55); box-shadow:0 0 65px rgba(47,168,142,.12); transform:none }
+.mechanism-slide[data-mechanism-step="2"] .access-card,
+.mechanism-slide[data-mechanism-step="3"] .access-card { color:#111619;
+  background:linear-gradient(135deg,#fffdf5,#e7dfd0); border-color:#cfc4b2;
+  box-shadow:0 22px 44px rgba(0,0,0,.38) }
+.mechanism-slide[data-mechanism-step="2"] .access-card::after,
+.mechanism-slide[data-mechanism-step="3"] .access-card::after {
+  background:linear-gradient(225deg,transparent 48%,#c9bfad 50%) }
+.mechanism-slide[data-mechanism-step="3"] .outer-loop { opacity:1 }
+.mechanism-slide[data-mechanism-step="3"] .outer-path { stroke-dashoffset:0 }
+.mechanism-slide[data-mechanism-step="3"] .outer-loop-label { opacity:1; transform:translateX(-50%) translateY(0) }
+
+/* Why improvement needs a trustworthy signal. */
+.signal-slide { overflow:hidden; padding:28px 5vw 46px; background:
+  radial-gradient(circle at 24% 36%,rgba(240,181,95,.075),transparent 27%),
+  radial-gradient(circle at 78% 60%,rgba(47,168,142,.08),transparent 29%),var(--bg) }
+.signal-slide::before { content:""; position:absolute; inset:0; opacity:.2;
+  background-image:radial-gradient(rgba(242,245,247,.14) .6px,transparent .6px);
+  background-size:8px 8px; mask-image:radial-gradient(circle,#000,transparent 74%) }
+.signal-stage { position:relative; width:min(94vw,1120px); height:min(74vh,620px); min-height:500px }
+.signal-question { position:absolute; z-index:4; left:50%; top:50%; width:100%; max-width:none;
+  transform:translate(-50%,-50%); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:clamp(38px,5.8vw,78px); font-weight:810; line-height:1.02; letter-spacing:-.052em;
+  transition:top .6s cubic-bezier(.2,.78,.2,1),transform .6s cubic-bezier(.2,.78,.2,1),
+    font-size .6s cubic-bezier(.2,.78,.2,1),opacity .4s ease }
+.trust-scene,.verifiable-scene,.open-scene { position:absolute; inset:0; opacity:0;
+  transform:translateY(16px); pointer-events:none;
+  transition:opacity .42s ease,transform .55s cubic-bezier(.2,.78,.2,1) }
+.signal-comparison { position:absolute; left:50%; top:49%; width:min(86vw,760px);
+  transform:translate(-50%,-50%); display:grid; grid-template-columns:1fr 120px 1fr;
+  align-items:center; gap:26px }
+.signal-sample { position:relative; height:170px; padding:20px; overflow:hidden;
+  border:1px solid rgba(242,245,247,.15); border-radius:20px;
+  background:linear-gradient(145deg,rgba(37,48,56,.9),rgba(17,24,30,.92));
+  box-shadow:0 20px 55px rgba(0,0,0,.34) }
+.sample-tag { position:absolute; left:18px; top:16px; color:#8f9ba4;
+  font:700 10px/1 ui-monospace,Menlo,monospace; letter-spacing:.16em }
+.sample-art { position:absolute; inset:48px 22px 22px }
+.sample-art i { position:absolute; display:block; width:34px; height:34px; border-radius:50%;
+  background:#66747e; box-shadow:0 7px 18px rgba(0,0,0,.25) }
+.sample-one i:nth-child(1) { left:8%; top:12% }
+.sample-one i:nth-child(2) { left:58%; top:4%; background:#a16056 }
+.sample-one i:nth-child(3) { left:37%; top:58%; background:#467f74 }
+.sample-two i:nth-child(1) { left:12%; top:32% }
+.sample-two i:nth-child(2) { left:42%; top:32%; background:#a16056 }
+.sample-two i:nth-child(3) { left:72%; top:32%; background:#467f74 }
+.signal-beacon { position:relative; width:112px; aspect-ratio:1; display:grid; place-items:center;
+  border-radius:50%; color:#f4c77f; border:1px solid rgba(240,181,95,.58);
+  background:radial-gradient(circle,rgba(240,181,95,.2),rgba(11,16,20,.95) 68%);
+  box-shadow:0 0 60px rgba(240,181,95,.16);
+  font:780 12px/1 ui-monospace,Menlo,monospace; letter-spacing:.13em }
+.signal-beacon::before,.signal-beacon::after { content:""; position:absolute; inset:-12px;
+  border:1px solid rgba(240,181,95,.18); border-radius:50% }
+.signal-beacon::after { inset:-25px; opacity:.5 }
+.trust-copy { position:absolute; left:0; right:0; bottom:7%; color:var(--ink);
+  font-size:clamp(19px,2.2vw,28px) }
+.scene-title { position:absolute; left:0; right:0; top:3%; color:var(--ink);
+  font:790 clamp(31px,4vw,52px)/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.045em }
+.verifier-cards { position:absolute; left:50%; top:48%; width:min(82vw,760px);
+  transform:translate(-50%,-50%); display:grid; grid-template-columns:1fr 1fr; gap:26px }
+.verifier-card { position:relative; height:220px; padding:25px 28px; text-align:left;
+  border:1px solid rgba(242,245,247,.17); border-radius:20px;
+  background:linear-gradient(145deg,#1b252c,#10171c); box-shadow:0 24px 60px rgba(0,0,0,.36) }
+.verifier-type { color:#8e9aa3; font:720 11px/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.18em }
+.code-window { margin-top:27px; display:flex; flex-direction:column; gap:12px }
+.code-window i { display:block; height:8px; border-radius:99px; background:#50606a }
+.code-window i:nth-child(1) { width:78% }
+.code-window i:nth-child(2) { width:56% }
+.code-window i:nth-child(3) { width:68% }
+.verify-result { position:absolute; left:28px; right:28px; bottom:24px; display:flex;
+  justify-content:space-between; align-items:center; color:#8be0c9;
+  font:750 clamp(12px,1.15vw,15px)/1 ui-monospace,Menlo,monospace; letter-spacing:.08em }
+.verify-check { width:25px; height:25px; display:grid; place-items:center; border-radius:50%;
+  color:#0d241e; background:#6fd1b8; font:900 15px/1 sans-serif }
+.math-equation { margin-top:42px; color:var(--ink); text-align:center;
+  font:760 clamp(28px,3.5vw,45px)/1 ui-monospace,Menlo,monospace; letter-spacing:-.06em }
+.verifiable-label { position:absolute; left:0; right:0; bottom:2%; display:flex;
+  flex-direction:column; align-items:center; gap:10px }
+.verifiable-label strong { padding:9px 15px; border:1px solid rgba(47,168,142,.48);
+  border-radius:999px; color:#81d7c2; font:750 clamp(10px,1vw,13px)/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.16em }
+.verifiable-label span { color:#aab4bb; font-size:clamp(14px,1.35vw,18px) }
+.example-grid { position:absolute; left:50%; top:54%; width:min(92vw,1000px);
+  transform:translate(-50%,-50%); display:grid; grid-template-columns:repeat(3,1fr); gap:20px }
+.example-card { min-height:300px; padding:22px 22px 25px; display:flex; flex-direction:column;
+  border:1px solid rgba(242,245,247,.14); border-radius:22px; text-align:left;
+  background:linear-gradient(150deg,rgba(31,42,49,.96),rgba(15,21,26,.98));
+  box-shadow:0 24px 58px rgba(0,0,0,.34); opacity:0; transform:translateY(22px) scale(.97);
+  transition:opacity .42s ease,transform .55s cubic-bezier(.2,.78,.2,1) }
+.example-art { height:175px; display:grid; place-items:center; margin-bottom:18px;
+  border-radius:15px; overflow:hidden; background:rgba(7,11,14,.46) }
+.example-card h3 { margin-top:auto; color:var(--ink); font:700 clamp(17px,1.65vw,22px)/1.2
+  -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; letter-spacing:-.022em;
+  text-wrap:balance }
+.chat-art { position:relative; width:82%; height:72% }
+.chat-bubble { position:absolute; width:72%; height:48%; border-radius:16px 16px 16px 5px;
+  background:#34434d; border:1px solid #52616b }
+.chat-bubble::before,.chat-bubble::after { content:""; position:absolute; left:15px;
+  height:6px; border-radius:99px; background:#75838c }
+.chat-bubble::before { top:15px; width:65% }
+.chat-bubble::after { top:29px; width:42% }
+.chat-bubble:first-child { left:0; top:0 }
+.chat-bubble:last-child { right:0; bottom:0; transform:scaleX(-1); background:#17483f;
+  border-color:#2f8c78 }
+.image-art { display:flex; gap:12px; align-items:center }
+.image-thumb { position:relative; width:105px; height:118px; overflow:hidden; border-radius:10px;
+  border:1px solid #55616a; background:linear-gradient(#2d5363 0 55%,#18272d 56%) }
+.image-thumb::before { content:""; position:absolute; left:17px; bottom:20px; width:72px; height:54px;
+  background:#c27b52; clip-path:polygon(50% 0,100% 100%,0 100%) }
+.image-thumb::after { content:""; position:absolute; left:42px; top:21px; width:20px; height:20px;
+  border-radius:50%; background:#edc47e }
+.image-thumb:last-child { filter:saturate(.55); transform:rotate(4deg) scale(.92) }
+.plan-art { width:86%; height:78% }
+.plan-path { fill:none; stroke:#80909a; stroke-width:4; stroke-linecap:round }
+.plan-branch { fill:none; stroke:var(--jud); stroke-width:3; stroke-linecap:round; stroke-dasharray:7 8 }
+.plan-node { fill:#121a20; stroke:#8d9aa3; stroke-width:3 }
+.plan-node.good { stroke:var(--pix); fill:#153a32 }
+.signal-slide[data-signal-step="1"] .signal-question { top:4%; transform:translate(-50%,0);
+  font-size:clamp(28px,3.3vw,44px) }
+.signal-slide[data-signal-step="1"] .trust-scene,
+.signal-slide[data-signal-step="2"] .verifiable-scene,
+.signal-slide[data-signal-step="3"] .open-scene,
+.signal-slide[data-signal-step="4"] .open-scene,
+.signal-slide[data-signal-step="5"] .open-scene,
+.signal-slide[data-signal-step="6"] .open-scene { opacity:1; transform:none }
+.signal-slide[data-signal-step="2"] .signal-question,
+.signal-slide[data-signal-step="3"] .signal-question,
+.signal-slide[data-signal-step="4"] .signal-question,
+.signal-slide[data-signal-step="5"] .signal-question,
+.signal-slide[data-signal-step="6"] .signal-question { opacity:0 }
+.signal-slide[data-signal-step="4"] .example-one,
+.signal-slide[data-signal-step="5"] .example-one,.signal-slide[data-signal-step="5"] .example-two,
+.signal-slide[data-signal-step="6"] .example-one,.signal-slide[data-signal-step="6"] .example-two,
+.signal-slide[data-signal-step="6"] .example-three { opacity:1; transform:none }
+
+/* Five-minute ARGUS story, adapted from the untouched appendix. */
+.sequence-slide { overflow:hidden; padding:28px 4vw 46px; background:
+  radial-gradient(circle at 18% 72%,rgba(47,168,142,.085),transparent 29%),
+  radial-gradient(circle at 83% 24%,rgba(240,181,95,.065),transparent 28%),var(--bg) }
+.sequence-slide::before { content:""; position:absolute; inset:0; opacity:.19;
+  background-image:radial-gradient(rgba(242,245,247,.14) .6px,transparent .6px);
+  background-size:8px 8px; mask-image:radial-gradient(circle,#000,transparent 76%) }
+.sequence-stage { position:relative; width:min(94vw,1120px); height:min(76vh,640px); min-height:510px }
+.sequence-title { max-width:none; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:clamp(39px,5.5vw,74px); font-weight:820; line-height:1.02; letter-spacing:-.052em;
+  text-wrap:balance }
+.sequence-kicker { color:#8e9aa3; font:750 clamp(10px,1vw,13px)/1 ui-monospace,Menlo,monospace;
+  letter-spacing:.2em }
+
+.momentum-phase { position:absolute; inset:0; transition:opacity .42s ease,transform .55s ease }
+.momentum-title { position:absolute; left:50%; top:50%; width:100%; transform:translate(-50%,-50%);
+  transition:top .55s cubic-bezier(.2,.78,.2,1),transform .55s cubic-bezier(.2,.78,.2,1),
+    font-size .55s cubic-bezier(.2,.78,.2,1),opacity .38s ease }
+.momentum-visual { position:absolute; left:50%; top:20%; width:min(92vw,960px); height:430px;
+  transform:translate(-50%,14px); opacity:0; transition:opacity .45s ease,transform .6s ease }
+.momentum-visual svg { width:100%; height:100%; overflow:visible }
+.momentum-path-shadow,.momentum-path { fill:none; stroke-linecap:round }
+.momentum-path-shadow { stroke:rgba(47,168,142,.13); stroke-width:22 }
+.momentum-path { stroke:#58c4aa; stroke-width:5; stroke-dasharray:12 11;
+  filter:drop-shadow(0 0 10px rgba(47,168,142,.42)); animation:momentum-dash 1.35s linear infinite }
+@keyframes momentum-dash { to { stroke-dashoffset:-46 } }
+.momentum-path + * { pointer-events:none }
+.momentum-visual marker path { fill:#58c4aa }
+.momentum-node circle { fill:#11241f; stroke:#62cbb2; stroke-width:3;
+  filter:drop-shadow(0 6px 12px rgba(0,0,0,.4)) }
+.momentum-node text { fill:#d9f4ec; font:750 10px/1 ui-monospace,Menlo,monospace;
+  text-anchor:middle; letter-spacing:.04em }
+.node-three text { font-size:8px }
+.human-line { position:absolute; left:3%; right:3%; top:36%; height:1px;
+  border-top:1px dashed rgba(240,181,95,.55); opacity:0; transition:opacity .42s ease }
+.human-line span { position:absolute; left:0; top:-25px; color:#e8b96f;
+  font:750 10px/1 ui-monospace,Menlo,monospace; letter-spacing:.17em }
+.superhuman-seal { position:absolute; right:1.4%; top:0; padding:11px 16px; color:#101417;
+  background:#f2c277; clip-path:polygon(2% 7%,98% 0,100% 91%,3% 100%);
+  font:850 12px/1 ui-monospace,Menlo,monospace; letter-spacing:.13em;
+  opacity:0; transform:rotate(3deg) scale(.8); transition:opacity .4s ease,transform .5s ease }
+.momentum-copy { position:absolute; left:0; right:0; bottom:1%; color:#f0c27b;
+  font-size:clamp(18px,2.2vw,27px); opacity:0; transform:translateY(12px);
+  transition:opacity .4s ease,transform .45s ease }
+.momentum-copy span { display:inline-block; margin-left:12px; padding:7px 10px; border-radius:999px;
+  color:#9fe3d1; border:1px solid rgba(47,168,142,.45);
+  font:750 .48em/1 ui-monospace,Menlo,monospace; letter-spacing:.1em; vertical-align:.17em }
+.momentum-slide[data-sequence-step="1"] .momentum-title,
+.momentum-slide[data-sequence-step="2"] .momentum-title { top:2%; transform:translate(-50%,0);
+  font-size:clamp(28px,3.8vw,50px) }
+.momentum-slide[data-sequence-step="1"] .momentum-visual,
+.momentum-slide[data-sequence-step="2"] .momentum-visual { opacity:1; transform:translate(-50%,0) }
+.momentum-slide[data-sequence-step="2"] .human-line,
+.momentum-slide[data-sequence-step="2"] .superhuman-seal { opacity:1 }
+.momentum-slide[data-sequence-step="2"] .superhuman-seal { transform:rotate(3deg) scale(1) }
+.momentum-slide[data-sequence-step="2"] .momentum-copy { opacity:1; transform:none }
+
+.access-question { position:absolute; left:50%; top:50%; width:min(94vw,1040px);
+  transform:translate(-50%,-50%); transition:top .58s cubic-bezier(.2,.78,.2,1),
+  transform .58s cubic-bezier(.2,.78,.2,1),font-size .58s ease,color .4s ease }
+.tool-possibility { position:absolute; left:50%; top:55%; width:min(86vw,880px);
+  transform:translate(-50%,calc(-50% + 14px)); color:#aab5bc; opacity:0;
+  transition:top .55s ease,opacity .4s ease,transform .55s cubic-bezier(.2,.78,.2,1),color .4s ease }
+.tool-possibility p { font-size:clamp(22px,2.6vw,34px); font-weight:590; letter-spacing:-.025em }
+.tool-possibility span { display:block; margin-top:15px; color:#7f8d96;
+  font-size:clamp(16px,1.7vw,22px); font-weight:400 }
+.access-answer { position:absolute; left:50%; top:70%; width:100%; transform:translate(-50%,-35%);
+  color:var(--ink); font:820 clamp(42px,6vw,80px)/1.02 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.052em; text-wrap:balance; opacity:0;
+  transition:opacity .42s ease,transform .55s cubic-bezier(.2,.78,.2,1) }
+.access-answer::after { content:""; display:block; width:min(50vw,520px); height:6px; margin:24px auto 0;
+  background:linear-gradient(90deg,transparent,#59c8ae 18%,#59c8ae 82%,transparent);
+  transform:scaleX(.45); opacity:.7; transition:transform .7s ease }
+.access-slide[data-sequence-step="1"] .access-question,
+.access-slide[data-sequence-step="2"] .access-question { top:5%; transform:translateX(-50%);
+  color:#aeb8bf; font-size:clamp(25px,3.35vw,44px) }
+.access-slide[data-sequence-step="1"] .tool-possibility { opacity:1; transform:translate(-50%,-50%) }
+.access-slide[data-sequence-step="2"] .tool-possibility { top:37%; color:#8d9aa2; opacity:.62;
+  transform:translate(-50%,-50%) }
+.access-slide[data-sequence-step="2"] .access-answer { opacity:1; transform:translate(-50%,-50%) }
+.access-slide[data-sequence-step="2"] .access-answer::after { transform:scaleX(1) }
+
+.vision-title { position:absolute; z-index:4; left:50%; top:50%; width:100%; transform:translate(-50%,-50%);
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  transition:top .58s ease,transform .58s ease,font-size .58s ease }
+.vision-title strong { font:inherit; color:var(--ink) }
+.vision-tail { max-height:0; overflow:hidden; color:#69cfb5; opacity:0; transform:translateY(12px);
+  transition:max-height .55s ease,opacity .4s ease,transform .5s ease }
+.vision-map { position:absolute; inset:0 }
+.vision-card { position:absolute; top:57%; width:350px; min-height:180px; padding:28px 30px;
+  display:flex; flex-direction:column; justify-content:center; gap:15px; text-align:left;
+  box-shadow:0 24px 58px rgba(0,0,0,.37); opacity:0;
+  transition:left .62s cubic-bezier(.2,.78,.2,1),right .62s cubic-bezier(.2,.78,.2,1),
+    opacity .4s ease,transform .55s ease }
+.vision-card > span { font:800 10px/1 ui-monospace,Menlo,monospace; letter-spacing:.17em }
+.vision-card > strong { font:800 clamp(25px,2.6vw,35px)/1.08 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.035em }
+.vision-goal { left:50%; color:#15191b; background:linear-gradient(145deg,#f6efe0,#d8cdb8);
+  clip-path:polygon(1% 3%,98% 0,100% 94%,93% 100%,3% 97%,0 8%);
+  transform:translate(-50%,-50%) rotate(-1.5deg) scale(.96) }
+.vision-goal > span { color:#69736e }
+.vision-proxy { right:7%; color:#eaf8f4; background:linear-gradient(145deg,#247963,#15483c);
+  width:430px;
+  clip-path:polygon(2% 0,97% 3%,100% 96%,5% 100%,0 7%);
+  transform:translateY(-50%) rotate(1.5deg) scale(.96) }
+.vision-proxy > span { color:#a5decf }
+.vision-proxy > strong { font-size:clamp(20px,2vw,28px); line-height:1.12 }
+.vision-proxy small { align-self:flex-start; padding:7px 10px; border:1px solid rgba(234,248,244,.4);
+  border-radius:999px; font:800 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.13em }
+.vision-arrow { position:absolute; left:50%; top:57%; color:#6e7b84; font-size:39px;
+  opacity:0; transform:translate(-50%,-50%) scale(.8); transition:opacity .35s ease,transform .45s ease }
+.vision-slide[data-sequence-step="1"] .vision-tail,
+.vision-slide[data-sequence-step="2"] .vision-tail,
+.vision-slide[data-sequence-step="3"] .vision-tail { max-height:1.2em; opacity:1; transform:none }
+.vision-slide[data-sequence-step="2"] .vision-title,
+.vision-slide[data-sequence-step="3"] .vision-title { top:2%; transform:translateX(-50%); gap:2px;
+  font-size:clamp(23px,3vw,39px) }
+.vision-slide[data-sequence-step="2"] .vision-goal { opacity:1; transform:translate(-50%,-50%) rotate(-1.5deg) scale(1) }
+.vision-slide[data-sequence-step="3"] .vision-goal { left:29%; opacity:1;
+  transform:translate(-50%,-50%) rotate(-1.5deg) scale(1) }
+.vision-slide[data-sequence-step="3"] .vision-proxy { right:9%; opacity:1;
+  transform:translateY(-50%) rotate(1.5deg) scale(1) }
+.vision-slide[data-sequence-step="3"] .vision-arrow { opacity:1; transform:translate(-50%,-50%) scale(1) }
+
+.case-kicker,.case-title { position:absolute; z-index:4; left:0; right:0; opacity:0;
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,opacity .4s ease }
+.case-title { top:50%; transform:translateY(-50%); opacity:1 }
+.case-kicker { top:0 }
+.case-pipeline { position:absolute; left:50%; top:51%; width:min(92vw,900px);
+  transform:translate(-50%,-50%); display:grid;
+  grid-template-columns:220px 42px 320px 42px 220px; align-items:center; gap:14px }
+.case-item,.case-arrow { opacity:0; transform:translateY(18px) scale(.97);
+  transition:opacity .4s ease,transform .5s cubic-bezier(.2,.78,.2,1) }
+.case-item { display:flex; flex-direction:column; align-items:center; gap:13px }
+.case-arrow { color:#63717b; font-size:31px; transform:translateX(-8px) }
+.case-asset { position:relative; width:100%; height:210px; display:grid; place-items:center;
+  overflow:hidden; border-radius:17px; box-shadow:0 22px 50px rgba(0,0,0,.37) }
+.paper-asset { padding:11px; background:linear-gradient(145deg,#f6f0e4,#d9d0c0);
+  clip-path:polygon(2% 1%,97% 0,100% 96%,94% 99%,4% 97%,0 7%) }
+.case-asset img { width:100%; height:100%; object-fit:cover; border:0; border-radius:9px; box-shadow:none }
+.code-asset { background:#121c22; border:1px solid #32424c }
+.code-asset .codecard { width:100%; height:100%; max-width:none; padding:22px 20px; border:0;
+  border-radius:0; color:#9fe1ce; font-size:9px; line-height:1.55;
+  background:linear-gradient(145deg,#1d2b32,#10171c) }
+.case-label { color:#8e9aa3; font:750 10px/1 ui-monospace,Menlo,monospace; letter-spacing:.16em }
+.score-asset { grid-template-columns:1fr; align-content:center; gap:10px; padding:19px;
+  color:#10201c; background:linear-gradient(145deg,#d8f0e8,#7fcdb9);
+  clip-path:polygon(3% 1%,98% 4%,100% 96%,5% 100%,0 8%) }
+.score-pixels { width:78px; height:52px; margin:auto; opacity:.55; border:1px solid rgba(15,51,42,.34);
+  background:conic-gradient(from 90deg,#163a32 25%,#d5eee7 0 50%,#4d9d89 0 75%,#edf8f4 0) 0 0/16px 16px }
+.score-asset strong { font:850 13px/1.05 ui-monospace,Menlo,monospace; letter-spacing:.08em }
+.score-asset > span { position:absolute; right:15px; top:13px; width:27px; height:27px;
+  display:grid; place-items:center; border-radius:50%; color:#d8f0e8; background:#153d33; font-weight:900 }
+.case-lines { position:absolute; left:0; right:0; bottom:1%; height:38px }
+.case-line { position:absolute; inset:0; color:var(--ink); font-size:clamp(18px,2vw,25px);
+  opacity:0; transform:translateY(10px); transition:opacity .35s ease,transform .42s ease }
+.pipeline-slide[data-sequence-step="1"] .case-title,
+.pipeline-slide[data-sequence-step="2"] .case-title,
+.pipeline-slide[data-sequence-step="3"] .case-title { top:4%; transform:none;
+  font-size:clamp(29px,4vw,51px) }
+.pipeline-slide[data-sequence-step="1"] .case-kicker,
+.pipeline-slide[data-sequence-step="2"] .case-kicker,
+.pipeline-slide[data-sequence-step="3"] .case-kicker { opacity:1 }
+.pipeline-slide[data-sequence-step="1"] .case-input,
+.pipeline-slide[data-sequence-step="2"] .case-input,.pipeline-slide[data-sequence-step="2"] .case-code,
+.pipeline-slide[data-sequence-step="3"] .case-input,.pipeline-slide[data-sequence-step="3"] .case-code,.pipeline-slide[data-sequence-step="3"] .case-render,
+.pipeline-slide[data-sequence-step="2"] .arrow-one,
+.pipeline-slide[data-sequence-step="3"] .arrow-one,.pipeline-slide[data-sequence-step="3"] .arrow-two {
+  opacity:1; transform:none }
+.pipeline-slide[data-sequence-step="1"] .line-one,
+.pipeline-slide[data-sequence-step="2"] .line-two,
+.pipeline-slide[data-sequence-step="3"] .line-three { opacity:1; transform:none }
+
+.learn-kicker,.learn-title { position:absolute; left:0; right:0; opacity:0;
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,opacity .4s ease }
+.learn-title { top:50%; transform:translateY(-50%); opacity:1 }
+.learn-kicker { top:0 }
+.learn-loop { position:absolute; left:50%; top:49%; width:min(78vw,760px);
+  transform:translate(-50%,-44%) scale(.97); opacity:0;
+  transition:opacity .42s ease,transform .55s ease }
+.learn-loop svg { width:100%; overflow:visible }
+.learn-loop .node { fill:#162229; stroke:#40515d; stroke-width:1.8 }
+.learn-loop .nlabel { fill:#f1f4f6; font-size:15px; font-weight:750 }
+.learn-loop .edge { stroke:#63c7af; stroke-width:3; filter:drop-shadow(0 0 6px rgba(47,168,142,.3)) }
+.learn-notes { position:absolute; left:0; right:0; bottom:1%; display:flex; justify-content:center; gap:24px }
+.learn-note { width:390px; min-height:72px; padding:18px 24px; color:#121719; text-align:left;
+  background:linear-gradient(135deg,#f5efdf,#d9cfbc); box-shadow:0 18px 40px rgba(0,0,0,.32);
+  clip-path:polygon(1% 4%,97% 0,100% 92%,94% 100%,3% 96%);
+  font:720 clamp(16px,1.7vw,21px)/1.18 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.018em;
+  opacity:0; transform:translateY(16px) rotate(-2deg); transition:opacity .38s ease,transform .48s ease }
+.learn-note.note-tool { color:#e7f5f1; background:linear-gradient(135deg,#247461,#17473c);
+  transform:translateY(16px) rotate(2deg) }
+.learn-slide[data-sequence-step="1"] .learn-title,
+.learn-slide[data-sequence-step="2"] .learn-title,
+.learn-slide[data-sequence-step="3"] .learn-title { top:4%; transform:none; font-size:clamp(29px,4vw,52px) }
+.learn-slide[data-sequence-step="1"] .learn-kicker,
+.learn-slide[data-sequence-step="2"] .learn-kicker,
+.learn-slide[data-sequence-step="3"] .learn-kicker { opacity:1 }
+.learn-slide[data-sequence-step="1"] .learn-loop,
+.learn-slide[data-sequence-step="2"] .learn-loop,
+.learn-slide[data-sequence-step="3"] .learn-loop { opacity:1; transform:translate(-50%,-44%) scale(1) }
+.learn-slide[data-sequence-step="2"] .note-instructions,
+.learn-slide[data-sequence-step="3"] .note-instructions,
+.learn-slide[data-sequence-step="3"] .note-tool { opacity:1; transform:rotate(-2deg) }
+.learn-slide[data-sequence-step="3"] .note-tool { transform:rotate(2deg) }
+
+.tool-premise { position:absolute; left:50%; top:50%; width:min(91vw,1020px);
+  transform:translate(-50%,-50%); color:var(--ink); opacity:1;
+  font:760 clamp(32px,3.7vw,50px)/1.08 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.04em;
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,color .4s ease,opacity .4s ease }
+.tool-title { position:absolute; left:0; right:0; top:50%; opacity:0;
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,opacity .4s ease }
+.tool-title { transform:translateY(-50%) }
+.tool-slide[data-sequence-step="1"] .tool-premise { top:25%; color:#8d9aa2;
+  font-size:clamp(18px,2vw,27px) }
+.tool-slide[data-sequence-step="1"] .tool-title { top:57%; opacity:1 }
+
+.measure-kicker,.measure-title { position:absolute; left:0; right:0;
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,opacity .4s ease }
+.measure-kicker { top:0; opacity:0 }
+.measure-title { top:50%; transform:translateY(-50%); opacity:1 }
+.tool-triptych { position:absolute; left:50%; top:49%; width:min(94vw,990px); transform:translate(-50%,-50%);
+  display:grid; grid-template-columns:260px 38px 260px 38px 260px; gap:22px; align-items:center }
+.tool-frame { position:relative; padding:15px 15px 18px; color:#171b1d;
+  background:linear-gradient(145deg,#f8f1e3,#ddd3c0); box-shadow:0 22px 52px rgba(0,0,0,.39);
+  clip-path:polygon(1% 3%,96% 0,100% 94%,92% 99%,4% 97%,0 7%);
+  opacity:0; transform:translateY(18px) rotate(var(--tool-tilt,0deg)) scale(.96);
+  transition:opacity .4s ease,transform .52s cubic-bezier(.2,.78,.2,1) }
+.tool-original { --tool-tilt:-2deg }.tool-measure { --tool-tilt:1.5deg }.tool-drawn { --tool-tilt:-1deg }
+.tool-image { width:230px; height:230px; display:grid; place-items:center; overflow:hidden; background:#fff }
+.tool-image img { width:100%; height:100%; object-fit:cover; border:0; border-radius:0; box-shadow:none }
+.tool-frame > span { display:block; margin-top:13px; text-align:left;
+  font:850 11px/1 ui-monospace,Menlo,monospace; letter-spacing:.12em }
+.tool-arrow { color:#6e7c85; font-size:34px; opacity:0; transform:translateX(-8px);
+  transition:opacity .35s ease,transform .45s ease }
+.measure-receipt { position:absolute; left:50%; bottom:-1%; width:min(88vw,790px); padding:7px;
+  display:grid; grid-template-columns:repeat(5,1fr); gap:2px; color:#e9f7f3;
+  background:#101a20; border:1px solid #32434d; border-radius:18px;
+  box-shadow:0 18px 46px rgba(0,0,0,.36); opacity:0;
+  transform:translate(-50%,14px) scale(.97); transition:opacity .4s ease,transform .5s ease }
+.measure-value { min-height:59px; padding:10px 9px; display:flex; flex-direction:column;
+  justify-content:center; gap:7px; border-radius:11px; background:rgba(255,255,255,.035) }
+.measure-value small { color:#82939d; font:800 8px/1 ui-monospace,Menlo,monospace; letter-spacing:.14em }
+.measure-value strong { color:#eaf7f3; font:760 clamp(13px,1.5vw,18px)/1 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif }
+.measure-detail-slide[data-sequence-step="1"] .measure-title,
+.measure-detail-slide[data-sequence-step="2"] .measure-title,
+.measure-detail-slide[data-sequence-step="3"] .measure-title,
+.measure-detail-slide[data-sequence-step="4"] .measure-title { top:4%; transform:none; font-size:clamp(31px,4.2vw,55px) }
+.measure-detail-slide[data-sequence-step="1"] .measure-kicker,
+.measure-detail-slide[data-sequence-step="2"] .measure-kicker,
+.measure-detail-slide[data-sequence-step="3"] .measure-kicker,
+.measure-detail-slide[data-sequence-step="4"] .measure-kicker { opacity:1 }
+.measure-detail-slide[data-sequence-step="1"] .tool-original,
+.measure-detail-slide[data-sequence-step="2"] .tool-original,.measure-detail-slide[data-sequence-step="2"] .tool-measure,
+.measure-detail-slide[data-sequence-step="3"] .tool-original,.measure-detail-slide[data-sequence-step="3"] .tool-measure,
+.measure-detail-slide[data-sequence-step="4"] .tool-frame {
+  opacity:1; transform:rotate(var(--tool-tilt,0deg)) scale(1) }
+.measure-detail-slide[data-sequence-step="2"] .tool-arrow-one,
+.measure-detail-slide[data-sequence-step="3"] .tool-arrow-one,
+.measure-detail-slide[data-sequence-step="4"] .tool-arrow { opacity:1; transform:none }
+.measure-detail-slide[data-sequence-step="3"] .measure-receipt,
+.measure-detail-slide[data-sequence-step="4"] .measure-receipt { opacity:1; transform:translate(-50%,0) scale(1) }
+
+.benefit-title { position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,opacity .4s ease,filter .4s ease }
+.benefit-equation { position:absolute; left:50%; top:49%; width:min(91vw,900px);
+  transform:translate(-50%,-50%); display:grid; grid-template-columns:1fr 54px 1fr;
+  align-items:center; gap:20px; opacity:0; transition:opacity .4s ease,transform .5s ease }
+.benefit-card { min-height:155px; padding:25px 28px; display:flex; flex-direction:column;
+  justify-content:center; gap:12px; text-align:left; box-shadow:0 22px 52px rgba(0,0,0,.35) }
+.benefit-card small { font:850 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.16em }
+.benefit-card strong { font:780 clamp(24px,2.7vw,35px)/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.035em }
+.benefit-card span { font:650 clamp(12px,1.35vw,17px)/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif }
+.benefit-measure { color:#151a1c; background:linear-gradient(145deg,#f6efe0,#d8cdb8);
+  clip-path:polygon(1% 4%,97% 0,100% 92%,93% 100%,3% 97%,0 8%) }
+.benefit-measure small,.benefit-measure span { color:#65716c }
+.benefit-check { color:#eaf8f4; background:linear-gradient(145deg,#247963,#15483c);
+  clip-path:polygon(2% 0,97% 4%,100% 96%,5% 100%,0 7%) }
+.benefit-check small,.benefit-check span { color:#a5decf }
+.benefit-plus { color:#687680; font-size:42px; font-weight:300 }
+.benefit-stats { position:absolute; left:50%; bottom:0; width:min(90vw,820px);
+  transform:translateX(-50%); display:flex; justify-content:center; gap:22px }
+.benefit-stat { width:340px; min-height:94px; padding:16px 22px; display:grid;
+  grid-template-columns:auto 1fr; grid-template-rows:1fr 1fr; column-gap:18px;
+  align-items:center; text-align:left; border-radius:17px; opacity:0;
+  transform:translateY(14px) scale(.97); transition:opacity .4s ease,transform .5s ease }
+.benefit-stat strong { grid-row:1 / 3; font:850 clamp(29px,3.6vw,45px)/1 ui-monospace,Menlo,monospace; white-space:nowrap }
+.benefit-stat span { align-self:end; font:800 11px/1 ui-monospace,Menlo,monospace; letter-spacing:.1em }
+.benefit-stat small { align-self:start; color:inherit; opacity:.62; font:700 9px/1.1 ui-monospace,Menlo,monospace; letter-spacing:.08em }
+.benefit-calls { width:315px; color:#e8f0f3; background:#152128; border:1px solid #344751 }
+.benefit-score { width:430px; color:#102019; background:linear-gradient(125deg,#a8ead8,#58bca3) }
+.benefit-score strong { font-size:clamp(28px,3.2vw,40px) }
+.benefit-iteration { position:absolute; left:50%; top:50%; width:min(92vw,980px);
+  transform:translate(-50%,-42%) scale(.97); opacity:0;
+  font:790 clamp(40px,5.7vw,72px)/1.02 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.045em; transition:opacity .4s ease,transform .55s ease }
+.benefit-slide[data-sequence-step="1"] .benefit-title,
+.benefit-slide[data-sequence-step="2"] .benefit-title,
+.benefit-slide[data-sequence-step="3"] .benefit-title,
+.benefit-slide[data-sequence-step="4"] .benefit-title { top:4%; transform:none; font-size:clamp(31px,4.2vw,55px) }
+.benefit-slide[data-sequence-step="1"] .benefit-equation,
+.benefit-slide[data-sequence-step="2"] .benefit-equation,
+.benefit-slide[data-sequence-step="3"] .benefit-equation { opacity:1; transform:translate(-50%,-50%) }
+.benefit-slide[data-sequence-step="2"] .benefit-calls,
+.benefit-slide[data-sequence-step="3"] .benefit-calls,
+.benefit-slide[data-sequence-step="3"] .benefit-score { opacity:1; transform:none }
+.benefit-slide[data-sequence-step="4"] .benefit-title { opacity:.07; filter:blur(2px) }
+.benefit-slide[data-sequence-step="4"] .benefit-iteration { opacity:1; transform:translate(-50%,-50%) scale(1) }
+
+.conclusion-opening { position:absolute; left:50%; top:50%; width:min(94vw,1080px);
+  transform:translate(-50%,-50%); transition:top .58s ease,transform .58s ease,opacity .4s ease }
+.conclusion-opening h1 { font:790 clamp(42px,5.5vw,72px)/1.02 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.05em; text-wrap:balance; transition:font-size .58s ease,color .4s ease }
+.conclusion-opening em { color:#70d2ba; font-style:normal }
+.conclusion-examples { margin-top:30px; display:flex; justify-content:center; gap:14px;
+  opacity:0; transform:translateY(12px); transition:opacity .4s ease,transform .5s ease }
+.conclusion-examples span { min-width:112px; padding:11px 18px; color:#14201d;
+  background:linear-gradient(145deg,#f4eddf,#d9cfbc); box-shadow:0 12px 28px rgba(0,0,0,.28);
+  clip-path:polygon(2% 5%,96% 0,100% 92%,91% 100%,4% 97%,0 9%);
+  font:800 14px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif }
+.conclusion-examples span:nth-child(2) { color:#eaf8f4; background:linear-gradient(145deg,#247963,#15483c) }
+.conclusion-question { position:absolute; left:50%; top:54%; width:min(92vw,980px);
+  transform:translate(-50%,calc(-50% + 18px)); opacity:0;
+  font:800 clamp(40px,5.5vw,72px)/1.03 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.05em; text-wrap:balance;
+  transition:top .55s ease,transform .55s ease,font-size .55s ease,opacity .4s ease }
+.conclusion-answer { position:absolute; left:50%; top:50%; width:min(92vw,900px);
+  transform:translate(-50%,calc(-50% + 16px)); display:grid;
+  grid-template-columns:1fr 66px 1fr; align-items:center; gap:18px;
+  opacity:0; transition:opacity .42s ease,transform .55s ease }
+.conclusion-card { position:relative; min-height:175px; padding:28px 30px; display:flex;
+  flex-direction:column; justify-content:center; gap:13px; text-align:left;
+  box-shadow:0 24px 55px rgba(0,0,0,.38) }
+.conclusion-card small { font:850 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.16em }
+.conclusion-card strong { font:790 clamp(27px,3vw,39px)/1.05 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.04em }
+.direction-card { z-index:2; color:#151a1c; background:linear-gradient(145deg,#f6efe0,#d8cdb8);
+  clip-path:polygon(1% 4%,97% 0,100% 92%,93% 100%,3% 97%,0 8%) }
+.direction-card small { color:#68736e }
+.harness-card { z-index:2; color:#eaf8f4; background:linear-gradient(145deg,#247963,#15483c);
+  clip-path:polygon(2% 0,97% 4%,100% 96%,5% 100%,0 7%) }
+.harness-card small { color:#a5decf }
+.harness-card::before,.harness-card::after { content:""; position:absolute; inset:0; z-index:-1;
+  border:2px solid rgba(102,204,178,.36); opacity:0; transition:opacity .4s ease,transform .55s ease }
+.conclusion-arrow { color:#6e7c85; font-size:44px; font-weight:300 }
+.conclusion-rsi { position:absolute; left:50%; bottom:-1%; width:min(92vw,920px);
+  transform:translate(-50%,14px); opacity:0; transition:opacity .4s ease,transform .5s ease }
+.conclusion-rsi strong { display:block; font:760 clamp(22px,2.8vw,35px)/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  letter-spacing:-.035em }
+.conclusion-rsi span { display:inline-block; margin-top:12px; padding:8px 12px;
+  color:#b8eee1; border:1px solid rgba(112,210,186,.45); border-radius:999px;
+  font:850 9px/1 ui-monospace,Menlo,monospace; letter-spacing:.14em }
+.conclusion-slide[data-sequence-step="1"] .conclusion-examples,
+.conclusion-slide[data-sequence-step="2"] .conclusion-examples { opacity:1; transform:none }
+.conclusion-slide[data-sequence-step="2"] .conclusion-opening { top:3%; transform:translateX(-50%) }
+.conclusion-slide[data-sequence-step="2"] .conclusion-opening h1 { color:#8f9ca4; font-size:clamp(20px,2.35vw,31px) }
+.conclusion-slide[data-sequence-step="2"] .conclusion-opening .conclusion-examples { margin-top:12px; opacity:.48; transform:scale(.78) }
+.conclusion-slide[data-sequence-step="2"] .conclusion-question { opacity:1; transform:translate(-50%,-50%) }
+.conclusion-slide[data-sequence-step="3"] .conclusion-opening,
+.conclusion-slide[data-sequence-step="4"] .conclusion-opening { opacity:0 }
+.conclusion-slide[data-sequence-step="3"] .conclusion-question,
+.conclusion-slide[data-sequence-step="4"] .conclusion-question { top:4%; transform:translateX(-50%);
+  opacity:1; color:#a4b0b7; font-size:clamp(25px,3.2vw,42px) }
+.conclusion-slide[data-sequence-step="3"] .conclusion-answer,
+.conclusion-slide[data-sequence-step="4"] .conclusion-answer { opacity:1; transform:translate(-50%,-50%) }
+.conclusion-slide[data-sequence-step="4"] .conclusion-rsi { opacity:1; transform:translate(-50%,0) }
+.conclusion-slide[data-sequence-step="4"] .harness-card::before { opacity:1; transform:translate(10px,10px) }
+.conclusion-slide[data-sequence-step="4"] .harness-card::after { opacity:1; transform:translate(20px,20px) }
+.questions-slide { overflow:hidden; background:
+  radial-gradient(circle at 50% 50%,rgba(47,168,142,.15),transparent 27%),
+  radial-gradient(circle at 52% 48%,rgba(240,181,95,.06),transparent 48%),var(--bg) }
+.questions-slide h1 { position:relative; z-index:2; font-size:clamp(88px,14vw,190px);
+  letter-spacing:-.07em; text-shadow:0 18px 60px rgba(0,0,0,.35) }
+.questions-slide h1::after { content:""; display:block; width:38%; height:7px; margin:20px auto 0;
+  border-radius:999px; background:linear-gradient(90deg,transparent,#65cbb2,transparent) }
+.questions-orbit { position:absolute; left:50%; top:50%; width:min(56vw,620px); aspect-ratio:1;
+  transform:translate(-50%,-50%) rotate(-8deg); border:1px solid rgba(105,207,181,.2);
+  border-radius:46% 54% 49% 51%; animation:question-orbit 16s linear infinite }
+.questions-orbit::before,.questions-orbit::after { content:""; position:absolute; border-radius:50% }
+.questions-orbit::before { inset:11%; border:1px dashed rgba(105,207,181,.24) }
+.questions-orbit::after { width:15px; height:15px; right:7%; top:24%; background:#6ed1b8;
+  box-shadow:0 0 24px rgba(105,207,181,.7) }
+@keyframes question-orbit { to { transform:translate(-50%,-50%) rotate(352deg) } }
+.appendix-divider { background:radial-gradient(circle at 50% 50%,rgba(47,168,142,.08),transparent 34%),var(--bg) }
+.appendix-divider h1 { color:#8f9ba4 }
+
 .st { opacity:0; transform:translateY(22px);
   transition:opacity .5s ease, transform .5s cubic-bezier(.2,.7,.2,1) }
 .st.on { opacity:1; transform:none }
@@ -67,12 +756,508 @@ img.panel { border-radius:10px; background:#fff; border:1px solid var(--rule);
   font-size:22px; cursor:pointer; z-index:6; line-height:1 }
 .nav.prev { left:24px } .nav.next { left:78px }
 .nav:hover { border-color:var(--mut) }
+@media (max-width:760px) {
+  .intro-shell { height:min(78vh,610px) }
+  .intro-title,.intro-phrase { white-space:normal; text-wrap:balance }
+  .headline-card { width:min(88vw,640px); min-height:96px; padding:14px 20px }
+  .headline-one { top:25%; left:48% }
+  .headline-two { top:40%; left:52% }
+  .headline-three { top:56%; left:47% }
+  .headline-four { top:71%; left:51% }
+  .intro-copy { top:calc(50% + 68px) }
+  .intro-copy.recursive-copy { top:calc(50% + 116px) }
+  .mechanism-stage { width:98vw; min-height:500px }
+  .llm-card { width:168px; height:116px }
+  .mechanism-slide[data-mechanism-step="1"] .llm-card,
+  .mechanism-slide[data-mechanism-step="2"] .llm-card,
+  .mechanism-slide[data-mechanism-step="3"] .llm-card { left:23% }
+  .agent-frame { left:2%; right:2% }
+  .agent-frame-label { left:6% }
+  .access-stack { left:69%; width:54vw }
+  .access-card { width:clamp(96px,17vw,124px); height:98px; padding-left:10px; padding-right:10px }
+  .access-name { font-size:clamp(10px,2vw,14px) }
+  .outer-loop-label { bottom:13% }
+  .mechanism-copy { bottom:2%; font-size:clamp(15px,2.5vw,19px) }
+  .signal-stage { width:98vw; min-height:500px }
+  .signal-question { font-size:clamp(34px,8vw,54px); padding:0 14px }
+  .signal-slide[data-signal-step="1"] .signal-question { top:5%; font-size:clamp(26px,6vw,38px) }
+  .signal-comparison { width:92vw; grid-template-columns:1fr 76px 1fr; gap:10px }
+  .signal-sample { height:142px; padding:13px }
+  .signal-beacon { width:72px; font-size:8px }
+  .signal-beacon::before { inset:-7px }
+  .signal-beacon::after { inset:-14px }
+  .trust-copy { bottom:9%; font-size:clamp(17px,4.5vw,23px) }
+  .scene-title { top:5%; font-size:clamp(27px,6.5vw,40px) }
+  .verifier-cards { width:92vw; gap:11px }
+  .verifier-card { height:190px; padding:18px }
+  .verify-result { left:18px; right:18px; bottom:18px; letter-spacing:.03em }
+  .math-equation { font-size:clamp(23px,5.5vw,34px) }
+  .example-grid { width:94vw; gap:9px }
+  .example-card { min-height:270px; padding:13px 13px 18px; border-radius:16px }
+  .example-art { height:150px; margin-bottom:13px }
+  .example-card h3 { font-size:clamp(13px,3vw,18px) }
+  .image-art { gap:6px }
+  .image-thumb { width:72px; height:102px }
+  .image-thumb::before { left:10px; width:52px }
+  .image-thumb::after { left:28px }
+  .sequence-stage { width:98vw; min-height:500px }
+  .sequence-title { font-size:clamp(34px,8vw,54px); padding:0 13px }
+  .momentum-slide[data-sequence-step="1"] .momentum-title,
+  .momentum-slide[data-sequence-step="2"] .momentum-title { top:5%; font-size:clamp(25px,5.8vw,38px) }
+  .momentum-visual { width:96vw; top:23%; height:355px }
+  .human-line span { font-size:8px }
+  .superhuman-seal { right:3%; font-size:9px; padding:9px 11px }
+  .momentum-copy span { display:block; width:max-content; margin:9px auto 0 }
+  .access-question { font-size:clamp(33px,7.6vw,52px) }
+  .access-slide[data-sequence-step="1"] .access-question,
+  .access-slide[data-sequence-step="2"] .access-question { top:6%; font-size:clamp(22px,5.2vw,34px) }
+  .tool-possibility { width:90vw }
+  .tool-possibility p { font-size:clamp(20px,4.8vw,29px) }
+  .tool-possibility span { font-size:clamp(14px,3.3vw,19px) }
+  .access-answer { font-size:clamp(36px,8.3vw,58px) }
+  .vision-title { font-size:clamp(30px,7vw,48px) }
+  .vision-slide[data-sequence-step="2"] .vision-title,
+  .vision-slide[data-sequence-step="3"] .vision-title { top:4%; font-size:clamp(20px,4.5vw,30px) }
+  .vision-map { transform:scale(.84); transform-origin:center }
+  .vision-card { width:320px }
+  .vision-slide[data-sequence-step="3"] .vision-goal { left:27% }
+  .vision-slide[data-sequence-step="3"] .vision-proxy { right:5% }
+  .case-title,.learn-title,.tool-title,.measure-title,.benefit-title { padding-left:13px; padding-right:13px }
+  .pipeline-slide[data-sequence-step="1"] .case-title,
+  .pipeline-slide[data-sequence-step="2"] .case-title,
+  .pipeline-slide[data-sequence-step="3"] .case-title { top:6%; font-size:clamp(26px,6vw,39px) }
+  .case-pipeline { width:900px; transform:translate(-50%,-50%) scale(.69) }
+  .case-lines { bottom:6% }
+  .learn-slide[data-sequence-step="1"] .learn-title,
+  .learn-slide[data-sequence-step="2"] .learn-title,
+  .learn-slide[data-sequence-step="3"] .learn-title { top:6%; font-size:clamp(26px,6vw,39px) }
+  .learn-loop { width:94vw }
+  .learn-notes { gap:10px; bottom:5% }
+  .learn-note { width:44vw; padding:13px 11px; font-size:9px }
+  .measure-detail-slide[data-sequence-step="1"] .measure-title,
+  .measure-detail-slide[data-sequence-step="2"] .measure-title,
+  .measure-detail-slide[data-sequence-step="3"] .measure-title,
+  .measure-detail-slide[data-sequence-step="4"] .measure-title,
+  .benefit-slide[data-sequence-step="1"] .benefit-title,
+  .benefit-slide[data-sequence-step="2"] .benefit-title,
+  .benefit-slide[data-sequence-step="3"] .benefit-title,
+  .benefit-slide[data-sequence-step="4"] .benefit-title { top:6%; font-size:clamp(27px,6.2vw,41px) }
+  .tool-triptych { width:990px; transform:translate(-50%,-50%) scale(.63) }
+  .measure-receipt { width:94vw; bottom:3% }
+  .measure-value { min-height:52px; padding:8px 5px }
+  .measure-value small { font-size:6px }
+  .measure-value strong { font-size:10px }
+  .benefit-equation { width:94vw; grid-template-columns:1fr 32px 1fr; gap:8px }
+  .benefit-card { min-height:140px; padding:17px 15px }
+  .benefit-plus { font-size:31px }
+  .benefit-stats { width:94vw; gap:9px; bottom:3% }
+  .benefit-stat { width:46vw; min-height:84px; padding:13px 11px; column-gap:8px }
+  .benefit-stat strong { font-size:clamp(21px,5vw,32px) }
+  .benefit-stat span { font-size:8px }
+  .benefit-stat small { font-size:7px }
+  .benefit-iteration { font-size:clamp(34px,8vw,56px); padding:0 15px }
+  .conclusion-opening h1 { font-size:clamp(34px,8vw,53px) }
+  .conclusion-examples { gap:7px }
+  .conclusion-examples span { min-width:85px; padding:9px 11px; font-size:11px }
+  .conclusion-slide[data-sequence-step="2"] .conclusion-opening h1 { font-size:clamp(18px,4.2vw,27px) }
+  .conclusion-question { font-size:clamp(35px,8vw,54px) }
+  .conclusion-slide[data-sequence-step="3"] .conclusion-question,
+  .conclusion-slide[data-sequence-step="4"] .conclusion-question { top:6%; font-size:clamp(22px,5vw,33px) }
+  .conclusion-answer { width:94vw; grid-template-columns:1fr 34px 1fr; gap:8px }
+  .conclusion-card { min-height:150px; padding:18px 15px }
+  .conclusion-card strong { font-size:clamp(20px,4.7vw,30px) }
+  .conclusion-arrow { font-size:31px }
+  .conclusion-rsi { bottom:2% }
+  .conclusion-rsi strong { font-size:clamp(18px,4.2vw,27px) }
+  .questions-slide h1 { font-size:clamp(76px,20vw,140px) }
+  .questions-orbit { width:min(82vw,520px) }
+}
+@media (max-height:650px) {
+  .intro-shell { height:82vh }
+  .headline-card { min-height:88px; padding-top:12px; padding-bottom:11px }
+  .mechanism-slide { padding-top:18px; padding-bottom:30px }
+  .mechanism-stage { transform:scale(.86); transform-origin:center; margin:-42px 0 }
+  .signal-slide { padding-top:18px; padding-bottom:30px }
+  .signal-stage { transform:scale(.86); transform-origin:center; margin:-42px 0 }
+  .sequence-slide { padding-top:18px; padding-bottom:30px }
+  .sequence-stage { transform:scale(.86); transform-origin:center; margin:-42px 0 }
+}
 @media (prefers-reduced-motion: reduce) {
-  .st { transition:none } .edge { animation:none } }
+  .st,.intro-news,.intro-concept,.headline-card,.intro-prefix,.intro-copy,.llm-card,
+  .agent-system,.access-path,.access-heading span,.access-cards::before,.access-card,
+  .access-card::after,.outer-loop,.outer-path,.outer-loop-label,.mechanism-copy,
+  .signal-question,.trust-scene,.verifiable-scene,.open-scene,.example-card,
+  .momentum-phase,.momentum-title,.momentum-visual,.human-line,.superhuman-seal,
+  .momentum-copy,.access-question,.tool-possibility,.access-answer,.access-answer::after,.vision-title,.vision-tail,
+  .vision-card,.vision-arrow,.case-kicker,.case-title,.case-item,.case-arrow,.case-line,
+  .learn-kicker,.learn-title,.learn-loop,.learn-note,.tool-premise,.tool-title,.measure-kicker,.measure-title,
+  .tool-frame,.tool-arrow,.measure-receipt,.benefit-title,.benefit-equation,.benefit-stat,.benefit-iteration,
+  .conclusion-opening,.conclusion-question,.conclusion-answer,.conclusion-rsi,.harness-card::before,.harness-card::after { transition:none }
+  .edge,.momentum-path,.questions-orbit { animation:none } }
 </style>
 
-<div class="slide active">
-  <div class="kicker"><span class="st">recursive self improvement</span><span class="st seeing">, for seeing</span></div>
+<div class="slide intro active" data-intro-step="0">
+  <div class="intro-shell" aria-live="polite">
+    <div class="intro-news">
+      <h1 class="intro-title">Recursive Self-Improvement</h1>
+      <div class="headline-stack" aria-label="Recent headlines about self-improving AI">
+        <article class="headline-card headline-one" data-source="https://www.axios.com/2026/01/27/models-improve-ai">
+          <div class="headline-meta">Axios&nbsp;&nbsp;January 2026</div>
+          <h2>Models that improve on their own are AI's next big thing</h2>
+        </article>
+        <article class="headline-card headline-two" data-source="https://spectrum.ieee.org/recursive-self-improvement">
+          <div class="headline-meta">IEEE Spectrum&nbsp;&nbsp;May 2026</div>
+          <h2>AI Is Starting to Build Better AI</h2>
+        </article>
+        <article class="headline-card headline-three" data-source="https://www.anthropic.com/institute/recursive-self-improvement">
+          <div class="headline-meta">Anthropic&nbsp;&nbsp;June 2026</div>
+          <h2>When AI builds itself</h2>
+        </article>
+        <article class="headline-card headline-four" data-source="https://www.wired.com/story/frontier-labs-arent-the-only-ones-pursuing-self-improving-ai/">
+          <div class="headline-meta">WIRED&nbsp;&nbsp;July 2026</div>
+          <h2>I Built a Self-Improving AI, and So Can You</h2>
+        </article>
+      </div>
+    </div>
+    <div class="intro-concept">
+      <h1 class="intro-phrase"><span class="intro-prefix">Recursive&nbsp;</span><span>Self-Improvement</span></h1>
+      <p class="intro-copy self-copy">It changes itself to do a task better.</p>
+      <p class="intro-copy recursive-copy">Each improvement helps create the next one.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide mechanism-slide" data-mechanism-step="0">
+  <div class="mechanism-stage" aria-live="polite">
+    <div class="llm-card">
+      <span class="llm-name">LLM</span>
+      <span class="llm-note">language model</span>
+    </div>
+
+    <div class="agent-system">
+      <div class="agent-frame" aria-hidden="true"></div>
+      <div class="agent-frame-label">AGENT <span>LLM in a loop</span></div>
+
+      <svg class="access-lines" viewBox="0 0 1100 620" aria-hidden="true">
+        <defs>
+          <marker id="access-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path class="access-arrow-head" d="M0 0 L10 5 L0 10 z"></path>
+          </marker>
+        </defs>
+        <path class="access-path" d="M405 220 C485 130 575 128 650 202" marker-end="url(#access-arrow)"></path>
+        <path class="access-path" d="M650 292 C570 368 485 365 405 280" marker-end="url(#access-arrow)"></path>
+      </svg>
+
+      <div class="access-stack">
+        <div class="access-heading">
+          <span class="access-heading-default">WHAT IT CAN ACCESS</span>
+          <span class="harness-heading">HARNESS</span>
+        </div>
+        <div class="access-cards">
+          <div class="access-card"><span class="access-number">01</span><span class="access-name">Instructions</span></div>
+          <div class="access-card"><span class="access-number">02</span><span class="access-name">Memory</span></div>
+          <div class="access-card"><span class="access-number">03</span><span class="access-name">Tools</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-loop">
+      <svg class="outer-lines" viewBox="0 0 1100 620" aria-hidden="true">
+        <defs>
+          <marker id="outer-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#f0b55f"></path>
+          </marker>
+        </defs>
+        <path class="outer-path" pathLength="1" d="M815 190 C900 105 800 72 550 65 C280 55 95 115 85 280 C70 520 380 580 720 560 C1040 540 1080 280 930 210 C890 184 850 180 815 190" marker-end="url(#outer-arrow)"></path>
+      </svg>
+      <span class="outer-loop-label">REVIEW AND REWRITE</span>
+    </div>
+
+    <p class="mechanism-copy agent-copy">Give an LLM ways to act, observe, and adjust.</p>
+    <p class="mechanism-copy harness-copy">This surrounding setup is its harness.</p>
+    <p class="mechanism-copy outer-copy">The outer loop improves the harness itself.</p>
+  </div>
+</div>
+
+<div class="slide signal-slide" data-signal-step="0">
+  <div class="signal-stage" aria-live="polite">
+    <h1 class="signal-question">How do we improve the harness?</h1>
+
+    <div class="trust-scene">
+      <div class="signal-comparison">
+        <div class="signal-sample">
+          <span class="sample-tag">TRY 1</span>
+          <div class="sample-art sample-one"><i></i><i></i><i></i></div>
+        </div>
+        <div class="signal-beacon">BETTER</div>
+        <div class="signal-sample">
+          <span class="sample-tag">TRY 2</span>
+          <div class="sample-art sample-two"><i></i><i></i><i></i></div>
+        </div>
+      </div>
+      <p class="trust-copy">We need a signal we can trust.</p>
+    </div>
+
+    <div class="verifiable-scene">
+      <h2 class="scene-title">Some tasks have clear checks</h2>
+      <div class="verifier-cards">
+        <div class="verifier-card">
+          <span class="verifier-type">CODE</span>
+          <div class="code-window"><i></i><i></i><i></i></div>
+          <div class="verify-result"><span>12 TESTS PASSED</span><span class="verify-check">&#10003;</span></div>
+        </div>
+        <div class="verifier-card">
+          <span class="verifier-type">MATH</span>
+          <div class="math-equation">47 &times; 3 = 141</div>
+          <div class="verify-result"><span>EXACT ANSWER</span><span class="verify-check">&#10003;</span></div>
+        </div>
+      </div>
+      <div class="verifiable-label">
+        <strong>VERIFIABLE DOMAINS</strong>
+        <span>Many code and math tasks can be checked automatically.</span>
+      </div>
+    </div>
+
+    <div class="open-scene">
+      <h2 class="scene-title">What if “better” has no clear answer?</h2>
+      <div class="example-grid">
+        <article class="example-card example-one">
+          <div class="example-art">
+            <div class="chat-art"><div class="chat-bubble"></div><div class="chat-bubble"></div></div>
+          </div>
+          <h3>Which answer is more helpful?</h3>
+        </article>
+        <article class="example-card example-two">
+          <div class="example-art image-art"><div class="image-thumb"></div><div class="image-thumb"></div></div>
+          <h3>Which image matches the prompt?</h3>
+        </article>
+        <article class="example-card example-three">
+          <div class="example-art">
+            <svg class="plan-art" viewBox="0 0 240 140" aria-hidden="true">
+              <path class="plan-path" d="M22 70 C70 70 68 34 116 34 C166 34 170 70 218 70"></path>
+              <path class="plan-branch" d="M116 34 C124 87 166 108 218 108"></path>
+              <circle class="plan-node" cx="22" cy="70" r="10"></circle>
+              <circle class="plan-node" cx="116" cy="34" r="10"></circle>
+              <circle class="plan-node good" cx="218" cy="70" r="10"></circle>
+              <circle class="plan-node" cx="218" cy="108" r="10"></circle>
+            </svg>
+          </div>
+          <h3>Is this plan actually good?</h3>
+        </article>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide sequence-slide momentum-slide" data-sequence-step="0" data-sequence-last="2">
+  <div class="sequence-stage">
+    <div class="momentum-phase">
+      <h1 class="sequence-title momentum-title">Models improve faster when answers can be checked.</h1>
+      <div class="momentum-visual" aria-hidden="true">
+        <div class="human-line"><span>HUMAN LEVEL</span></div>
+        <svg viewBox="0 0 1000 410">
+          <defs>
+            <marker id="momentum-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z"></path>
+            </marker>
+          </defs>
+          <path class="momentum-path-shadow" d="M90 340 C230 338 235 292 340 292 S500 235 610 224 S765 108 895 78"></path>
+          <path class="momentum-path" d="M90 340 C230 338 235 292 340 292 S500 235 610 224 S765 108 895 78" marker-end="url(#momentum-arrow)"></path>
+          <g class="momentum-node node-one"><circle cx="90" cy="340" r="28"></circle><text x="90" y="346">TRY</text></g>
+          <g class="momentum-node node-two"><circle cx="340" cy="292" r="28"></circle><text x="340" y="298">CHECK</text></g>
+          <g class="momentum-node node-three"><circle cx="610" cy="224" r="28"></circle><text x="610" y="230">IMPROVE</text></g>
+          <g class="momentum-node node-four"><circle cx="895" cy="78" r="31"></circle></g>
+        </svg>
+        <div class="superhuman-seal">SUPERHUMAN</div>
+      </div>
+      <p class="momentum-copy">On some tasks, models may become superhuman <span>e.g. math and code</span></p>
+    </div>
+  </div>
+</div>
+
+<div class="slide sequence-slide access-slide" data-sequence-step="0" data-sequence-last="2">
+  <div class="sequence-stage">
+    <h1 class="sequence-title access-question">What can you do if you have access to a superhuman mathematician and coder?</h1>
+    <div class="tool-possibility">
+      <p>It could build tools on the fly.</p>
+      <span>Imagine your own version of Photoshop or a mathematical theory of a topic you care about.</span>
+    </div>
+    <p class="access-answer">For open-ended work<br>build a proxy you can verify.</p>
+  </div>
+</div>
+
+<div class="slide sequence-slide vision-slide" data-sequence-step="0" data-sequence-last="3">
+  <div class="sequence-stage">
+    <h1 class="sequence-title vision-title">
+      <span>Let’s try to build a</span>
+      <strong>Recursive Self-Improvement Harness</strong>
+      <span class="vision-tail">for vision.</span>
+    </h1>
+    <div class="vision-map">
+      <div class="vision-card vision-goal">
+        <span>THE GOAL</span>
+        <strong>Build an RSI harness for image understanding</strong>
+      </div>
+      <span class="vision-arrow">&#8594;</span>
+      <div class="vision-card vision-proxy">
+        <span>THE PROXY TASK</span>
+        <strong>Describe the image so precisely that I can write code to reconstruct it</strong>
+        <small>CHECKABLE</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="slide sequence-slide pipeline-slide" data-sequence-step="0" data-sequence-last="3">
+  <div class="sequence-stage">
+    <span class="sequence-kicker case-kicker">ARGUS</span>
+    <h1 class="sequence-title case-title">Look at an image. Reproduce it.</h1>
+    <div class="case-pipeline">
+      <div class="case-item case-input">
+        <div class="case-asset paper-asset" id="argus-task-input"></div>
+        <span class="case-label">TARGET IMAGE</span>
+      </div>
+      <span class="case-arrow arrow-one">&#8594;</span>
+      <div class="case-item case-code">
+        <div class="case-asset code-asset" id="argus-task-code"></div>
+        <span class="case-label">DRAWING CODE</span>
+      </div>
+      <span class="case-arrow arrow-two">&#8594;</span>
+      <div class="case-item case-render">
+        <div class="case-asset paper-asset" id="argus-task-render"></div>
+        <span class="case-label">RENDER</span>
+      </div>
+    </div>
+    <div class="case-lines">
+      <p class="case-line line-one">Start with a target image.</p>
+      <p class="case-line line-two">The Agent writes drawing code.</p>
+      <p class="case-line line-three">Render it back.</p>
+    </div>
+  </div>
+</div>
+
+<div class="slide sequence-slide learn-slide" data-sequence-step="0" data-sequence-last="3">
+  <div class="sequence-stage">
+    <span class="sequence-kicker learn-kicker">ARGUS</span>
+    <h1 class="sequence-title learn-title">Now every attempt can teach the harness.</h1>
+    <div class="learn-loop" id="argus-loop"></div>
+    <div class="learn-notes">
+      <div class="learn-note note-instructions">Models keep getting better at writing code.</div>
+      <div class="learn-note note-tool">Let the model write tools that improve the harness.</div>
+    </div>
+  </div>
+</div>
+
+<div class="slide sequence-slide tool-slide" data-sequence-step="0" data-sequence-last="1">
+  <div class="sequence-stage">
+    <p class="tool-premise">We let the model build and use its own visual tools.</p>
+    <h1 class="sequence-title tool-title">It wrote a measurement tool.</h1>
+  </div>
+</div>
+
+<div class="slide sequence-slide measure-detail-slide" data-sequence-step="0" data-sequence-last="4">
+  <div class="sequence-stage">
+    <span class="sequence-kicker measure-kicker">ONE REWRITE ADDED THE WHOLE PIPELINE</span>
+    <h1 class="sequence-title measure-title">What did the measurement tool do?</h1>
+    <div class="tool-triptych">
+      <div class="tool-frame tool-original">
+        <div class="tool-image" id="argus-tool-input"></div>
+        <span>START WITH PIXELS</span>
+      </div>
+      <span class="tool-arrow tool-arrow-one">&#8594;</span>
+      <div class="tool-frame tool-measure">
+        <div class="tool-image" id="argus-tool-measure"></div>
+        <span>FLOOD FILL FINDS EACH REGION</span>
+      </div>
+      <span class="tool-arrow tool-arrow-two">&#8594;</span>
+      <div class="tool-frame tool-drawn">
+        <div class="tool-image" id="argus-tool-output"></div>
+        <span>DRAW SVG FROM THE NUMBERS</span>
+      </div>
+    </div>
+    <div class="measure-receipt">
+      <div class="measure-value"><small>COUNT</small><strong>11 regions</strong></div>
+      <div class="measure-value"><small>POSITION</small><strong>x and y</strong></div>
+      <div class="measure-value"><small>SIZE</small><strong>width and height</strong></div>
+      <div class="measure-value"><small>COLOR</small><strong>pixel value</strong></div>
+      <div class="measure-value"><small>SHAPE</small><strong>triangle</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="slide sequence-slide benefit-slide" data-sequence-step="0" data-sequence-last="4">
+  <div class="sequence-stage">
+    <h1 class="sequence-title benefit-title">Why was the tool useful?</h1>
+    <div class="benefit-equation">
+      <div class="benefit-card benefit-measure">
+        <small>THE TOOL</small>
+        <strong>Direct pixel measurements</strong>
+        <span>count · position · size · color · shape</span>
+      </div>
+      <div class="benefit-plus">+</div>
+      <div class="benefit-card benefit-check">
+        <small>THE CHECK</small>
+        <strong>Fixed pixel comparison</strong>
+        <span>same pixels · same score</span>
+      </div>
+    </div>
+    <div class="benefit-stats">
+      <div class="benefit-stat benefit-calls">
+        <strong>4 &#8594; 0</strong>
+        <span>MODEL CALLS</span>
+        <small>ON THIS TASK</small>
+      </div>
+      <div class="benefit-stat benefit-score">
+        <strong>0.75 &#8594; 0.98</strong>
+        <span>PIXEL SCORE</span>
+        <small>ON THIS TASK</small>
+      </div>
+    </div>
+    <p class="benefit-iteration">Later versions learned when to measure and when to ask the model.</p>
+  </div>
+</div>
+
+<div class="slide sequence-slide conclusion-slide" data-sequence-step="0" data-sequence-last="4">
+  <div class="sequence-stage">
+    <div class="conclusion-opening">
+      <h1>Models may become <em>superhuman and tireless</em> on tasks with reliable checks.</h1>
+      <div class="conclusion-examples">
+        <span>math</span>
+        <span>code</span>
+        <span>games</span>
+      </div>
+    </div>
+    <h2 class="conclusion-question">How can I break my task into parts the model can check?</h2>
+    <div class="conclusion-answer">
+      <div class="conclusion-card direction-card">
+        <small>YOU</small>
+        <strong>Set the direction and the check.</strong>
+      </div>
+      <div class="conclusion-arrow">&#8594;</div>
+      <div class="conclusion-card harness-card">
+        <small>THE HARNESS</small>
+        <strong>Can automate more of the path.</strong>
+      </div>
+    </div>
+    <div class="conclusion-rsi">
+      <strong>Each better Harness starts the next loop.</strong>
+      <span>RECURSIVE SELF-IMPROVEMENT</span>
+    </div>
+  </div>
+</div>
+
+<div class="slide questions-slide">
+  <div class="questions-orbit" aria-hidden="true"></div>
+  <h1>Questions?</h1>
+</div>
+
+<div class="slide appendix-divider">
+  <div class="kicker">APPENDIX</div>
+  <h1>Original ARGUS deck</h1>
+</div>
+
+<div class="slide">
+  <div class="kicker"><span class="st">Recursive Self-Improvement</span><span class="st seeing">, for seeing</span></div>
   <h1 class="giant st">ARGUS</h1>
   <p class="sub st" style="font-size:clamp(17px,2vw,24px)">a self improving harness for visual tasks</p>
 </div>
@@ -169,24 +1354,142 @@ const dots=document.querySelector('.dots');
 slides.forEach((_,k)=>{const d=document.createElement('div');
   d.className='dot'+(k?'':' on');dots.appendChild(d);});
 let i=0;
+let introStep=0;
+const introLast=8;
+let mechanismStep=0;
+const mechanismLast=3;
+const mechanismSlide=document.querySelector('.mechanism-slide');
+let signalStep=0;
+const signalLast=6;
+const signalSlide=document.querySelector('.signal-slide');
+const archiveStart=slides.findIndex(s=>s.querySelector('h1.giant')?.textContent.trim()==='ARGUS');
 function steps(s){return [...s.querySelectorAll('.st')];}
+function cloneClean(node){
+  if(!node)return null;
+  const clone=node.cloneNode(true);
+  clone.classList.remove('st','on');
+  clone.querySelectorAll('.st,.on').forEach(e=>e.classList.remove('st','on'));
+  if(clone.tagName==='IMG'){
+    clone.removeAttribute('width');clone.removeAttribute('height');
+  }
+  return clone;
+}
+function mountClone(id,node){
+  const mount=document.getElementById(id);const clone=cloneClean(node);
+  if(mount&&clone)mount.replaceChildren(clone);
+}
+function hydrateArgusStory(){
+  if(archiveStart<0)return;
+  const task=slides[archiveStart+1];
+  const taskImages=task?.querySelectorAll('.row img')||[];
+  mountClone('argus-task-input',taskImages[0]);
+  mountClone('argus-task-code',task?.querySelector('.codecard'));
+  mountClone('argus-task-render',taskImages[1]);
+  mountClone('argus-loop',slides[archiveStart+3]?.querySelector('.loopwrap svg'));
+  const loop=document.querySelector('#argus-loop svg');
+  if(loop){
+    const ns='http://www.w3.org/2000/svg';
+    const defs=document.createElementNS(ns,'defs');
+    const marker=document.createElementNS(ns,'marker');
+    marker.setAttribute('id','learn-arrow');marker.setAttribute('viewBox','0 0 10 10');
+    marker.setAttribute('refX','8');marker.setAttribute('refY','5');
+    marker.setAttribute('markerWidth','6');marker.setAttribute('markerHeight','6');marker.setAttribute('orient','auto');
+    const arrow=document.createElementNS(ns,'path');
+    arrow.setAttribute('d','M0 0 L10 5 L0 10 z');arrow.setAttribute('fill','#63c7af');
+    marker.appendChild(arrow);defs.appendChild(marker);loop.prepend(defs);
+    loop.querySelectorAll('.edge').forEach(edge=>edge.setAttribute('marker-end','url(#learn-arrow)'));
+  }
+  const toolRow=slides[archiveStart+4]?.querySelectorAll('.row')[0];
+  const toolImages=toolRow?.querySelectorAll('img')||[];
+  mountClone('argus-tool-input',toolImages[0]);
+  mountClone('argus-tool-measure',toolImages[1]);
+  mountClone('argus-tool-output',toolImages[2]);
+  const judgeRow=slides[archiveStart+5]?.querySelectorAll('.row')[0];
+  const judgeImages=judgeRow?.querySelectorAll('img')||[];
+  mountClone('argus-judge-a',judgeImages[0]);
+  mountClone('argus-judge-b',judgeImages[1]);
+}
+function showIntro(n){
+  introStep=Math.max(0,Math.min(introLast,n));
+  slides[0].dataset.introStep=String(introStep);
+}
+function showMechanism(n){
+  mechanismStep=Math.max(0,Math.min(mechanismLast,n));
+  mechanismSlide.dataset.mechanismStep=String(mechanismStep);
+}
+function showSignal(n){
+  signalStep=Math.max(0,Math.min(signalLast,n));
+  signalSlide.dataset.signalStep=String(signalStep);
+}
+function showSequence(slide,n){
+  const last=Number(slide.dataset.sequenceLast||0);
+  slide.dataset.sequenceStep=String(Math.max(0,Math.min(last,n)));
+}
 function showSlide(n,fromStart=true){
   slides[i].classList.remove('active');
   [...dots.children][i].classList.remove('on');
   i=n; slides[i].classList.add('active');
   [...dots.children][i].classList.add('on');
+  if(slides[i].classList.contains('intro')){
+    showIntro(fromStart?0:introLast);return;
+  }
+  if(slides[i].classList.contains('mechanism-slide')){
+    showMechanism(fromStart?0:mechanismLast);return;
+  }
+  if(slides[i].classList.contains('signal-slide')){
+    showSignal(fromStart?0:signalLast);return;
+  }
+  if(slides[i].classList.contains('sequence-slide')){
+    showSequence(slides[i],fromStart?0:Number(slides[i].dataset.sequenceLast||0));return;
+  }
   const st=steps(slides[i]);
   st.forEach(e=>e.classList.remove('on'));
   if(fromStart&&st.length) st[0].classList.add('on');
   if(!fromStart) st.forEach(e=>e.classList.add('on'));
 }
 function fwd(){
+  if(slides[i].classList.contains('intro')){
+    if(introStep<introLast){showIntro(introStep+1);return;}
+    showSlide(1);return;
+  }
+  if(slides[i].classList.contains('mechanism-slide')){
+    if(mechanismStep<mechanismLast){showMechanism(mechanismStep+1);return;}
+    showSlide(2);return;
+  }
+  if(slides[i].classList.contains('signal-slide')){
+    if(signalStep<signalLast){showSignal(signalStep+1);return;}
+    showSlide(3);return;
+  }
+  if(slides[i].classList.contains('sequence-slide')){
+    const current=Number(slides[i].dataset.sequenceStep||0);
+    const last=Number(slides[i].dataset.sequenceLast||0);
+    if(current<last){showSequence(slides[i],current+1);return;}
+    if(i<slides.length-1){showSlide(i+1);return;}
+  }
   const st=steps(slides[i]);
   const next=st.find(e=>!e.classList.contains('on'));
   if(next){next.classList.add('on');return;}
-  if(i<slides.length-1) showSlide(i+1);
+  if(i<slides.length-1){showSlide(i+1);return;}
+  showSlide(0);
 }
 function back(){
+  if(slides[i].classList.contains('intro')){
+    if(introStep>0){showIntro(introStep-1);return;}
+    showSlide(slides.length-1,false);return;
+  }
+  if(slides[i].classList.contains('mechanism-slide')){
+    if(mechanismStep>0){showMechanism(mechanismStep-1);return;}
+    showSlide(0,false);return;
+  }
+  if(slides[i].classList.contains('signal-slide')){
+    if(signalStep>0){showSignal(signalStep-1);return;}
+    showSlide(1,false);return;
+  }
+  if(slides[i].classList.contains('sequence-slide')){
+    const current=Number(slides[i].dataset.sequenceStep||0);
+    if(current>0){showSequence(slides[i],current-1);return;}
+    if(i>0)showSlide(i-1,false);return;
+  }
   const st=steps(slides[i]);
   const on=st.filter(e=>e.classList.contains('on'));
   if(on.length>1){on[on.length-1].classList.remove('on');return;}
@@ -203,5 +1506,14 @@ document.querySelector('.nav.prev').addEventListener('click',back);
 dots.addEventListener('click',e=>{
   const k=[...dots.children].indexOf(e.target); if(k>=0)showSlide(k);
 });
-steps(slides[0]).forEach((e,k)=>{ if(k===0)e.classList.add('on'); });
+const query=new URLSearchParams(location.search);
+const requested=Math.max(0,Math.min(slides.length-1,Number(query.get('slide')||1)-1));
+hydrateArgusStory();
+showSlide(requested,query.get('all')!=='1');
+if(requested===0&&query.has('step')) showIntro(Number(query.get('step'))||0);
+if(requested===1&&query.has('step')) showMechanism(Number(query.get('step'))||0);
+if(requested===2&&query.has('step')) showSignal(Number(query.get('step'))||0);
+if(slides[requested].classList.contains('sequence-slide')&&query.has('step')){
+  showSequence(slides[requested],Number(query.get('step'))||0);
+}
 </script>
