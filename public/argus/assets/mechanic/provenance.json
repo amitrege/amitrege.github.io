@@ -1,0 +1,36 @@
+{
+  "kind": "Static replay of a completed code-evolution experiment",
+  "case_seed": 4103,
+  "case_id": "drawing-arm",
+  "run_id": "9d989dc6cdcb",
+  "comparison_identity": {
+    "schema": 1,
+    "case_id": "drawing-arm",
+    "case_seed": 4103,
+    "before_sha256": "d0e2889894abbd2090a4732af8f39d1caeaac530d5bc63fc51a71088effb3b28",
+    "after_sha256": "0ec5924876f09085a6f1733744f890f3ae830d0837e2ffaed8ce34e8f9f6543e",
+    "run_id": "9d989dc6cdcb",
+    "has_after": true,
+    "version_sha256": "07066da4274e471fe4732cccd5f1b2b1f28f315c3081c97fa92eb580f2d65885"
+  },
+  "saved_commitment": "695bf060252f5a3bef933c564d57aee34eac825e91b2a2807f600f21a100b9f4",
+  "sources_sha256": {
+    "demo/data/comparisons/893f7e80c4d2100e1d0c59d9528e3625710484d0c5f3c75e4928a057656ec7c9.json": "4d8efb83d3b66e3a3faeb2dafa081241f65736571327fa973dc18e081d64741a",
+    "demo/data/predictions/695bf060252f5a3bef933c564d57aee34eac825e91b2a2807f600f21a100b9f4.json": "c0a7ad3b7c4a84492b204a4fc9dd2f0e6cccfb837b1158c5a828a1a5900f5791",
+    "demo/data/clips/4103.npz": "5a5389889a71aaa971bdbfb5c2eefb912764aed18233729646c52acd621df556",
+    "demo/data/archive/9d989dc6cdcb/generation-2.py": "0ec5924876f09085a6f1733744f890f3ae830d0837e2ffaed8ce34e8f9f6543e",
+    "demo/world.py": "1dd2c802ee304d4e9385f50b58ebe081cee4395f9021316c56cf3eee712cb35e",
+    "demo/engine.py": "7b7be8a70b84d1aeafaa63c5a36e4021d6aff6703fbd94f43d1bbf7d126ac2ea"
+  },
+  "exporter": "talk/build/export_mechanic.py",
+  "notes": [
+    "No model calls or inference during export or presentation.",
+    "All predicted geometry and trajectories are copied from saved results and independently checked for agreement.",
+    "Observed sprite is a lossless export of the actual 24-frame inference input.",
+    "The uncovered +20 reveal is rendered by the original evaluator after the archived prediction commitment.",
+    "Evidence view is an explanatory reprojection of observed pixels using inferred geometry, not a new fitting run or recorded search animation.",
+    "Shape-family cards are schematics. No synthetic candidate scores are presented.",
+    "Static files include reveal data; this is a presentation replay, not a new blind evaluation.",
+    "Saved headline errors combine withheld phase and +/-10 intervention scores; +20 replay RMS is reported separately."
+  ]
+}

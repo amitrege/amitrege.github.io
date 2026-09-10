@@ -1,0 +1,15 @@
+.harness-focus{gap:0;text-align:center}
+.harness-focus .focus-content{width:min(100%,1250px);position:relative;padding-bottom:90px}
+.harness-focus .focus-title{font-size:clamp(35px,5vw,74px);line-height:1.14;letter-spacing:-.05em;max-width:none;font-weight:750}
+.harness-focus .focus-line{display:block}
+.harness-focus .focus-almost{display:inline-block;max-width:0;opacity:0;overflow:hidden;vertical-align:bottom;white-space:nowrap;transition:max-width .5s cubic-bezier(.2,.75,.2,1),opacity .35s ease}
+.harness-focus mark{background:#f0b55f1a;color:#f2c57e;padding:0 .13em .04em;border-radius:.08em;font-weight:inherit;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.harness-focus .focus-almost mark{margin-left:.12em}
+.harness-focus .focus-today{display:block;margin-top:18px;font-size:.64em;opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+.harness-focus[data-step="1"] .focus-almost,.harness-focus[data-step="2"] .focus-almost{max-width:14ch;opacity:1}
+.harness-focus[data-step="1"] .focus-today,.harness-focus[data-step="2"] .focus-today{opacity:1;transform:none}
+.harness-focus .focus-question{position:absolute;left:0;right:0;bottom:0;color:var(--green);font-size:clamp(23px,2.7vw,39px);font-weight:500;letter-spacing:-.025em;opacity:0;transform:translateY(12px);transition:opacity .35s ease,transform .4s ease}
+.harness-focus[data-step="2"] .focus-question{opacity:1;transform:none}
+.feedback[data-step="0"] .checks-scene,.feedback[data-step="1"] .fuzzy-scene{opacity:1;visibility:visible;transform:none}
+@media(max-width:760px){.harness-focus .focus-content{padding-bottom:108px}.harness-focus .focus-title{font-size:clamp(29px,7.8vw,53px);line-height:1.24}.harness-focus .focus-today{margin-top:23px}.harness-focus .focus-question{font-size:26px;max-width:90%;margin:auto}.controls .slide-dots{gap:0}.controls .slide-dot{width:17px}}
+@media(prefers-reduced-motion:reduce){.harness-focus .focus-almost,.harness-focus .focus-today,.harness-focus .focus-question{transition:none}}

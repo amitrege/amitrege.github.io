@@ -1,0 +1,78 @@
+/* Four manual reveals: model, agent, harness, and harness improvement. */
+.level-set{--rewrite:#f0b55f;padding:20px 3vw;overflow:hidden;background:radial-gradient(circle at 34% 38%,#f2f5f70e,transparent 23%),radial-gradient(circle at 72% 50%,#63c7af12,transparent 27%),var(--bg)}
+.level-set::before{opacity:.22;background:radial-gradient(#f2f5f724 .6px,transparent .6px);background-size:8px 8px;mask-image:radial-gradient(circle,#000,transparent 72%)}
+.level-set .level-stage{position:relative;width:min(94vw,1100px);height:min(74vh,620px);max-height:100%}
+.level-set .level-model{position:absolute;z-index:5;left:50%;top:45%;width:clamp(190px,20vw,230px);height:clamp(128px,14vw,152px);transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:11px;border:1px solid #f2f5f747;border-radius:24px;background:radial-gradient(circle at 35% 20%,#29343d,#151c22 68%);box-shadow:0 28px 80px #0007,inset 0 1px #ffffff0f;transition:left .6s cubic-bezier(.2,.78,.2,1),top .6s cubic-bezier(.2,.78,.2,1)}
+.level-set .level-model::before{content:"";position:absolute;inset:-9px;border-radius:31px;border:1px solid #f2f5f712}
+.level-set .level-model h2{margin:0;font:800 clamp(34px,4vw,52px)/1 var(--mono);letter-spacing:-.06em}
+.level-set .level-model>span{color:#aab4bb;font-size:clamp(11px,1vw,14px);letter-spacing:.04em}
+.level-set .level-agent{position:absolute;inset:0;z-index:2;opacity:0;visibility:hidden;transform:scale(.97);transition:opacity .4s ease,transform .55s ease,visibility .4s}
+.level-set .level-agent-frame{position:absolute;left:5%;right:5%;top:13%;height:60%;border:1.5px dashed #a0adb775;border-radius:50%;box-shadow:inset 0 0 80px #7e8c9906}
+.level-set .level-agent-label{position:absolute;left:10%;top:6%;display:flex;align-items:baseline;gap:12px;font:780 clamp(13px,1.35vw,18px)/1 var(--mono);letter-spacing:.18em}
+.level-set .level-agent-label>span{color:var(--mut);font:400 clamp(10px,.95vw,13px)/1.2 var(--sans);letter-spacing:0}
+.level-set .level-connections{position:absolute;inset:0;z-index:1;width:100%;height:100%;overflow:visible}
+.level-set .level-action-path{fill:none;stroke:#89959e;stroke-width:2.2;stroke-linecap:round;stroke-dasharray:8 10;opacity:.8;transition:stroke .4s ease}
+.level-set .level-connections marker path{fill:#89959e;transition:fill .4s ease}
+.level-set .level-connections text{fill:#a0aeb6;font:12px var(--mono);letter-spacing:.06em}
+.level-set .level-access{position:absolute;z-index:4;left:72%;top:44%;width:min(35vw,385px);transform:translate(-50%,-50%)}
+.level-set .level-access::before{content:"";position:absolute;inset:-15px -20px -15px;z-index:-1;border:2px solid transparent;border-radius:27px;background:#63c7af00;transform:scale(.96);transition:background .4s,border-color .4s,transform .45s,box-shadow .4s}
+.level-set .level-access-heading{height:28px;margin-bottom:13px;display:grid;place-items:center;color:var(--mut);font:720 clamp(10px,1vw,13px)/1 var(--mono);letter-spacing:.16em;white-space:nowrap}
+.level-set .level-access-heading>span{grid-area:1/1;transition:opacity .35s,transform .4s,visibility .35s}
+.level-set .level-harness-heading{color:var(--green);opacity:0;visibility:hidden;transform:translateY(7px)}
+.level-set .level-access-cards{position:relative;display:flex;justify-content:center;align-items:center}
+.level-set .level-access-card{position:relative;width:clamp(106px,11.5vw,135px);height:clamp(98px,10.6vw,117px);margin:0 -5px;padding:17px 13px;display:flex;align-items:flex-end;color:#d5dce0;background:linear-gradient(145deg,#253038,#171e24);border:1px solid #3a4650;clip-path:polygon(0 0,calc(100% - 19px) 0,100% 19px,100% 100%,0 100%);font:760 clamp(12px,1.12vw,15px)/1 var(--mono);letter-spacing:-.025em;transition:color .4s,background .4s,border-color .4s}
+.level-set .level-access-card::after{content:"";position:absolute;right:0;top:0;width:19px;height:19px;background:linear-gradient(225deg,transparent 48%,#53606a 50%)}
+.level-set .level-access-card:nth-child(1){transform:rotate(-4deg);z-index:1}
+.level-set .level-access-card:nth-child(2){transform:translateY(-7px);z-index:2}
+.level-set .level-access-card:nth-child(3){transform:rotate(4deg);z-index:1}
+.level-set .level-access-number{position:absolute;left:13px;top:12px;color:#7f8c95;font:650 9px/1 var(--mono);letter-spacing:.12em}
+.level-set .level-control{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:21px;padding-top:13px;border-top:1px solid #3a4650;font:500 clamp(10px,1vw,13px)/1.3 var(--mono);color:#a9b6be;transition:color .4s,border-color .4s}
+.level-set .level-control>span{color:#84999e;font-size:16px}
+.level-set .level-control small{font:400 10px/1.3 var(--sans);color:var(--mut)}
+.level-set .level-outer{position:absolute;inset:0;z-index:3;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .35s,visibility .35s}
+.level-set .level-outer-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.level-set .level-outer-path{fill:none;stroke:var(--rewrite);stroke-width:3.5;stroke-linecap:round;filter:drop-shadow(0 0 10px #f0b55f30);stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .8s cubic-bezier(.2,.72,.2,1)}
+.level-set .level-outer-lines marker path{fill:var(--rewrite)}
+.level-set .level-outer-label{position:absolute;left:50%;bottom:11%;transform:translateX(-50%);padding:11px 17px;border:1px solid #f0b55f94;border-radius:999px;background:#0b1014f0;color:#f2c57e;font:760 clamp(10px,1vw,13px)/1 var(--mono);letter-spacing:.15em;white-space:nowrap}
+.level-set .level-caption{position:absolute;z-index:7;left:50%;bottom:0;width:min(86vw,740px);margin:0;transform:translate(-50%,10px);color:var(--ink);font-size:clamp(17px,1.8vw,23px);line-height:1.35;text-align:center;opacity:0;visibility:hidden;transition:opacity .35s,transform .4s,visibility .35s}
+.level-set .level-mobile{display:none}
+.level-set:not([data-step="0"]) .level-model{left:25%;top:42%}
+.level-set:not([data-step="0"]) .level-agent{opacity:1;visibility:visible;transform:none}
+.level-set[data-step="1"] .level-agent-copy,.level-set[data-step="2"] .level-harness-copy,.level-set[data-step="3"] .level-outer-copy{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.level-set[data-step="2"] .level-access-default,.level-set[data-step="3"] .level-access-default{opacity:0;visibility:hidden;transform:translateY(-7px)}
+.level-set[data-step="2"] .level-harness-heading,.level-set[data-step="3"] .level-harness-heading{opacity:1;visibility:visible;transform:none}
+.level-set[data-step="2"] .level-access::before,.level-set[data-step="3"] .level-access::before{background:#63c7af14;border-color:#63c7af88;box-shadow:0 0 65px #63c7af14;transform:none}
+.level-set[data-step="2"] .level-action-path,.level-set[data-step="3"] .level-action-path{stroke:var(--green)}
+.level-set[data-step="2"] .level-connections marker path,.level-set[data-step="3"] .level-connections marker path{fill:var(--green)}
+.level-set[data-step="2"] .level-access-card,.level-set[data-step="3"] .level-access-card{color:#111619;background:linear-gradient(135deg,#fffdf5,#e7dfd0);border-color:#cfc4b2}
+.level-set[data-step="2"] .level-access-card::after,.level-set[data-step="3"] .level-access-card::after{background:linear-gradient(225deg,transparent 48%,#c9bfad 50%)}
+.level-set[data-step="2"] .level-control,.level-set[data-step="3"] .level-control{color:#c2e3d8;border-color:#63c7af55}
+.level-set[data-step="3"] .level-outer{opacity:1;visibility:visible}
+.level-set[data-step="3"] .level-outer-path{stroke-dashoffset:0}
+@media(max-width:760px){
+  .level-set{padding:12px 3vw}
+  .level-set .level-stage{height:min(78vh,620px);width:94vw}
+  .level-set .level-model{width:150px;height:112px;border-radius:21px}
+  .level-set .level-model h2{font-size:38px}
+  .level-set .level-model>span{font-size:11px}
+  .level-set:not([data-step="0"]) .level-model{left:31%;top:24%;width:138px;height:105px}
+  .level-set .level-agent-frame{left:3%;right:3%;top:8%;height:69%;border-radius:35px}
+  .level-set .level-agent-label{left:9%;top:2%;gap:10px;font-size:13px;background:var(--bg);padding:0 7px}
+  .level-set .level-agent-label>span{font-size:10px}
+  .level-set .level-access{left:58%;top:55%;width:min(69vw,268px)}
+  .level-set .level-access::before{inset:-13px -12px;border-radius:22px}
+  .level-set .level-access-heading{font-size:10px;margin-bottom:11px;height:25px}
+  .level-set .level-access-card{width:92px;height:92px;margin:0 -4px;padding:14px 8px;font-size:10px}
+  .level-set .level-access-number{left:9px;top:11px;font-size:8px}
+  .level-set .level-control{gap:7px;margin-top:17px;padding-top:12px;font-size:10px;flex-wrap:wrap}
+  .level-set .level-control>span{font-size:14px}
+  .level-set .level-control small{font-size:9px}
+  .level-set .level-desktop{display:none}
+  .level-set .level-mobile{display:block}
+  .level-set .level-connections text{font-size:11px}
+  .level-set .level-outer-path{stroke-width:2.5}
+  .level-set .level-outer-label{bottom:23%;font-size:10px;padding:10px 13px}
+  .level-set .level-caption{width:82vw;font-size:18px;bottom:1%;line-height:1.45}
+}
+@media(max-height:650px) and (min-width:761px){.level-set{padding-top:0;padding-bottom:0}.level-set .level-stage{height:85vh}.level-set .level-caption{font-size:18px}.level-set .level-model{height:126px}.level-set .level-access-card{height:98px}.level-set .level-control{margin-top:16px}}
+@media(prefers-reduced-motion:reduce){.level-set *,.level-set *::before,.level-set *::after{transition:none!important}}

@@ -1,0 +1,11 @@
+.vision-bridge{text-align:center;background:radial-gradient(ellipse at 50% 50%,#63c7af08,transparent 65%),var(--bg)}
+.vision-bridge .bridge-scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:25px 6vw;opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .38s,visibility .38s,transform .45s}
+.vision-bridge[data-step="0"] .bridge-text,.vision-bridge[data-step="1"] .bridge-vision{opacity:1;visibility:visible;transform:none}
+.vision-bridge h1{font-size:clamp(38px,5.25vw,77px);max-width:1120px;line-height:1.1;letter-spacing:-.05em;text-wrap:balance}
+.vision-bridge .bridge-text h1{max-width:970px}
+.vision-bridge .bridge-glyphs{display:flex;align-items:center;justify-content:center;gap:35px;margin-top:42px;color:#5b727f;font:500 47px var(--mono)}
+.vision-bridge .bridge-glyphs i{display:block;width:1px;height:40px;background:#31434d}
+.vision-bridge .bridge-eye{display:block;width:150px;height:94px;margin-top:40px;fill:none;stroke:var(--green);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.vision-bridge .bridge-eye .eye-frame{stroke:#36534f;stroke-width:1.5}
+@media(max-width:760px){.vision-bridge .bridge-scene{padding:20px 6vw}.vision-bridge h1{font-size:clamp(35px,10vw,54px)}.vision-bridge .bridge-glyphs{font-size:37px;margin-top:35px}.vision-bridge .bridge-eye{width:130px;height:85px;margin-top:34px}}
+@media(prefers-reduced-motion:reduce){.vision-bridge .bridge-scene{transition:none}}
