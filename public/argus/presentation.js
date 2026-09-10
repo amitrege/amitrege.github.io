@@ -39,27 +39,31 @@ const beats = [
     {note: 'What does it look like in vision? Let’s look at two experiments.', time: '1:26–1:31'},
   ],
   [
-    {title: 'What happens behind the cover?', stage: 'The problem', caption: 'A short clip. A hidden drawing point.', receipt: '', note: 'A short clip. A covered drawing point. We supply the mechanism family and physics. It measures the geometry.', time: '1:31–1:42'},
-    {title: 'What happens behind the cover?', stage: 'The first attempt', caption: 'The first program misplaces the hidden point.', receipt: stat('Original error', '36.3', 'px', 'original'), note: 'The original program misplaces the hidden point. Its predicted motion is wrong.', time: '1:42–1:49'},
-    {title: 'It wrote a measuring tool.', stage: 'What the model wrote', caption: 'Combine visible edges across frames.', receipt: '', note: 'It wrote code to combine visible edges across frames. Then it revised the code to compare possible shapes.', time: '1:49–2:00'},
-    {title: 'The new tool makes a better prediction.', stage: 'The improved tool', caption: 'The saved code works on this further example.', receipt: stat('Original error', '36.3', 'px', 'original') + arrow + stat('Improved error', '0.3', 'px'), note: 'We kept that code. This machine was held out from improvement and selection. The prediction is much closer.', time: '2:00–2:08'},
-    {title: 'Move the pin. Predict the new motion.', stage: 'A new question', caption: 'Change the machine before revealing the answer.', receipt: stat('Pin change', '+20', 'px', 'reference'), note: 'Now move the pin. Predict a motion it was never shown. Then reveal the answer.', time: '2:08–2:20'},
-    {title: 'Now reveal what actually happens.', stage: 'The check', caption: 'Compare the prediction with the simulator.', receipt: stat('Mean test error', '−83', '%') + '<div class="stat-note">20 further machines<br>from the same family</div>', note: 'The motion matches closely. On twenty further machines from this family, average prediction error fell about eighty-three percent.', time: '2:20–2:32'},
+    {intro: true, video: false, note: 'One way to get feedback in vision is to hide something, predict it, then check the answer.', time: '1:31–1:38'},
+    {intro: true, video: true, note: 'Here is the covered clip. We supply the mechanism family and physics. It measures the geometry.', time: '1:38–1:42'},
+    {intro: true, video: true, note: 'We can use that feedback to train a network from scratch. But these models know a ton of info implicitly.', time: '1:42–1:49'},
+    {intro: true, video: true, note: 'We want to express that as code.', time: '1:49–1:52'},
+    {intro: true, video: true, note: 'Can we use this feedback to write tools which help them solve this task?', time: '1:52–1:58'},
+    {title: 'What happens behind the cover?', stage: 'The first attempt', caption: 'The first program misplaces the hidden point.', receipt: stat('Original error', '36.3', 'px', 'original'), note: 'The original program misplaces the hidden point. Its predicted motion is wrong.', time: '1:58–2:05'},
+    {title: 'It wrote a measuring tool.', stage: 'What the model wrote', caption: 'Combine visible edges across frames.', receipt: '', note: 'It wrote code to combine visible edges across frames. Then it revised the code to compare possible shapes.', time: '2:05–2:16'},
+    {title: 'The new tool makes a better prediction.', stage: 'The improved tool', caption: 'The saved code works on this further example.', receipt: stat('Original error', '36.3', 'px', 'original') + arrow + stat('Improved error', '0.3', 'px'), note: 'We kept that code. This machine was held out from improvement and selection. The prediction is much closer.', time: '2:16–2:24'},
+    {title: 'Move the pin. Predict the new motion.', stage: 'A new question', caption: 'Change the machine before revealing the answer.', receipt: stat('Pin change', '+20', 'px', 'reference'), note: 'Now move the pin. Predict a motion it was never shown. Then reveal the answer.', time: '2:24–2:36'},
+    {title: 'Now reveal what actually happens.', stage: 'The check', caption: 'Compare the prediction with the simulator.', receipt: stat('Mean test error', '−83', '%') + '<div class="stat-note">20 further machines<br>from the same family</div>', note: 'The motion matches closely. On twenty further machines from this family, average prediction error fell about eighty-three percent.', time: '2:36–2:48'},
   ],
   [
-    {title: 'How high was the camera?', stage: 'The problem', caption: 'A real photograph. A measurement to make.', receipt: '', note: 'Does this work on natural images? Here is a real room. How high was the camera?', time: '2:32–2:40'},
-    {title: 'How high was the camera?', stage: 'The first attempt', caption: 'We start with an existing depth model.', receipt: stat('Original estimate', '0.57', 'm', 'original'), note: 'We supply an existing depth model. The first measuring code handles camera tilt poorly. It says fifty-seven centimetres.', time: '2:40–2:49'},
-    {title: 'It wrote a measuring tool.', stage: 'What the model wrote', caption: 'Fit the floor in predicted depth.', receipt: '', note: 'It writes a better procedure. Turn depth into points in space. Fit the floor. Check whether that fit is plausible.', time: '2:49–2:59'},
-    {title: 'Measure the distance to the floor.', stage: 'The improved tool', caption: 'Account for the camera’s tilt.', receipt: stat('Original estimate', '0.57', 'm', 'original') + arrow + stat('Improved estimate', '1.56', 'm'), note: 'Measure the perpendicular distance to the floor. The new answer is one point five six metres.', time: '2:59–3:06'},
-    {title: 'Now check the reference height.', stage: 'The check', caption: 'Compare with the room’s recorded 3D geometry.', receipt: stat('Improved estimate', '1.56', 'm') + stat('Reference height', '1.51', 'm', 'reference'), note: 'The recorded room geometry gives us one point five one. The program did not get to see that reference.', time: '3:06–3:15'},
-    {title: 'Another room. The same measuring tool.', stage: 'Reuse', caption: 'The next photograph gets the better procedure.', receipt: stat('Original', '0.34', 'm', 'original') + stat('Improved', '0.87', 'm') + stat('Reference', '0.86', 'm', 'reference'), note: 'Another room. The same procedure. Eighty-seven centimetres; reference, eighty-six. The project also measures distances, sizes, and which object is closer.', time: '3:15–3:25'},
+    {title: 'How high was the camera?', stage: 'The problem', caption: 'A real photograph. A measurement to make.', receipt: '', note: 'Does this work on natural images? Here is a real room. How high was the camera?', time: '2:48–2:56'},
+    {title: 'How high was the camera?', stage: 'The first attempt', caption: 'We start with an existing depth model.', receipt: stat('Original estimate', '0.57', 'm', 'original'), note: 'We supply an existing depth model. The first measuring code handles camera tilt poorly. It says fifty-seven centimetres.', time: '2:56–3:05'},
+    {title: 'It wrote a measuring tool.', stage: 'What the model wrote', caption: 'Fit the floor in predicted depth.', receipt: '', note: 'It writes a better procedure. Turn depth into points in space. Fit the floor. Check whether that fit is plausible.', time: '3:05–3:15'},
+    {title: 'Measure the distance to the floor.', stage: 'The improved tool', caption: 'Account for the camera’s tilt.', receipt: stat('Original estimate', '0.57', 'm', 'original') + arrow + stat('Improved estimate', '1.56', 'm'), note: 'Measure the perpendicular distance to the floor. The new answer is one point five six metres.', time: '3:15–3:22'},
+    {title: 'Now check the reference height.', stage: 'The check', caption: 'Compare with the room’s recorded 3D geometry.', receipt: stat('Improved estimate', '1.56', 'm') + stat('Reference height', '1.51', 'm', 'reference'), note: 'The recorded room geometry gives us one point five one. The program did not get to see that reference.', time: '3:22–3:31'},
+    {title: 'Another room. The same measuring tool.', stage: 'Reuse', caption: 'The next photograph gets the better procedure.', receipt: stat('Original', '0.34', 'm', 'original') + stat('Improved', '0.87', 'm') + stat('Reference', '0.86', 'm', 'reference'), note: 'Another room. The same procedure. Eighty-seven centimetres; reference, eighty-six. The project also measures distances, sizes, and which object is closer.', time: '3:31–3:41'},
   ],
   [
-    {note: 'For your own work: how can I break my task into parts the model can check?', time: '3:25–3:32'},
-    {note: 'Let it write the tools. Let the procedure change.', time: '3:32–3:37'},
-    {note: 'Keep the check independent. The program cannot redefine what counts as correct.', time: '3:37–3:43'},
-    {note: 'Test on new examples. Keep improvements that work beyond the failures it was shown.', time: '3:43–3:49'},
-    {note: 'We have shown retained tool improvements. We have not shown recursive self-improvement yet. Can better tools help build the next better version?', time: '3:49–4:02'},
+    {note: 'For your own work: how can I break my task into parts the model can check?', time: '3:41–3:48'},
+    {note: 'Let it write the tools. Let the procedure change.', time: '3:48–3:53'},
+    {note: 'Keep the check independent. The program cannot redefine what counts as correct.', time: '3:53–3:59'},
+    {note: 'Test on new examples. Keep improvements that work beyond the failures it was shown.', time: '3:59–4:05'},
+    {note: 'We have shown retained tool improvements. We have not shown recursive self-improvement yet. Can better tools help build the next better version?', time: '4:05–4:18'},
   ],
 ];
 
@@ -69,6 +73,16 @@ const pending = new Map();
 const total = beats.reduce((sum, b) => sum + b.length, 0);
 const names = ['Headlines', 'Self-improvement', 'LLM → agent → harness', 'Improving the harness', 'The feedback', 'The core insight', 'Why vision?', 'Motion', 'A photograph', 'Takeaways'];
 const replayNames = new Map(slides.flatMap((el, i) => el.dataset.replay ? [[i, el.dataset.replay]] : []));
+
+function setPlayerState(i, s) {
+  const player = players.get(i);
+  const beat = beats[i][s];
+  if (replayNames.get(i) === 'mechanic') {
+    player.setIntro(Boolean(beat.intro), Boolean(beat.video));
+    if (!beat.intro) player.setStep(s - 4);
+  } else player.setStep(s);
+}
+
 const nav = $('.slide-dots');
 names.forEach((name, i) => {
   const button = document.createElement('button');
@@ -90,7 +104,7 @@ async function loadPlayer(i) {
       const player = await factory($(`#${name}-canvas`));
       players.set(i, player);
       $(`#${name}-loading`).hidden = true;
-      player.setStep(slide === i ? step : 0);
+      setPlayerState(i, slide === i ? step : 0);
       return player;
     } catch (error) {
       const el = $(`#${name}-loading`);
@@ -117,11 +131,14 @@ function show(i, s, updateHash = true) {
   const beat = beats[slide][step];
   if (replayNames.has(slide)) {
     const name = replayNames.get(slide);
-    $(`#${name}-title`).textContent = beat.title;
-    $(`#${name}-stage`).textContent = beat.stage;
-    $(`#${name}-caption`).textContent = beat.caption;
-    $(`#${name}-receipt`).innerHTML = beat.receipt;
-    if (players.has(slide)) players.get(slide).setStep(step);
+    slides[slide].dataset.phase = beat.intro ? 'intro' : 'attempts';
+    if (!beat.intro) {
+      $(`#${name}-title`).textContent = beat.title;
+      $(`#${name}-stage`).textContent = beat.stage;
+      $(`#${name}-caption`).textContent = beat.caption;
+      $(`#${name}-receipt`).innerHTML = beat.receipt;
+    }
+    if (players.has(slide)) setPlayerState(slide, step);
     else void loadPlayer(slide);
   }
   [...nav.children].forEach((el, j) => {

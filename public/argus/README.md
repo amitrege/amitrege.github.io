@@ -2,6 +2,6 @@
 
 A static talk with two recorded vision experiments.
 
-Use the arrow keys or Space to advance, N for notes, and F for fullscreen. Playback needs no API calls or application backend.
+Use the arrow keys or Space to advance, N for notes, and F for fullscreen.
 
-Publish this docs folder using GitHub Pages: Settings > Pages > Deploy from a branch > main > /docs.
+Publish the docs folder using GitHub Pages: Settings > Pages > Deploy from a branch > main > /docs.

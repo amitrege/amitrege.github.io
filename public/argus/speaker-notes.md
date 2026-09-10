@@ -1,6 +1,6 @@
 # Can code help us see?
 
-10 slides. 38 manual reveals. Target timing: 4:02.
+10 slides. 42 manual reveals. Target timing: 4:18.
 
 These are the notes used in the presentation. Pause for the predictions and the reveals.
 
@@ -104,75 +104,91 @@ What does it look like in vision? Let’s look at two experiments.
 
 ## Motion
 
-**1:31–1:42**
+**1:31–1:38**
 
-A short clip. A covered drawing point. We supply the mechanism family and physics. It measures the geometry.
+One way to get feedback in vision is to hide something, predict it, then check the answer.
+
+**1:38–1:42**
+
+Here is the covered clip. We supply the mechanism family and physics. It measures the geometry.
 
 **1:42–1:49**
 
+We can use that feedback to train a network from scratch. But these models know a ton of info implicitly.
+
+**1:49–1:52**
+
+We want to express that as code.
+
+**1:52–1:58**
+
+Can we use this feedback to write tools which help them solve this task?
+
+**1:58–2:05**
+
 The original program misplaces the hidden point. Its predicted motion is wrong.
 
-**1:49–2:00**
+**2:05–2:16**
 
 It wrote code to combine visible edges across frames. Then it revised the code to compare possible shapes.
 
-**2:00–2:08**
+**2:16–2:24**
 
 We kept that code. This machine was held out from improvement and selection. The prediction is much closer.
 
-**2:08–2:20**
+**2:24–2:36**
 
 Now move the pin. Predict a motion it was never shown. Then reveal the answer.
 
-**2:20–2:32**
+**2:36–2:48**
 
 The motion matches closely. On twenty further machines from this family, average prediction error fell about eighty-three percent.
 
 ## A photograph
 
-**2:32–2:40**
+**2:48–2:56**
 
 Does this work on natural images? Here is a real room. How high was the camera?
 
-**2:40–2:49**
+**2:56–3:05**
 
 We supply an existing depth model. The first measuring code handles camera tilt poorly. It says fifty-seven centimetres.
 
-**2:49–2:59**
+**3:05–3:15**
 
 It writes a better procedure. Turn depth into points in space. Fit the floor. Check whether that fit is plausible.
 
-**2:59–3:06**
+**3:15–3:22**
 
 Measure the perpendicular distance to the floor. The new answer is one point five six metres.
 
-**3:06–3:15**
+**3:22–3:31**
 
 The recorded room geometry gives us one point five one. The program did not get to see that reference.
 
-**3:15–3:25**
+**3:31–3:41**
 
 Another room. The same procedure. Eighty-seven centimetres; reference, eighty-six. The project also measures distances, sizes, and which object is closer.
 
 ## Takeaways
 
-**3:25–3:32**
+**3:41–3:48**
 
 For your own work: how can I break my task into parts the model can check?
 
-**3:32–3:37**
+**3:48–3:53**
 
 Let it write the tools. Let the procedure change.
 
-**3:37–3:43**
+**3:53–3:59**
 
 Keep the check independent. The program cannot redefine what counts as correct.
 
-**3:43–3:49**
+**3:59–4:05**
 
 Test on new examples. Keep improvements that work beyond the failures it was shown.
 
-**3:49–4:02**
+**4:05–4:18**
 
 We have shown retained tool improvements. We have not shown recursive self-improvement yet. Can better tools help build the next better version?
 

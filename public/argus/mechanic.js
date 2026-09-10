@@ -30,7 +30,7 @@ function pointAt(m, phase, offset=0) {
 }
 
 /** @param {HTMLCanvasElement} canvas
- * @returns {Promise<{setStep:(n:number)=>void,destroy:()=>void}>}
+ * @returns {Promise<{setStep:(n:number)=>void,setIntro:(active:boolean,visible?:boolean)=>void,destroy:()=>void}>}
  */
 export async function createMechanic(canvas) {
   const response = await fetch(new URL('data.json', ASSET));
@@ -41,7 +41,7 @@ export async function createMechanic(canvas) {
   ]);
   const ctx=canvas.getContext('2d');
   if (!ctx) throw new Error('This browser cannot create the Mechanic canvas.');
-  let step=0, dead=false, frameId=0, start=performance.now(), width=0, height=0;
+  let step=0, intro=false, introVisible=true, dead=false, frameId=0, start=performance.now(), width=0, height=0;
   let reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const resize=()=>{
     const r=canvas.getBoundingClientRect();
@@ -123,19 +123,6 @@ export async function createMechanic(canvas) {
     }
     return t;
   }
-  function thumbnails(p) {
-    const area=content(p), n=3,gap=8, horizontal=area.h<210;
-    const cellH=horizontal?area.h:(area.h-gap*(n-1))/n;
-    // Three real moments from the short source clip. No hidden geometry.
-    const box=[190,130,140,100];
-    [0,11,23].forEach((idx,i)=>{
-      const cw=horizontal?(area.w-2*gap)/3:area.w-28;
-      const r={x:horizontal?area.x+i*(cw+gap):area.x+14,y:horizontal?area.y:area.y+i*(cellH+gap),w:cw,h:cellH};
-      imageFrame(observed,data.observation,idx,r,box);
-      ctx.fillStyle='rgba(11,16,20,.8)';rect(r.x+7,r.y+7,54,19,4);ctx.fill();
-      text(`frame ${String(idx+1).padStart(2,'0')}`,r.x+13,r.y+16,9.5,C.paper);
-    });
-  }
   function shapeCard(p,filled,selected) {
     ctx.fillStyle=selected?'#172C2A':'#101A21';rect(p.x,p.y,p.w,p.h,8);ctx.fill();
     ctx.strokeStyle=selected?'#426E62':C.line;ctx.lineWidth=1;ctx.stroke();
@@ -166,22 +153,27 @@ export async function createMechanic(canvas) {
     if (!canvas.getClientRects().length) { frameId=requestAnimationFrame(draw); return; }
     const elapsed=reduced?1.2:(now-start)/1000;
     ctx.fillStyle=C.bg;ctx.fillRect(0,0,width,height);
+    if(intro&&!introVisible) {frameId=requestAnimationFrame(draw);return;}
     const margin=Math.min(8,width*.01),gap=16,small=width<660;
+    const observedOnly=intro||step===0;
     const p1=small?{x:margin,y:margin,w:width-2*margin,h:(height-2*margin-gap)/2}:
       {x:margin,y:margin,w:(width-2*margin-gap)/2,h:height-2*margin};
+    if(small&&observedOnly)p1.h=height-2*margin;
     const p2=small?{...p1,y:p1.y+p1.h+gap}:{...p1,x:p1.x+p1.w+gap};
     const sourceIndex=Math.round((.5-.5*Math.cos(elapsed*1.6))*23);
     const evIndex=Math.min(23,Math.floor((elapsed%5.3)/3.5*24));
     const cyc=(elapsed/5.4)%1,fullPhase=-Math.PI+cyc*TAU;
     const revealIndex=Math.floor(cyc*48),revealPhase=data.reveal.phases[revealIndex];
-    panel(p1,step===5?'ACTUAL MOTION · COVER REMOVED':'OBSERVED VIDEO · DRAWING POINT COVERED');
-    const labels=['THREE MOMENTS FROM THE SAME CLIP','ORIGINAL PROGRAM · FULL MOTION',
+    panel(p1,!observedOnly&&step===5?'ACTUAL MOTION · COVER REMOVED':'OBSERVED VIDEO · DRAWING POINT COVERED');
+    const labels=['','ORIGINAL PROGRAM · FULL MOTION',
       'MODEL-WRITTEN MEASUREMENT · VISIBLE EVIDENCE','IMPROVED PROGRAM · FULL MOTION',
       'CHANGED CRANK · PREDICTION COMMITTED','PREDICTION COMPARED WITH ACTUAL MOTION'];
-    panel(p2,labels[step]);
-    const photoT=photo(p1,step===5?revealIndex:(step===2?evIndex:sourceIndex),step===2,step===5);
-    if(step===0)thumbnails(p2);
-    else if(step===2)evidenceView(p2,evIndex);
+    if(!observedOnly)panel(p2,labels[step]);
+    const photoT=photo(p1,observedOnly?sourceIndex:(step===5?revealIndex:(step===2?evIndex:sourceIndex)),!observedOnly&&step===2,!observedOnly&&step===5);
+    if(observedOnly) {
+      // The introduction shows the original clip on its own. Text reveals use
+      // setIntro so the video keeps playing across those clicks.
+    } else if(step===2)evidenceView(p2,evIndex);
     else {
       const area=content(p2);area.h-=22;
       const t=transform(area);grid(area,t);
@@ -214,16 +206,21 @@ export async function createMechanic(canvas) {
         legend(p2,[['original',C.orange,true],['improved',C.green],['actual',C.paper]]);
       }
     }
-    if(step!==5){
+    if(observedOnly||step!==5){
       const x=p1.x+16,y=p1.y+p1.h-7,w=p1.w-32;
       line([x,y],[x+w,y],'#33434A',2);
-      line([x,y],[x+w*((step===2?evIndex:sourceIndex)/23),y],C.green,2);
+      line([x,y],[x+w*((!observedOnly&&step===2?evIndex:sourceIndex)/23),y],C.green,2);
     }
     frameId=requestAnimationFrame(draw);
   }
   frameId=requestAnimationFrame(draw);
   return {
-    setStep(n) {if(!Number.isFinite(n))return;step=Math.max(0,Math.min(5,Math.round(n)));start=performance.now();},
+    setStep(n) {if(!Number.isFinite(n))return;intro=false;step=Math.max(0,Math.min(5,Math.round(n)));start=performance.now();},
+    setIntro(active,visible=true) {
+      const next=Boolean(active);
+      if(next!==intro)start=performance.now();
+      intro=next;introVisible=Boolean(visible);
+    },
     destroy() {dead=true;cancelAnimationFrame(frameId);ro.disconnect();}
   };
 }

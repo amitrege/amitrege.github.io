@@ -1,0 +1,56 @@
+/* Keep the clip still in the layout while each new thought takes the lead. */
+.motion-intro{display:none;width:100%;max-width:1400px;flex:0 0 clamp(295px,36vh,350px)}
+.demo-slide[data-phase="intro"]{gap:18px;padding-top:25px}
+.demo-slide[data-phase="intro"] .motion-intro{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:0;padding-top:8px}
+.motion-intro .motion-line{flex:0 0 auto;width:100%;max-width:1260px;max-height:0;overflow:hidden;margin:0;opacity:0;visibility:hidden;transform:translateY(12px);font:700 clamp(36px,3.65vw,54px)/1.14 var(--sans);letter-spacing:-.045em;text-wrap:balance;color:var(--ink);transition:font-size .5s cubic-bezier(.2,.78,.2,1),line-height .5s,letter-spacing .5s,max-height .5s,margin .5s,opacity .4s,visibility .4s,transform .5s,color .4s}
+.demo-slide[data-phase="intro"] .motion-line-one,
+.demo-slide[data-phase="intro"][data-step="2"] .motion-line-two,
+.demo-slide[data-phase="intro"][data-step="3"] .motion-line-two,
+.demo-slide[data-phase="intro"][data-step="4"] .motion-line-two,
+.demo-slide[data-phase="intro"][data-step="3"] .motion-line-three,
+.demo-slide[data-phase="intro"][data-step="4"] .motion-line-three,
+.demo-slide[data-phase="intro"][data-step="4"] .motion-line-four{max-height:5em;opacity:1;visibility:visible;transform:none}
+.demo-slide[data-phase="intro"][data-step="2"] .motion-line-one,
+.demo-slide[data-phase="intro"][data-step="3"] .motion-line-one,
+.demo-slide[data-phase="intro"][data-step="4"] .motion-line-one,
+.demo-slide[data-phase="intro"][data-step="3"] .motion-line-two,
+.demo-slide[data-phase="intro"][data-step="4"] .motion-line-two,
+.demo-slide[data-phase="intro"][data-step="4"] .motion-line-three{font-size:clamp(18px,1.5vw,22px);line-height:1.35;letter-spacing:-.025em;color:#8e9fa9;margin-bottom:15px;text-wrap:pretty}
+.demo-slide[data-phase="intro"] .demo-heading,
+.demo-slide[data-phase="intro"] .demo-footer{display:none}
+.demo-slide[data-phase="intro"] .replay-frame{border-color:transparent;background:transparent;min-height:180px;opacity:1;transition:opacity .4s ease}
+.demo-slide[data-phase="intro"][data-step="0"] .replay-frame{opacity:0;visibility:hidden}
+@media(min-width:1700px){.motion-intro{max-width:1600px}.motion-intro .motion-line{max-width:1450px}}
+@media(max-height:740px) and (min-width:761px){
+  .motion-intro{flex-basis:clamp(250px,36vh,290px)}
+  .demo-slide[data-phase="intro"]{gap:12px;padding-top:12px}
+  .motion-intro .motion-line{font-size:clamp(32px,3.3vw,45px)}
+  .demo-slide[data-phase="intro"] .replay-frame{min-height:140px}
+}
+@media(max-width:760px){
+  .motion-intro{flex-basis:clamp(305px,39vh,350px)}
+  .demo-slide[data-phase="intro"]{padding-top:15px;gap:14px}
+  .demo-slide[data-phase="intro"] .motion-intro{padding-top:0}
+  .motion-intro .motion-line{font-size:clamp(28px,7.4vw,40px);line-height:1.16;max-height:0}
+  .demo-slide[data-phase="intro"] .motion-line-one,
+  .demo-slide[data-phase="intro"][data-step="2"] .motion-line-two,
+  .demo-slide[data-phase="intro"][data-step="3"] .motion-line-two,
+  .demo-slide[data-phase="intro"][data-step="4"] .motion-line-two,
+  .demo-slide[data-phase="intro"][data-step="3"] .motion-line-three,
+  .demo-slide[data-phase="intro"][data-step="4"] .motion-line-three,
+  .demo-slide[data-phase="intro"][data-step="4"] .motion-line-four{max-height:8em}
+  .demo-slide[data-phase="intro"][data-step="2"] .motion-line-one,
+  .demo-slide[data-phase="intro"][data-step="3"] .motion-line-one,
+  .demo-slide[data-phase="intro"][data-step="4"] .motion-line-one,
+  .demo-slide[data-phase="intro"][data-step="3"] .motion-line-two,
+  .demo-slide[data-phase="intro"][data-step="4"] .motion-line-two,
+  .demo-slide[data-phase="intro"][data-step="4"] .motion-line-three{font-size:16px;line-height:1.3;margin-bottom:12px}
+  .demo-slide[data-phase="intro"] .replay-frame{min-height:160px}
+}
+@media(max-height:700px) and (max-width:760px){
+  .motion-intro{flex-basis:295px}
+  .demo-slide[data-phase="intro"]{gap:10px;padding-top:4px}
+  .motion-intro .motion-line{font-size:27px;line-height:1.12}
+  .demo-slide[data-phase="intro"] .replay-frame{min-height:110px}
+}
+@media(prefers-reduced-motion:reduce){.motion-intro .motion-line{transition:none}}
