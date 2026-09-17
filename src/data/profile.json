@@ -1,18 +1,17 @@
 {
   "name": "Amit Kiran Rege",
-  "headline": "PhD Student in Computer Science, CU Boulder",
+  "headline": "ML Researcher @ Phonely",
   "location": "Boulder, CO",
-  "email": "amit.rege@colorado.edu",
+  "email": "amitkiranrege@gmail.com",
   "photo": "/assets/img/headshot_prof.jpg",
   "bioParagraphs": [
-    "Hi! I am Amit Kiran Rege, a PhD student in Computer Science at the University of Colorado Boulder advised by <a href=\"https://www.colorado.edu/cs/claire-monteleoni\" target=\"_blank\" rel=\"noreferrer\">Claire Monteleoni</a>.",
-    "My research is in theoretical machine learning broadly construed, especially problems in AI safety and control. My recent focus is applying reinforcement learning theory to LLM post-training, while maintaining interests in foundational RL theory and the foundations of interpretability.",
-    "I am also interested in startups and early-stage venture through my role as an Associate at the <a href=\"https://www.colorado.edu/dcvf/\" target=\"_blank\" rel=\"noreferrer\">Deming Center Venture Fund</a>, where I help source and evaluate early-stage Colorado startups.",
+    "Hi! I am Amit Kiran Rege, an ML Researcher at <a href=\"https://phonely.ai\" target=\"_blank\" rel=\"noreferrer\">Phonely</a>, where I train and deploy voice agents for customers handling millions of calls a month. I graduated with a PhD in Computer Science from the University of Colorado Boulder, advised by <a href=\"https://www.colorado.edu/cs/claire-monteleoni\" target=\"_blank\" rel=\"noreferrer\">Claire Monteleoni</a>.",
+    "My research interest is in Reinforcement Learning and Human-AI collaboration broadly construed. My recent focus is applying reinforcement learning to LLM post-training, while maintaining interests in foundational RL theory and the foundations of interpretability.",
+    "I am also interested in startups and early-stage venture, and was previously an Associate at the <a href=\"https://www.colorado.edu/dcvf/\" target=\"_blank\" rel=\"noreferrer\">Deming Center Venture Fund</a>, where I helped source and evaluate early-stage Colorado startups.",
     "Outside work, I enjoy soccer, cricket, music, and following current affairs."
   ],
   "titles": [
-    "PhD Student, Department of Computer Science, University of Colorado Boulder",
-    "Associate, Deming Center Venture Fund"
+    "ML Researcher, Phonely"
   ],
   "education": [
     {
@@ -31,6 +30,10 @@
   "cvUrl": "/assets/docs/amit_rege_cv.pdf",
   "resumeUrl": "/assets/docs/amit_rege_resume.pdf",
   "socials": [
+    {
+      "label": "Phonely",
+      "url": "https://phonely.ai"
+    },
     {
       "label": "Google Scholar",
       "url": "https://scholar.google.com/citations?user=XeT3y04AAAAJ&hl=en"

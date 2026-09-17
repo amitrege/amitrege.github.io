@@ -1,5 +1,11 @@
 [
   {
+    "date": "2026-09-09",
+    "title": "Joined Phonely as an ML Researcher",
+    "detail": "Training and deploying voice agents for customers handling millions of calls a month.",
+    "link": "https://phonely.ai"
+  },
+  {
     "date": "2026-07-15",
     "title": "Paper accepted at CDC 2026",
     "detail": "Paper: \"Learning from Local Walks on Dynamic Graphs with Bandit Feedback\".",
