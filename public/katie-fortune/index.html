@@ -1,0 +1,2964 @@
+<!DOCTYPE html>
+<!--
+  A BIRTHDAY READING — a cute-mystical tarot reading on a velvet table.
+  ────────────────────────────────────────────────────────────────────────────
+  She taps the deck, it riffles and fans out, she picks three (the year behind
+  you · today · the year ahead), turns them over one by one — holographic foil
+  that moves when she tilts her phone — and reads them. Then: "curious what the
+  other cards said?" The whole deck flips in a wave: every single card is a good
+  one. And from the middle rises a card that isn't in any deck: XXII · KATIE.
+  (A tarot deck's major arcana stop at XXI. That's the joke. That's the point.)
+
+  The reading is rigged: card content is dealt by SLOT (past/today/future) from
+  CONFIG.spread, not by which card she taps. She can't tell.
+
+  DEBUG / SCREENSHOT HOOKS  (query params, combinable — e.g. ?s=3&still=1)
+    ?s=0   intro: title in the sky, the deck breathing centre-stage.
+    ?s=1   the deck fanned across the table, three empty slots waiting.
+    ?s=2   three cards placed face-down in their slots, the rest still fanned.
+    ?s=3   the first card turned over and focused: big holo card + reading.
+    ?s=4   all three turned over, the combined line, "curious what the other
+           cards said?" waiting.
+    ?s=5   the wave has happened: the rest of the deck face-up in a tableau,
+           "this deck only has good cards in it. i checked. twice."
+    ?s=6   the finale: XXII · KATIE, the meaning, the note, "— amit", again ↺.
+    Every ?s= state is applied instantly (motion snapped to its settled pose),
+    so a screenshot taken the moment the page loads is already right.
+
+    ?still=1   freezes ambient motion (holo sway, star twinkle, clouds, the
+               breathing deck, glints) at a good-looking frame. Layout is
+               identical with and without it.
+    ?mute=1    no sound.
+    ?far=0     CONFIG.farAway = false (the non-distance copy).
+    ?name=x    overrides CONFIG.herName (first letter capitalised: ?name=katie → Katie).
+    ?tilt=x,y  QA only: pins the holo tilt vector (each -1…1) for stills.
+    ?gallery=1 QA only: every card face + back + the XXII card laid out large.
+
+  window.__bday = { state, go(n), tilt(x,y), layout } for headless steps.
+
+  Everything is inline: SVG illustrations, canvas stars + sparkles, procedural
+  textures, Web Audio synthesis. Only Google Fonts are fetched.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#2b2650">
+<title>the cards have something to tell you 🔮</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="the cards have something to tell you 🔮">
+<meta property="og:description" content="(a birthday reading. pick three.)">
+<meta name="description" content="(a birthday reading. pick three.)">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔮</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400;1,500;1,600&family=Jost:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   tokens
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  --gold:#d9b46a; --gold-deep:#b0843a; --gold-pale:#f3dfa6;
+  --rose:#f4a7b9; --lilac:#c3b1e1; --butter:#f6dc9a; --mint:#bfe3d0; --sky:#b8d4f2;
+  --cream:#fbf0dc;
+  --title: 'Cinzel', 'Trajan Pro', Optima, 'Palatino Linotype', Palatino, Georgia, serif;
+  --deco:  'Cinzel Decorative', 'Cinzel', 'Trajan Pro', Optima, Palatino, Georgia, serif;
+  --read:  'Cormorant Garamond', Cormorant, Garamond, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  --sans:  'Jost', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ease-out: cubic-bezier(.2,.8,.25,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+}
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ height:100%; background:#2b2650; overflow:hidden; overscroll-behavior:none; }
+body{
+  position:fixed; inset:0;
+  font-family:var(--sans); color:#f6ead2;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+  touch-action:none;
+}
+button{ font:inherit; color:inherit; background:none; border:0; cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+button:focus-visible{ outline:2px solid rgba(243,223,166,.9); outline-offset:3px; }
+[hidden]{ display:none !important; }
+.sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+
+#app{ position:fixed; inset:0; overflow:hidden; touch-action:none; cursor:default; }
+#sa{ position:fixed; left:0; top:0; width:0; height:0; visibility:hidden; pointer-events:none;
+     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   the scene: sky, stars, clouds, moon, velvet table, crystal ball, fringe.
+   every layer is placed per frame by the JS camera (horizon tilts per act).
+   ═══════════════════════════════════════════════════════════════════════════ */
+#scene{ position:absolute; inset:0; overflow:hidden; pointer-events:none; }
+.cam{ position:absolute; left:0; top:0; will-change:transform; }
+#sky{
+  width:100%;
+  background:linear-gradient(180deg,
+    #15122c 0%, #1d1940 18%, #2b2650 38%, #3a3068 56%, #4a3b7a 70%,
+    #5a4385 82%, #6b4c8a 92%, #7c5893 100%);
+}
+#skyGlow{
+  width:100%; height:60vh;
+  background:
+    radial-gradient(60% 100% at 50% 100%, rgba(255,190,214,.30), rgba(255,190,214,0) 70%),
+    radial-gradient(90% 80% at 50% 100%, rgba(196,160,236,.30), rgba(196,160,236,0) 70%);
+}
+#starsWrap{ position:absolute; left:0; top:0; width:100%;
+  -webkit-mask-image:linear-gradient(180deg, #000 0%, #000 88%, rgba(0,0,0,0) 99%); mask-image:linear-gradient(180deg, #000 0%, #000 88%, rgba(0,0,0,0) 99%); }
+#starsWrap canvas{ position:absolute; left:0; top:0; width:100%; height:100%; animation:tw ease-in-out infinite alternate; }
+#starsWrap canvas:nth-child(1){ animation-duration:2.9s; }
+#starsWrap canvas:nth-child(2){ animation-duration:4.1s; animation-delay:-1.3s; }
+#starsWrap canvas:nth-child(3){ animation-duration:5.3s; animation-delay:-2.2s; }
+#starsWrap canvas:nth-child(4){ animation-duration:3.6s; animation-delay:-.6s; }
+#starsWrap canvas:nth-child(5){ animation-duration:6.4s; animation-delay:-3.1s; }
+@keyframes tw{ from{ opacity:.28; } to{ opacity:1; } }
+#shoot{ position:absolute; left:0; top:0; width:130px; height:2px; border-radius:2px; opacity:0; pointer-events:none;
+  background:linear-gradient(90deg, rgba(255,240,250,0), rgba(255,248,230,.95)); transform-origin:100% 50%; }
+#shoot.go{ animation:shoot 1.05s cubic-bezier(.3,.1,.4,1) forwards; }
+@keyframes shoot{ 0%{ opacity:0; transform:translate3d(0,0,0) rotate(var(--sa,-27deg)) scaleX(.3); } 20%{ opacity:1; }
+  100%{ opacity:0; transform:translate3d(var(--sx,-220px),var(--sy,110px),0) rotate(var(--sa,-27deg)) scaleX(1); } }
+#clouds{ width:100%; }
+#clouds svg{ position:absolute; overflow:visible; }
+.wisp{ animation:drift linear infinite alternate; }
+@keyframes drift{ from{ transform:translate3d(-4vw,0,0); } to{ transform:translate3d(4vw,0,0); } }
+
+#moon{ width:0; height:0; }
+#moonInner{ position:absolute; transform:translate(-50%,-50%); animation:bob 7s ease-in-out infinite; }
+#moonInner svg{ display:block; width:100%; height:100%; overflow:visible; }
+@keyframes bob{ 0%,100%{ transform:translate(-50%,-50%) rotate(-3deg); } 50%{ transform:translate(-50%,-56%) rotate(2deg); } }
+.zz{ font-family:var(--read); font-style:italic; font-weight:600; fill:#f3dfa6; opacity:0; animation:zz 6s ease-out infinite; }
+.zz.z2{ animation-delay:2s; } .zz.z3{ animation-delay:4s; }
+@keyframes zz{ 0%{ opacity:0; transform:translate(0,0) scale(.6); } 15%{ opacity:.85; } 70%{ opacity:0; transform:translate(14px,-26px) scale(1.15); } 100%{ opacity:0; } }
+#moon .lid-open{ opacity:0; transition:opacity .2s; } #moon .lid-shut{ transition:opacity .2s; }
+#moon.awake .lid-open{ opacity:1; } #moon.awake .lid-shut{ opacity:0; }
+
+#table{
+  width:150vw; left:-25vw;
+  border-radius:50% 50% 0 0 / 46px 46px 0 0;
+  background:
+    radial-gradient(56% 30% at 50% 0%, rgba(220,140,200,.34), rgba(220,140,200,0) 72%),
+    linear-gradient(180deg, #5b2a60 0%, #4b2153 12%, #3d1a46 38%, #31133a 66%, #240c2b 100%);
+  box-shadow:
+    0 -1.5px 0 rgba(240,206,140,.75),
+    0 -3px 0 rgba(120,70,40,.35),
+    0 -16px 40px rgba(16,8,32,.45);
+}
+#table::before{  /* velvet nap: procedural noise, set from JS */
+  content:''; position:absolute; inset:0; border-radius:inherit;
+  background-image:var(--velvet); background-size:220px 220px; opacity:.5;
+}
+#table::after{   /* a soft lip of light along the back edge */
+  content:''; position:absolute; left:0; right:0; top:0; height:70px; border-radius:inherit;
+  background:linear-gradient(180deg, rgba(255,214,170,.16), rgba(255,214,170,0));
+}
+
+#ball{ position:absolute; width:var(--bs,52px); height:calc(var(--bs,52px) * 1.32); margin-left:calc(var(--bs,52px) / -2); }
+#ball{ transition:opacity .9s ease; }
+#ball.away{ opacity:0; }
+#ball .halo{ position:absolute; left:50%; top:38%; width:300%; height:300%; transform:translate(-50%,-50%);
+  background:radial-gradient(closest-side, rgba(214,180,255,.42), rgba(255,170,210,.16) 55%, rgba(255,170,210,0)); animation:halo 4.6s ease-in-out infinite; }
+@keyframes halo{ 0%,100%{ opacity:.75; transform:translate(-50%,-50%) scale(.94); } 50%{ opacity:1; transform:translate(-50%,-50%) scale(1.06); } }
+#ball .orb{ position:absolute; left:0; top:0; width:100%; height:calc(var(--bs,52px)); border-radius:50%; overflow:hidden;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.95) 0%, rgba(255,255,255,0) 22%),
+    radial-gradient(circle at 60% 66%, rgba(255,184,214,.85), rgba(255,184,214,0) 55%),
+    radial-gradient(circle at 50% 50%, #e8dcff 0%, #b9a2ea 52%, #7a62b8 100%);
+  box-shadow: inset 0 -4px 10px rgba(60,30,110,.45), inset 0 2px 6px rgba(255,255,255,.5), 0 0 18px rgba(214,180,255,.55);
+}
+#ball .mist{ position:absolute; inset:-20%; opacity:.75; animation:spin 9s linear infinite;
+  background:conic-gradient(from 0deg, rgba(255,255,255,0), rgba(255,226,246,.55) 12%, rgba(255,255,255,0) 30%, rgba(190,226,255,.5) 46%, rgba(255,255,255,0) 62%, rgba(255,240,200,.45) 80%, rgba(255,255,255,0)); }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+#ball .stand{ position:absolute; left:-12%; width:124%; bottom:0; height:auto; }
+#ball .msg{ position:absolute; left:50%; bottom:110%; transform:translate(-50%,6px) scale(.9); white-space:nowrap;
+  font-family:var(--read); font-style:italic; font-weight:600; font-size:15px; color:#fdf3dc;
+  padding:6px 12px 7px; border-radius:14px; background:rgba(44,28,74,.82); border:1px solid rgba(240,206,140,.45);
+  box-shadow:0 8px 22px rgba(10,5,25,.45); opacity:0; transition:opacity .35s ease, transform .5s var(--ease-spring); }
+#ball.say .msg{ opacity:1; transform:translate(-50%,0) scale(1); }
+#ball.swirl .orb{ animation:orbPulse 1.4s ease-out; }
+@keyframes orbPulse{ 0%{ box-shadow: inset 0 -4px 10px rgba(60,30,110,.45), 0 0 18px rgba(214,180,255,.55);} 30%{ box-shadow: inset 0 -4px 10px rgba(60,30,110,.25), 0 0 46px rgba(255,214,250,.95);} 100%{ box-shadow: inset 0 -4px 10px rgba(60,30,110,.45), 0 0 18px rgba(214,180,255,.55);} }
+
+#moonMsg{ position:absolute; white-space:nowrap; transform:translate(0,0) scale(.9); transform-origin:0 0;
+  font-family:var(--read); font-style:italic; font-weight:600; font-size:15px; color:#fdf3dc;
+  padding:6px 12px 7px; border-radius:14px; background:rgba(44,28,74,.82); border:1px solid rgba(240,206,140,.45);
+  box-shadow:0 8px 22px rgba(10,5,25,.45); opacity:0; transition:opacity .35s ease, transform .5s var(--ease-spring); }
+#moonMsg.on{ opacity:1; transform:translate(0,0) scale(1); }
+
+#pool{ position:absolute; left:0; top:0; width:100px; height:100px; margin:-50px 0 0 -50px; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,214,186,.34), rgba(255,180,214,.14) 50%, rgba(255,180,214,0));
+  will-change:transform; }
+#fringe{ position:absolute; left:0; right:0; bottom:0; height:calc(var(--fh,30px) + env(safe-area-inset-bottom)); }
+#fringe .band{ position:absolute; left:0; right:0; top:0; height:var(--fh,30px);
+  background-image:var(--fringe); background-size:auto 100%; background-repeat:repeat-x; transform-origin:50% 0; animation:sway 5s ease-in-out infinite; }
+#fringe .under{ position:absolute; left:0; right:0; top:0; bottom:0;
+  background:linear-gradient(180deg, rgba(30,14,42,0) 0%, rgba(22,10,32,.65) 100%); }
+@keyframes sway{ 0%,100%{ transform:skewX(-2.5deg); } 50%{ transform:skewX(2.5deg); } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   cards. every card is: card (placement) › shadow, glow, tilt (3D: flip+tilt)
+   › back + edge + front faces. holo layers only switch on for the few cards
+   that are "live" (focused, slots, the XXII card).
+   ═══════════════════════════════════════════════════════════════════════════ */
+#stage{ position:absolute; inset:0; pointer-events:none; z-index:10; }
+.card{
+  position:absolute; left:0; top:0;
+  width:var(--cw,100px); height:calc(var(--cw,100px) * 1.7);
+  margin-left:calc(var(--cw,100px) / -2); margin-top:calc(var(--cw,100px) * -.85);
+  transform-origin:50% 50%;
+  perspective:calc(var(--cw,100px) * 6.5);
+  pointer-events:none;
+  will-change:transform;   /* cards are rastered once at full size and only ever scaled DOWN */
+  --lx:50%; --ly:50%; --fx:50%; --fy:50%; --gx:0px; --gy:0px; --hi:1; --hyp:.3;
+}
+.card .cshadow{ position:absolute; left:-16%; right:-16%; top:-9%; bottom:-11%; border-radius:30%;
+  background:radial-gradient(closest-side, rgba(12,4,24,.62), rgba(12,4,24,.28) 55%, rgba(12,4,24,0));
+  transform-origin:50% 50%; }
+.card .cglow{ position:absolute; left:-34%; right:-34%; top:-22%; bottom:-22%; border-radius:50%;
+  background:radial-gradient(closest-side, rgba(255,226,160,.75), rgba(255,190,220,.30) 50%, rgba(255,190,220,0));
+  opacity:0; transition:opacity .35s ease; }
+.card.lit .cglow{ opacity:1; }
+.card .ctilt{ position:absolute; inset:0; transform-style:preserve-3d; -webkit-transform-style:preserve-3d; }
+.card .face{
+  position:absolute; inset:0; overflow:hidden;
+  border-radius:calc(var(--cw,100px) * .075);
+  -webkit-backface-visibility:hidden; backface-visibility:hidden;
+  transform:translateZ(1.2px);
+  will-change:transform;   /* keep the SVG raster when tilt/flip/scale change: no per-frame re-raster */
+  isolation:isolate;
+  box-shadow:0 0 0 .5px rgba(120,80,40,.35);
+}
+.card .front{ transform:rotateY(180deg) translateZ(1.2px); }
+.card .face > svg{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+.card .edge{ position:absolute; top:1.5%; bottom:1.5%; left:50%; width:2px; margin-left:-1px; display:none;
+  background:linear-gradient(180deg, #f4dc9c, #c39448 50%, #f0d38f); transform:rotateY(90deg); border-radius:2px; }
+
+/* glint: a one-shot travelling band, triggered on one card at a time by JS */
+.card .face::after{
+  content:''; position:absolute; top:-30%; bottom:-30%; left:-70%; width:90%; opacity:0;
+  background:linear-gradient(100deg, rgba(255,255,255,0) 32%, rgba(255,250,235,.3) 48%, rgba(255,214,240,.14) 55%, rgba(255,255,255,0) 68%);
+  transform:translate3d(-60%,0,0) rotate(8deg); pointer-events:none;
+}
+.card .face.gl::after{ animation:glint 1.15s cubic-bezier(.55,0,.35,1) forwards; }
+@keyframes glint{ 0%{ opacity:1; transform:translate3d(-60%,0,0) rotate(8deg); } 100%{ opacity:1; transform:translate3d(330%,0,0) rotate(8deg); } }
+.card.holo .face::after{ display:none; }
+
+/* the holo stack — every per-frame change is a transform on an oversized child, so the
+   compositor does the work: no repaints, the line-masks are rasterised once. */
+.card .hx{ position:absolute; inset:0; display:none; pointer-events:none; }
+.card.holo .hx{ display:block; }
+.card.holo.up .back .hx, .card.holo:not(.up) .front .hx{ display:none; }
+.hx > *, .hx i{ position:absolute; pointer-events:none; }
+.hx .fm{ inset:0; overflow:hidden;
+  -webkit-mask-image:var(--mask); mask-image:var(--mask);
+  -webkit-mask-size:100% 100%; mask-size:100% 100%; -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat; }
+.hx .fm i{ left:-80%; top:-80%; width:260%; height:260%; will-change:transform; }
+.hx .fa{ background-image:linear-gradient(112deg, rgba(255,255,255,0) 36%, rgba(255,122,192,.95) 41.5%, rgba(255,226,140,.98) 45.5%,
+  rgba(255,252,236,1) 47.5%, rgba(124,232,181,.95) 50%, rgba(108,192,255,.95) 54%, rgba(185,140,255,.9) 58.5%, rgba(185,140,255,0) 64%); }
+.hx .fb{ background-image:repeating-linear-gradient(112deg, rgba(255,122,192,.13) 0, rgba(255,214,110,.11) 9%, rgba(124,232,181,.13) 18%,
+  rgba(108,192,255,.13) 27%, rgba(185,140,255,.13) 36%, rgba(255,122,192,.13) 45%); }
+.hx .sh{ left:-70%; top:-70%; width:240%; height:240%; will-change:transform; mix-blend-mode:soft-light; opacity:.6;
+  background-image:linear-gradient(112deg, rgba(255,150,210,0) 30%, rgba(255,150,210,.6) 39%, rgba(255,226,150,.55) 45%,
+    rgba(150,236,200,.55) 51%, rgba(150,196,255,.6) 57%, rgba(200,160,255,0) 68%); }
+.hx .gm{ left:-25%; top:-25%; width:150%; height:150%; will-change:transform; mix-blend-mode:color-dodge; overflow:hidden;
+  -webkit-mask-image:radial-gradient(closest-side, #000 0%, rgba(0,0,0,.72) 28%, rgba(0,0,0,.14) 64%, rgba(0,0,0,0) 100%);
+  mask-image:radial-gradient(closest-side, #000 0%, rgba(0,0,0,.72) 28%, rgba(0,0,0,.14) 64%, rgba(0,0,0,0) 100%); }
+.hx .gm i{ left:-40%; top:-40%; width:180%; height:180%; will-change:transform; background-image:var(--glitter); background-size:84px 84px; }
+.hx .gl{ left:-50%; top:-50%; width:200%; height:200%; will-change:transform, opacity; mix-blend-mode:overlay;
+  background:radial-gradient(closest-side, rgba(255,253,245,.58) 0%, rgba(255,250,240,.18) 26%, rgba(255,255,255,0) 58%); }
+.card.katie .hx .sh{ opacity:.85; }
+.card.katie .hx .fm i.fa{ width:220%; height:220%; left:-60%; top:-60%; }
+.card.katie .hx .gm i{ background-size:70px 70px; }
+
+/* card typography (inside the face SVGs) */
+.c-num{ font-family:var(--title); font-weight:700; fill:#9a6c26; letter-spacing:.06em; }
+.c-the{ font-family:var(--read); font-style:italic; font-weight:600; fill:#9a6c26; }
+.c-ttl{ font-family:var(--title); font-weight:700; fill:#4a2f4d; letter-spacing:.035em; }
+.c-katie{ font-family:var(--deco); font-weight:700; fill:#5a3463; letter-spacing:.06em; }
+
+/* empty slot placeholders */
+.ph{ position:absolute; left:0; top:0; border-radius:8px; opacity:0; transition:opacity .6s ease;
+  border:1.2px dashed rgba(243,223,166,.55);
+  background:radial-gradient(closest-side, rgba(255,226,170,.10), rgba(255,226,170,0));
+  box-shadow:inset 0 0 18px rgba(255,214,160,.08); }
+.ph.on{ opacity:1; }
+.ph.ping{ animation:ping .9s ease-out; }
+@keyframes ping{ 0%{ box-shadow:0 0 0 0 rgba(255,226,160,.6), inset 0 0 18px rgba(255,214,160,.2); } 100%{ box-shadow:0 0 0 22px rgba(255,226,160,0), inset 0 0 18px rgba(255,214,160,.08); } }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   words
+   ═══════════════════════════════════════════════════════════════════════════ */
+#texts{ position:absolute; inset:0; pointer-events:none; z-index:30; }
+.t{ position:absolute; left:0; right:0; text-align:center; padding:0 20px; text-wrap:balance; }
+.ln, #caption p, .fread{ text-wrap:balance; }
+#title{ top:0; transition:opacity .9s ease, transform 1.3s cubic-bezier(.6,0,.2,1); }
+#title h1{
+  font-family:var(--deco); font-weight:700;
+  font-size:clamp(25px, 7.3vw, 54px); line-height:1.08; letter-spacing:.015em;
+  background:linear-gradient(180deg, #fff7dc 0%, #f6dc98 42%, #ddb46a 68%, #f7e4b0 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 16px rgba(255,214,150,.38)) drop-shadow(0 2px 1.5px rgba(16,8,36,.55));
+  padding:0 .1em;
+}
+#title p{
+  margin-top:.3em;
+  font-family:var(--read); font-style:italic; font-weight:500;
+  font-size:clamp(19px, 5.3vw, 31px); letter-spacing:.02em;
+  color:#f4e3bd; opacity:.94;
+  text-shadow:0 0 14px rgba(255,220,160,.35), 0 1px 2px rgba(16,8,36,.6);
+}
+#title .orn{ display:block; margin:.5em auto 0; width:clamp(90px, 30vw, 170px); height:auto; opacity:.85; }
+#title.away{ opacity:0; transform:translateY(-26px); }
+
+.cap{ font-family:var(--read); font-style:italic; font-weight:500;
+  font-size:clamp(19px, 5.2vw, 27px); line-height:1.3; color:#f8eedb;
+  text-shadow:0 1px 14px rgba(18,8,40,.75), 0 1px 2px rgba(18,8,40,.6); }
+#caption{ height:0; transition:top .9s var(--ease-out); }
+#caption p{ position:absolute; left:0; right:0; padding:0 22px; transform:translateY(-50%);
+  opacity:0; transition:opacity .55s ease, transform .7s var(--ease-out); }
+#caption p.on{ opacity:1; transform:translateY(-50%); }
+#caption p.out{ opacity:0; transform:translateY(calc(-50% - 10px)); }
+#caption p.in{ opacity:0; transform:translateY(calc(-50% + 10px)); transition:none; }
+#caption em{ font-style:normal; color:#ffe2a8; }
+#caption .late{ opacity:0; animation:lateIn 1s ease 1.3s forwards; }
+#caption.instant-late .late{ animation:none; opacity:1; }
+@keyframes lateIn{ to{ opacity:1; } }
+
+.lbl{ position:absolute; text-align:center; transform:translateX(-50%);
+  font-family:var(--sans); font-weight:500; font-size:10.5px; line-height:1.35; letter-spacing:.16em;
+  color:rgba(243,223,166,.82); opacity:0; transition:opacity .6s ease, color .6s ease, transform .6s var(--ease-out); }
+.lbl.on{ opacity:1; }
+.lbl.hot{ color:#fff1c9; text-shadow:0 0 12px rgba(255,214,150,.7); }
+
+#hint{ font-family:var(--sans); font-weight:500; font-size:11px; letter-spacing:.24em; color:rgba(243,223,166,.85);
+  opacity:0; transition:opacity .6s ease; }
+#hint.on{ opacity:1; animation:hintPulse 2.8s ease-in-out infinite; }
+@keyframes hintPulse{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+
+.pill{
+  position:absolute; left:50%; transform:translate(-50%, 8px) scale(.96);
+  pointer-events:none; opacity:0;
+  min-height:48px; padding:0 24px 2px; border-radius:999px; white-space:nowrap;
+  display:inline-flex; align-items:center; justify-content:center; gap:.5em;
+  font-family:var(--read); font-style:italic; font-weight:600; font-size:clamp(18px, 4.9vw, 22px); letter-spacing:.01em;
+  color:#fff4dc;
+  background:linear-gradient(180deg, rgba(126,92,170,.62), rgba(72,44,108,.66));
+  border:1px solid rgba(240,206,140,.62);
+  box-shadow:0 10px 30px rgba(10,4,26,.5), inset 0 1px 0 rgba(255,240,210,.28);
+  transition:opacity .5s ease, transform .6s var(--ease-spring), background .3s ease;
+}
+.pill.on{ opacity:1; transform:translate(-50%,0) scale(1); pointer-events:auto; }
+.pill:active{ transform:translate(-50%,0) scale(.96); }
+.pill::after{ content:''; position:absolute; inset:-2px; border-radius:inherit; pointer-events:none; border:1.5px solid rgba(243,214,150,.6);
+  opacity:0; animation:ring 2.6s cubic-bezier(.2,.7,.3,1) infinite; }
+@keyframes ring{ 0%{ opacity:.9; transform:scale(1); } 70%{ opacity:0; transform:scale(1.13,1.4); } 100%{ opacity:0; transform:scale(1.13,1.4); } }
+.pill .star{ font-style:normal; color:#ffe2a8; font-size:.8em; }
+
+/* ── focus view ─────────────────────────────────────────────────────────── */
+#focus{ position:absolute; inset:0; z-index:32; pointer-events:none; }
+#focus .veil{ position:absolute; inset:0; opacity:0; transition:opacity .55s ease;
+  background:radial-gradient(90% 70% at 50% 40%, rgba(30,14,50,.72), rgba(12,4,24,.93)); }
+body.focusing #texts{ opacity:0; }
+body.focusing #texts *{ pointer-events:none !important; }
+#texts{ transition:opacity .45s ease; }
+#focus.on .veil{ opacity:1; }
+#focus .flbl{ font-family:var(--sans); font-weight:500; font-size:11px; letter-spacing:.24em; color:rgba(243,223,166,.9);
+  opacity:0; transition:opacity .5s ease .1s; }
+#focus .fread{ font-family:var(--read); font-style:italic; font-weight:500; font-size:clamp(19px, 5.3vw, 26px); line-height:1.36;
+  color:#fbf0dc; text-shadow:0 1px 14px rgba(14,6,30,.8); }
+#focus .fread span{ display:inline-block; opacity:0; transform:translateY(8px); transition:opacity .6s ease, transform .8s var(--ease-out); }
+#focus.on .fread span{ opacity:1; transform:none; }
+#focus .fhint{ font-family:var(--sans); font-weight:500; font-size:10.5px; letter-spacing:.22em; color:rgba(243,223,166,.6);
+  opacity:0; transition:opacity .6s ease; }
+#focus.on .flbl{ opacity:1; }
+#focus.on .fhint{ opacity:1; transition-delay:1.4s; }
+
+#tiltPill{ z-index:36; font-size:clamp(15px, 4.2vw, 18px); min-height:44px; padding:0 18px 2px; }
+#tiltPill::after{ animation:none; }
+
+/* ── finale ─────────────────────────────────────────────────────────────── */
+#finale{ position:absolute; inset:0; z-index:33; pointer-events:none; }
+#finale .fm{ font-family:var(--read); font-style:italic; font-weight:500; font-size:clamp(19px, 5.2vw, 26px); line-height:1.32; color:#fff1d6;
+  text-shadow:0 1px 14px rgba(14,6,30,.85); }
+#finale .fn{ font-family:var(--read); font-weight:500; font-size:clamp(18px, 4.9vw, 24px); line-height:1.42; color:#f8ead0;
+  text-shadow:0 1px 14px rgba(14,6,30,.85); }
+#finale .fs{ font-family:var(--read); font-style:italic; font-weight:600; font-size:clamp(20px, 5.4vw, 27px); color:#ffe0a2;
+  text-shadow:0 0 16px rgba(255,200,120,.45), 0 1px 2px rgba(14,6,30,.7); }
+#finale .ln{ display:block; opacity:0; transform:translateY(10px); filter:blur(3px);
+  transition:opacity 1s ease, transform 1.2s var(--ease-out), filter 1s ease; }
+#finale .ln.on{ opacity:1; transform:none; filter:blur(0); }
+#again{ position:absolute; left:50%; transform:translateX(-50%); min-height:44px; padding:0 18px;
+  font-family:var(--sans); font-weight:500; font-size:11.5px; letter-spacing:.24em; color:rgba(243,223,166,.85);
+  opacity:0; pointer-events:none; transition:opacity .8s ease; }
+#again.on{ opacity:1; pointer-events:auto; }
+
+/* ── overlays ───────────────────────────────────────────────────────────── */
+#fx{ position:absolute; left:0; top:0; z-index:40; pointer-events:none; }
+#flash{ position:absolute; inset:0; z-index:41; pointer-events:none; opacity:0;
+  background:radial-gradient(60% 50% at 50% 46%, rgba(255,252,236,.98), rgba(255,226,180,.6) 40%, rgba(255,200,230,0) 75%); }
+#vig{ position:absolute; inset:0; z-index:42; pointer-events:none;
+  background:radial-gradient(130% 100% at 50% 45%, rgba(0,0,0,0) 55%, rgba(10,4,24,.32) 85%, rgba(8,2,20,.55) 100%); }
+#grain{ position:absolute; inset:0; z-index:43; pointer-events:none; opacity:.06; background-image:var(--grain); background-size:160px 160px; }
+#intro{ position:absolute; inset:0; z-index:60; pointer-events:none; background:#15122c; transition:opacity 1.3s ease;
+  animation:introSafety 1s ease 3.2s forwards; }  /* if script ever fails, never leave her on a dark screen */
+@keyframes introSafety{ to{ opacity:0; visibility:hidden; } }
+#intro.gone{ opacity:0; }
+
+#mute{
+  position:absolute; z-index:70;
+  top:calc(env(safe-area-inset-top) + 8px); right:calc(env(safe-area-inset-right) + 8px);
+  width:44px; height:44px; border-radius:50%;
+  display:grid; place-items:center;
+  opacity:.72; transition:opacity .3s ease, transform .3s var(--ease-spring);
+}
+#mute:hover{ opacity:1; }
+#mute:active{ transform:scale(.9); }
+#mute i{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center;
+  background:rgba(30,20,56,.42); border:1px solid rgba(240,206,140,.38); }
+#mute svg{ width:17px; height:17px; }
+#mute .off{ display:none; } #mute.muted .off{ display:block; } #mute.muted .on{ display:none; }
+
+/* gallery (QA) */
+#gallery{ position:absolute; inset:0; z-index:80; overflow:auto; background:#2b2650; padding:18px; display:none;
+  touch-action:pan-y; -webkit-user-select:text; user-select:text; }
+#gallery.on{ display:flex; flex-wrap:wrap; gap:18px; align-content:flex-start; justify-content:center; }
+#gallery .g{ position:relative; width:var(--gw,220px); height:calc(var(--gw,220px) * 1.7); }
+#gallery .g .card{ left:50%; top:50%; }
+
+/* ── modes ──────────────────────────────────────────────────────────────── */
+body.instant *, body.instant *::before, body.instant *::after{ transition:none !important; }
+body.still *, body.still *::before, body.still *::after{ animation-play-state:paused !important; }
+@media (prefers-reduced-motion: reduce){
+  .wisp, #moonInner, #fringe .band, #ball .mist, #ball .halo, .card .face::after, .pill::after, #hint.on{ animation:none !important; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="sa"></div>
+
+  <!-- ── scene ─────────────────────────────────────────────────────────── -->
+  <div id="scene" aria-hidden="true">
+    <div id="sky" class="cam"></div>
+    <div id="skyGlow" class="cam"></div>
+    <div id="starsWrap" class="cam"><canvas></canvas><canvas></canvas><canvas></canvas><canvas></canvas><canvas></canvas></div>
+    <div id="shoot"></div>
+    <div id="clouds" class="cam"></div>
+    <div id="moon" class="cam"><div id="moonInner"></div><div id="moonMsg"></div></div>
+    <div id="table" class="cam"><div id="ball"><div class="halo"></div><div class="orb"><div class="mist"></div></div><div class="msg"></div></div></div>
+    <div id="pool"></div>
+    <div id="fringe"><div class="under"></div><div class="band"></div></div>
+  </div>
+
+  <!-- ── cards ─────────────────────────────────────────────────────────── -->
+  <div id="stage"></div>
+
+  <!-- ── words ─────────────────────────────────────────────────────────── -->
+  <div id="texts">
+    <header id="title" class="t">
+      <h1 id="titleH">a birthday reading</h1>
+      <p id="titleFor">for Katie</p>
+    </header>
+    <div id="caption" class="t cap" aria-live="polite"><p></p><p></p></div>
+    <div class="lbl" id="lbl0"></div><div class="lbl" id="lbl1"></div><div class="lbl" id="lbl2"></div>
+    <p id="hint" class="t"></p>
+    <button id="twistBtn" class="pill" type="button"></button>
+    <button id="moreBtn" class="pill" type="button"></button>
+  </div>
+
+  <div id="focus">
+    <div class="veil"></div>
+    <p class="flbl t"></p>
+    <p class="fread t"></p>
+    <p class="fhint t"></p>
+  </div>
+
+  <div id="finale">
+    <p class="fm t" id="fMeaning"></p>
+    <p class="fn t" id="fNote"></p>
+    <p class="fs t" id="fSig"></p>
+    <button id="again" type="button"></button>
+  </div>
+
+  <button id="tiltPill" class="pill" type="button"></button>
+
+  <canvas id="fx"></canvas>
+  <div id="flash"></div>
+  <div id="vig"></div>
+  <div id="grain"></div>
+  <div id="intro"></div>
+
+  <button id="mute" type="button" aria-label="sound on/off">
+    <i>
+      <svg class="on" viewBox="0 0 24 24" fill="none" stroke="#f3dfa6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18 6.6a7.6 7.6 0 0 1 0 10.8"/></svg>
+      <svg class="off" viewBox="0 0 24 24" fill="none" stroke="#f3dfa6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+    </i>
+  </button>
+
+  <div id="gallery"></div>
+  <p class="sr" id="srText" aria-live="polite"></p>
+</div>
+
+<svg id="defs" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false"></svg>
+
+<script>
+// ══ customise me ══════════════════════════════════════════════════════════
+const CONFIG = {
+  herName: "Katie",   // always with a capital K
+  myName: "amit",
+  farAway: true,   // long-distance lines on/off (each has a local alternative)
+  distance: "8,000 km",
+
+  // ── words on the table ({name} = herName) ──
+  title: "a birthday reading",
+  forLine: "for {name}",
+  tapDeck: "tap the deck to shuffle",
+  shuffling: "shuffling. the cards are being dramatic about it.",
+  pickThree: "pick three. don't think too hard.",
+  slots: ["the year behind you", "today", "the year ahead"],
+  picked: ["the year behind you…", "today…", "…and the year ahead."],
+  turnOver: "now turn them over. one at a time.",
+  tapCard: "tap a card to turn it over",
+  putBack: "tap anywhere to put it back",
+  notYet: "patience. your three first.",
+  combined: "{past}, {today}, and {future}. the cards are not being subtle.",
+  twistAsk: "curious what the other cards said?",
+  twistLines: ["this deck only has good cards in it.", "i checked. twice."],
+  otherLabel: "also in this deck",
+  oneMore: "wait. there's one more card.",
+  tiltAsk: "✨ tilt to see the shimmer",
+  tiltOn: "✨ tilt away",
+  tiltNo: "✨ drag the card to tilt it",
+
+  // ── the card that isn't in any deck ──
+  katieNumeral: "XXII",
+  katieMeaning: ["the rarest card in the deck.", "anyone who draws it is very, very lucky."],
+  noteFar: ["happy birthday, {name}.", "i asked the cards about you from {distance} away.", "they said exactly what i would have."],
+  noteNear: ["happy birthday, {name}.", "the cards and i are in complete agreement."],
+  again: "read again ↺",
+
+  // ── little secrets (tap the moon. tap the crystal ball.) ──
+  moonSays: "mm… happy birthday, {name}… zzz",
+  ballSays: ["outlook: extremely good.", "signs point to cake.", "yes. obviously.", "ask again after cake."],
+
+  // ── the deck: 15 cards, every single one of them good ──
+  //    short = how it reads in the combined line
+  cards: [
+    { id: "bunny",     num: "I",    title: "the bunny",                short: "a brave little bunny",
+      reading: "soft, quick, brave when it counts. you hopped through a lot this year. gracefully. (mostly.)" },
+    { id: "birthday",  num: "IV",   title: "the birthday girl",        short: "a birthday girl",
+      reading: "the cards are very clear: today is about you. all of it. no notes." },
+    { id: "star",      num: "VI",   title: "the star",                 short: "a star on its way",
+      reading: "something lovely is on its way to you. the cards would say more, but they've been sworn to secrecy." },
+    { id: "cake",      num: "III",  title: "the cake",                 short: "far too much cake",
+      reading: "abundance. sweetness. at least one (1) slice too many. take it." },
+    { id: "telephone", num: "V",    title: "the telephone",            short: "a very long phone call",
+      reading: "a long call is coming. you will not be the first to hang up." },
+    { id: "sun",       num: "VIII", title: "the sun",                  short: "a year that likes you back",
+      reading: "warmth, joy, and a year that likes you back." },
+    { id: "letter",    num: "IX",   title: "the love letter",          short: "a love letter",
+      reading: "someone is thinking about you right now. (yes. now.)" },
+    { id: "moon",      num: "XII",  title: "the strawberry moon",      short: "a strawberry moon",
+      reading: "a soft season. good sleep. better dreams." },
+    { id: "kiss",      num: "VII",  title: "the kiss on the forehead", short: "a kiss on the forehead",
+      reading: "this year, someone was very proud of you. often. quietly. still is." },
+    { id: "hair",      num: "X",    title: "the good hair day",        short: "one perfect hair day",
+      reading: "there was at least one perfect hair day this year. the cards remember it. so do you." },
+    { id: "nap",       num: "0",    title: "the nap",                  short: "an excellent nap",
+      reading: "a long one. uninterrupted. blanket included. the cards insist." },
+    { id: "treat",     num: "XIV",  title: "the little treat",         short: "a little treat",
+      reading: "you will deserve a little treat today. you will have the little treat. this is not a suggestion." },
+    { id: "bouquet",   num: "XVII", title: "the bouquet",              short: "flowers for no reason",
+      reading: "flowers, for no reason. which is the best reason." },
+    { id: "hug",       num: "XIX",  title: "the big hug",              short: "a very big hug",
+      reading: "a big one is owed to you. the cards are keeping count." },
+    { id: "world",     num: "XXI",  title: "the world",                short: "the whole world",
+      reading: "the whole thing. it's yours. it suits you." },
+  ],
+  // which cards may land in which slot. the first is always the first reading;
+  // "read again ↺" deals from the rest, so every reading sounds right for its slot.
+  spread: {
+    past:   ["bunny", "kiss", "hair"],
+    today:  ["birthday", "cake", "letter", "treat"],
+    future: ["star", "sun", "telephone", "moon", "bouquet"],
+  },
+};
+// ═════════════════════════════════════════════════════════════════════════
+
+(function () {
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════════════
+   environment + tiny helpers
+   ═══════════════════════════════════════════════════════════════════════ */
+const QS = new URLSearchParams(location.search);
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const $ = (id) => document.getElementById(id);
+const n2 = (v) => Math.round(v * 100) / 100;
+
+if (QS.get('far') === '0') CONFIG.farAway = false;
+const capFirst = (t) => { t = String(t || '').trim(); return t ? t.charAt(0).toUpperCase() + t.slice(1) : t; };
+if (QS.get('name')) CONFIG.herName = capFirst(QS.get('name').slice(0, 24));
+const NAME = capFirst(CONFIG.herName) || 'you';
+const ME = (CONFIG.myName || 'amit').toLowerCase();
+const STILL = QS.get('still') === '1';
+const GALLERY = QS.get('gallery') === '1';
+const NOGLINT = QS.has('noglint');
+const STAGE0 = QS.has('s') ? clamp(parseInt(QS.get('s'), 10) || 0, 0, 6) : null;
+const RM = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+const COARSE = !!(window.matchMedia && matchMedia('(hover: none), (pointer: coarse)').matches);
+let TILT_PIN = null;
+if (QS.get('tilt')) {
+  const t = QS.get('tilt').split(',').map(Number);
+  if (t.length === 2 && t.every(isFinite)) TILT_PIN = [clamp(t[0], -1, 1), clamp(t[1], -1, 1)];
+}
+function fill(str, extra) {
+  return String(str).replace(/\{(\w+)\}/g, (m, k) =>
+    k === 'name' ? NAME : k === 'me' ? ME : k === 'distance' ? String(CONFIG.distance).replace(/ /g, '\u00a0') : (extra && extra[k] != null ? extra[k] : m));
+}
+
+// easings
+const E = {
+  inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  out3: t => 1 - Math.pow(1 - t, 3),
+  out5: t => 1 - Math.pow(1 - t, 5),
+  in3: t => t * t * t,
+  in2: t => t * t,
+  outBack: t => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); },
+  inOutSine: t => -(Math.cos(Math.PI * t) - 1) / 2,
+};
+
+// seeded rng — the ambient field + card specks are identical on every load
+let _seed = 0x5eed1e;
+function srnd() {
+  _seed = (_seed + 0x6D2B79F5) | 0;
+  let t = Math.imul(_seed ^ (_seed >>> 15), 1 | _seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const srange = (a, b) => a + srnd() * (b - a);
+const rand = (a, b) => a + Math.random() * (b - a);
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ART — every illustration is inline SVG drawn in a 200×340 card space.
+   gold line-art (gradient strokes), pastel fills, cute faces in plum ink.
+   each drawing is a string so it can be both a <g> in <defs> and a white
+   line-mask (data URL) that tells the holo foil where to sit.
+   ═══════════════════════════════════════════════════════════════════════ */
+const P = {
+  rose: '#f4a7b9', roseD: '#ea8aa3', roseL: '#fbd5de', roseXL: '#fde8ee',
+  lilac: '#c3b1e1', lilacD: '#ab95d5', lilacL: '#e2d8f3',
+  butter: '#f6dc9a', butterD: '#eec873', butterL: '#fbecc6',
+  mint: '#bfe3d0', mintD: '#9fd0b8', mintL: '#e0f2e8',
+  sky: '#b8d4f2', skyD: '#96bde9', skyL: '#dcebfa',
+  cream: '#fffaf0', white: '#fffdf8', peach: '#fcd7c2', honey: '#f3d4a7', honeyL: '#fbe9cc',
+};
+const INK = '#5a3a5c';
+const GOLD = 'url(#gold)';
+const sw = (w) => ` stroke="${GOLD}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+const ink = (w) => ` stroke="${INK}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"`;
+
+// ── shape helpers ───────────────────────────────────────────────────────
+function starP(cx, cy, R, r, rot, round, pts) {
+  const N = (pts || 5) * 2, v = [];
+  for (let i = 0; i < N; i++) {
+    const a = ((rot == null ? -90 : rot) + i * 360 / N) * Math.PI / 180, rr = i % 2 ? r : R;
+    v.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+  }
+  if (!round) return 'M' + v.map(p => n2(p[0]) + ' ' + n2(p[1])).join(' L') + 'Z';
+  let d = '';
+  for (let i = 0; i < N; i++) {
+    const p = v[i], a = v[(i - 1 + N) % N], b = v[(i + 1) % N];
+    const t = i % 2 ? round * .55 : round;
+    const p1 = [p[0] + (a[0] - p[0]) * t, p[1] + (a[1] - p[1]) * t];
+    const p2 = [p[0] + (b[0] - p[0]) * t, p[1] + (b[1] - p[1]) * t];
+    d += (i ? 'L' : 'M') + n2(p1[0]) + ' ' + n2(p1[1]) + ' Q' + n2(p[0]) + ' ' + n2(p[1]) + ' ' + n2(p2[0]) + ' ' + n2(p2[1]) + ' ';
+  }
+  return d + 'Z';
+}
+function heartP(cx, cy, w) {   // centred heart, w wide, ~0.8w tall
+  const k = (x, y) => n2(cx + x * w) + ' ' + n2(cy + y * w);
+  return `M${k(0, .36)} C${k(-.16, .24)} ${k(-.5, .06)} ${k(-.5, -.15)} C${k(-.5, -.38)} ${k(-.2, -.44)} ${k(0, -.2)} C${k(.2, -.44)} ${k(.5, -.38)} ${k(.5, -.15)} C${k(.5, .06)} ${k(.16, .24)} ${k(0, .36)} Z`;
+}
+function moonletP(x, y, r, k) {  // little crescent, opening right
+  return `M${n2(x)} ${n2(y - r)} A${n2(r)} ${n2(r)} 0 1 0 ${n2(x)} ${n2(y + r)} A${n2(r * (k || .6))} ${n2(r)} 0 0 1 ${n2(x)} ${n2(y - r)} Z`;
+}
+function cloudP(cx, by, w) {   // puffy cloud sitting on y=by, w wide
+  const h = w * .4, x0 = cx - w / 2;
+  const X = f => n2(x0 + w * f), Y = f => n2(by - h * f);
+  return `M${X(.1)} ${Y(0)} C${X(-.04)} ${Y(0)} ${X(-.04)} ${Y(.55)} ${X(.13)} ${Y(.55)} ` +
+    `C${X(.12)} ${Y(1.02)} ${X(.38)} ${Y(1.1)} ${X(.45)} ${Y(.82)} ` +
+    `C${X(.5)} ${Y(1.34)} ${X(.8)} ${Y(1.3)} ${X(.8)} ${Y(.76)} ` +
+    `C${X(.98)} ${Y(.82)} ${X(1.06)} ${Y(.24)} ${X(.92)} ${Y(0)} Z`;
+}
+const dot = (x, y, r, f) => `<circle cx="${n2(x)}" cy="${n2(y)}" r="${r}" fill="${f || GOLD}"/>`;
+const pearl = (x, y, r) => `<circle cx="${n2(x)}" cy="${n2(y)}" r="${r}" fill="#fffdf6"${sw(.8)}/>`;
+function sparkle(x, y, r, f, w) {
+  const k = r * .2;
+  return `<path d="M${n2(x)} ${n2(y - r)} Q${n2(x + k)} ${n2(y - k)} ${n2(x + r)} ${n2(y)} Q${n2(x + k)} ${n2(y + k)} ${n2(x)} ${n2(y + r)} Q${n2(x - k)} ${n2(y + k)} ${n2(x - r)} ${n2(y)} Q${n2(x - k)} ${n2(y - k)} ${n2(x)} ${n2(y - r)}Z" fill="${f || '#fff6d6'}"${sw(w || .9)}/>`;
+}
+const star = (x, y, R, f, w, rot) => `<path d="${starP(x, y, R, R * .5, rot, .22)}" fill="${f || P.butter}"${sw(w || 1)}/>`;
+const heart = (x, y, w, f, s) => `<path d="${heartP(x, y, w)}" fill="${f || P.rose}"${sw(s || 1.1)}/>`;
+function flower(x, y, r, f) {
+  let s = '';
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 72 - 90) * Math.PI / 180;
+    s += `<circle cx="${n2(x + Math.cos(a) * r * .95)}" cy="${n2(y + Math.sin(a) * r * .95)}" r="${n2(r * .62)}" fill="${f}"${sw(.6)}/>`;
+  }
+  return s + `<circle cx="${n2(x)}" cy="${n2(y)}" r="${n2(r * .46)}" fill="${P.butterD}"${sw(.6)}/>`;
+}
+// faces — always plum ink, always soft
+const eyesDot = (x1, x2, y, r) => {
+  r = r || 3.2;
+  return `<circle cx="${x1}" cy="${y}" r="${r}" fill="${INK}"/><circle cx="${x2}" cy="${y}" r="${r}" fill="${INK}"/>` +
+    `<circle cx="${n2(x1 + r * .38)}" cy="${n2(y - r * .4)}" r="${n2(r * .36)}" fill="#fff"/><circle cx="${n2(x2 + r * .38)}" cy="${n2(y - r * .4)}" r="${n2(r * .36)}" fill="#fff"/>`;
+};
+const eyesHappy = (x1, x2, y, w, s) => {   // ^ ^
+  w = w || 4.5;
+  return `<path d="M${x1 - w} ${y + 1.6} Q${x1} ${y - 3.6} ${x1 + w} ${y + 1.6} M${x2 - w} ${y + 1.6} Q${x2} ${y - 3.6} ${x2 + w} ${y + 1.6}"${ink(s || 1.7)}/>`;
+};
+const eyesSleep = (x1, x2, y, w, s) => {   // u u
+  w = w || 4.5;
+  return `<path d="M${x1 - w} ${y - 1.2} Q${x1} ${y + 3.8} ${x1 + w} ${y - 1.2} M${x2 - w} ${y - 1.2} Q${x2} ${y + 3.8} ${x2 + w} ${y - 1.2}"${ink(s || 1.7)}/>`;
+};
+const blush = (x1, x2, y, rx, ry) =>
+  `<ellipse cx="${x1}" cy="${y}" rx="${rx || 5.5}" ry="${ry || 3.2}" fill="${P.rose}" opacity=".85"/><ellipse cx="${x2}" cy="${y}" rx="${rx || 5.5}" ry="${ry || 3.2}" fill="${P.rose}" opacity=".85"/>`;
+const smile = (x, y, w, s) => `<path d="M${x - w} ${y} Q${x} ${y + w * 1.05} ${x + w} ${y}"${ink(s || 1.5)}/>`;
+const mouthW = (x, y, s) => `<path d="M${x - s * 1.6} ${y} Q${x - s * .8} ${y + s * 1.2} ${x} ${y} Q${x + s * .8} ${y + s * 1.2} ${x + s * 1.6} ${y}"${ink(1.3)}/>`;
+const zP = (x, y, s, w) => `<path d="M${x} ${y} h${s} l${-s} ${s} h${s}" fill="none"${sw(w || 1.5)}/>`;
+
+// faint sunburst + gold specks behind every illustration
+function rays(cx, cy, op) {
+  let d = '';
+  for (let i = 0; i < 32; i++) {
+    const a = i / 32 * Math.PI * 2;
+    const r1 = i % 2 ? 46 : 38, r2 = 170;
+    d += `M${n2(cx + Math.cos(a) * r1)} ${n2(cy + Math.sin(a) * r1)} L${n2(cx + Math.cos(a) * r2)} ${n2(cy + Math.sin(a) * r2)} `;
+  }
+  return `<path d="${d}" fill="none" stroke="${GOLD}" stroke-width=".6" opacity="${op || .26}"/>`;
+}
+function specks(seed, nn, avoid) {
+  const old = _seed; _seed = seed;
+  let s = '';
+  for (let i = 0; i < nn; i++) {
+    const x = srange(30, 170), y = srange(52, 250);
+    if (avoid && Math.hypot(x - avoid[0], y - avoid[1]) < avoid[2]) continue;
+    s += srnd() < .3 ? sparkle(x, y, srange(2, 3.2), '#fff7dc', .6) : dot(x, y, n2(srange(.6, 1.2)));
+  }
+  _seed = old;
+  return s;
+}
+function crown(cx, by, k, gem) {
+  k = k || 1;
+  const w = 13 * k, h = 15 * k;
+  const d = `M${n2(cx - w)} ${n2(by)} L${n2(cx - w - 2.5 * k)} ${n2(by - h * .92)} L${n2(cx - w * .45)} ${n2(by - h * .46)} L${n2(cx)} ${n2(by - h * 1.2)} L${n2(cx + w * .45)} ${n2(by - h * .46)} L${n2(cx + w + 2.5 * k)} ${n2(by - h * .92)} L${n2(cx + w)} ${n2(by)} Z`;
+  return `<path d="${d}" fill="${P.butter}"${sw(1.5 * k)}/>` +
+    `<path d="M${n2(cx - w)} ${n2(by - 3.4 * k)} H${n2(cx + w)}" fill="none"${sw(.8 * k)}/>` +
+    pearl(cx - w - 2.5 * k, by - h * .92, n2(2 * k)) + pearl(cx, by - h * 1.2, n2(2.4 * k)) + pearl(cx + w + 2.5 * k, by - h * .92, n2(2 * k)) +
+    `<path d="${heartP(cx, by - 7.6 * k, 7 * k)}" fill="${gem || P.rose}"${sw(.7 * k)}/>`;
+}
+function bow(cx, cy, k, f) {
+  const X = d => n2(cx + d * k), Y = d => n2(cy + d * k);
+  return `<path d="M${X(-2)} ${Y(2)} L${X(-9)} ${Y(17)} L${X(-4.5)} ${Y(14.5)} L${X(-2.5)} ${Y(19)} L${X(1)} ${Y(3)} Z M${X(2)} ${Y(2)} L${X(9)} ${Y(17)} L${X(4.5)} ${Y(14.5)} L${X(2.5)} ${Y(19)} L${X(-1)} ${Y(3)} Z" fill="${f}"${sw(1.1 * k)}/>` +
+    `<path d="M${X(0)} ${Y(0)} C${X(-6)} ${Y(-12)} ${X(-20)} ${Y(-12)} ${X(-18)} ${Y(-1)} C${X(-16)} ${Y(7)} ${X(-6)} ${Y(5)} ${X(0)} ${Y(0)} Z M${X(0)} ${Y(0)} C${X(6)} ${Y(-12)} ${X(20)} ${Y(-12)} ${X(18)} ${Y(-1)} C${X(16)} ${Y(7)} ${X(6)} ${Y(5)} ${X(0)} ${Y(0)} Z" fill="${f}"${sw(1.3 * k)}/>` +
+    `<path d="M${X(-13)} ${Y(-3)} Q${X(-9)} ${Y(-5)} ${X(-5)} ${Y(-1)} M${X(13)} ${Y(-3)} Q${X(9)} ${Y(-5)} ${X(5)} ${Y(-1)}" fill="none" stroke="#fff" stroke-width="${n2(1.1 * k)}" stroke-linecap="round" opacity=".7"/>` +
+    `<ellipse cx="${X(0)}" cy="${Y(0)}" rx="${n2(3.6 * k)}" ry="${n2(4 * k)}" fill="${f}"${sw(1.1 * k)}/>`;
+}
+function leafP(x, y, ang, len, wid) {     // pointed leaf from (x,y) toward ang (deg)
+  const a = ang * Math.PI / 180, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+  const tx = x + ux * len, ty = y + uy * len;
+  const c1x = x + ux * len * .45 + nx * wid, c1y = y + uy * len * .45 + ny * wid;
+  const c2x = x + ux * len * .45 - nx * wid, c2y = y + uy * len * .45 - ny * wid;
+  return `M${n2(x)} ${n2(y)} Q${n2(c1x)} ${n2(c1y)} ${n2(tx)} ${n2(ty)} Q${n2(c2x)} ${n2(c2y)} ${n2(x)} ${n2(y)} Z`;
+}
+function coilP(x0, y0, x1, y1, loops, r) {   // telephone cord: a prolate cycloid
+  const dx = x1 - x0, dy = y1 - y0, Ln = Math.hypot(dx, dy), ux = dx / Ln, uy = dy / Ln, nx = -uy, ny = ux;
+  const steps = loops * 16; let d = '';
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps, th = t * loops * Math.PI * 2;
+    const along = t * Ln - 3.2 * Math.sin(th), side = r * Math.cos(th) - r * Math.cos(0) * (1 - t) * 0;
+    d += (i ? 'L' : 'M') + n2(x0 + ux * along + nx * side) + ' ' + n2(y0 + uy * along + ny * side) + ' ';
+  }
+  return d;
+}
+function balloon(cx, cy, rx, ry, f, face) {
+  let s = `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${f}"${sw(1.9)}/>`;
+  s += `<path d="M${cx - 3.2} ${cy + ry + 4.5} L${cx} ${cy + ry - .5} L${cx + 3.2} ${cy + ry + 4.5} Z" fill="${f}"${sw(1.1)}/>`;
+  s += `<ellipse cx="${n2(cx - rx * .42)}" cy="${n2(cy - ry * .42)}" rx="${n2(rx * .2)}" ry="${n2(ry * .3)}" fill="#fff" opacity=".75" transform="rotate(28 ${n2(cx - rx * .42)} ${n2(cy - ry * .42)})"/>`;
+  if (face) s += eyesHappy(cx - 6.5, cx + 6.5, cy + 1, 3.2, 1.4) + blush(cx - 10, cx + 10, cy + 6.5, 3.4, 2) + smile(cx, cy + 6.5, 2.6, 1.3);
+  return s;
+}
+function wing(x, y, o) {   // o = -1 left wing, +1 right wing; root at (x,y)
+  const X = d => n2(x + o * d);
+  return `<path d="M${X(0)} ${y + 2} C${X(14)} ${y + 2} ${X(30)} ${y - 6} ${X(36)} ${y - 26} C${X(29)} ${y - 22} ${X(25)} ${y - 22} ${X(20)} ${y - 22} C${X(29)} ${y - 32} ${X(31)} ${y - 42} ${X(29)} ${y - 52} C${X(21)} ${y - 42} ${X(15)} ${y - 36} ${X(9)} ${y - 34} C${X(10)} ${y - 42} ${X(8)} ${y - 48} ${X(4)} ${y - 54} C${X(-2)} ${y - 40} ${X(-4)} ${y - 18} ${X(0)} ${y + 2} Z" fill="${P.white}"${sw(1.7)}/>` +
+    `<path d="M${X(4)} ${y - 4} C${X(12)} ${y - 8} ${X(18)} ${y - 13} ${X(22)} ${y - 20} M${X(3)} ${y - 14} C${X(9)} ${y - 20} ${X(14)} ${y - 27} ${X(18)} ${y - 36}" fill="none"${sw(.8)}/>`;
+}
+function tulip(cx, cy, rot, f, face) {
+  return `<g transform="rotate(${rot} ${cx} ${cy + 36})">` +
+    `<path d="M${cx - 13} ${cy} C${cx - 15} ${cy - 15} ${cx - 11} ${cy - 24} ${cx - 6} ${cy - 23} L${cx} ${cy - 14} L${cx + 6} ${cy - 23} C${cx + 11} ${cy - 24} ${cx + 15} ${cy - 15} ${cx + 13} ${cy} C${cx + 10} ${cy + 11} ${cx - 10} ${cy + 11} ${cx - 13} ${cy} Z" fill="${f}"${sw(1.7)}/>` +
+    `<path d="M${cx} ${cy - 14} C${cx - 4} ${cy - 6} ${cx - 4} ${cy + 1} ${cx - 1} ${cy + 7}" fill="none"${sw(.8)}/>` +
+    (face ? eyesSleep(cx - 5, cx + 5, cy - 1, 2.4, 1.2) + blush(cx - 8.5, cx + 8.5, cy + 3.5, 2.6, 1.6) : '') +
+    `</g>`;
+}
+
+// ── the card frame: border, corners, numeral cartouche, arch, title plaque ─
+const ARCH_D = 'M22 262 V120 A78 78 0 0 1 178 120 V262 Z';
+function frameMarkup(katie) {
+  let s = '';
+  s += `<rect x="6" y="6" width="188" height="328" rx="9" fill="none"${sw(1.9)}/>`;
+  s += `<rect x="10.5" y="10.5" width="179" height="319" rx="6" fill="none"${sw(.75)}/>`;
+  const corner = `<path d="M10.5 37 C23 37 37 23 37 10.5" fill="none"${sw(.95)}/><path d="M10.5 28.5 C18 28.5 28.5 18 28.5 10.5" fill="none"${sw(.65)}/>` +
+    dot(17.2, 17.2, 2.3) + dot(30.5, 30.5, 1.1);
+  s += corner + `<g transform="matrix(-1 0 0 1 200 0)">${corner}</g>`;
+  // bottom corners: just jewels, the plaque owns that edge
+  s += dot(16, 330 - 13, 1.5) + dot(184, 330 - 13, 1.5);
+  // numeral cartouche
+  s += `<path d="M70 25 L77.5 16 H122.5 L130 25 L122.5 34 H77.5 Z" fill="#fffaf1"${sw(1.1)}/>`;
+  s += `<path d="M40 25 H65 M135 25 H160" fill="none"${sw(.75)}/>` + dot(52.5, 25, 1.7) + dot(147.5, 25, 1.7);
+  // arch window
+  s += `<path d="${ARCH_D}" fill="none"${sw(1.7)}/>`;
+  s += `<path d="M26.5 257.5 V120 A73.5 73.5 0 0 1 173.5 120 V257.5 Z" fill="none"${sw(.55)}/>`;
+  s += `<path d="M100 37.6 L104.4 42 L100 46.4 L95.6 42 Z" fill="${katie ? P.lilac : P.rose}"${sw(.9)}/>`;
+  // spandrels: a little moon and a little star in the corners of the arch
+  s += `<path d="${moonletP(30, 58, 7.5, .58)}" fill="${P.butterL}"${sw(.9)}/>`;
+  s += `<path d="${starP(170, 57, 7, 3.1, -90, .2)}" fill="${P.butterL}"${sw(.9)}/>`;
+  s += dot(41, 47, 1) + dot(159, 47, 1) + dot(17, 84, 1.1) + dot(183, 84, 1.1);
+  // dotted arc just outside the arch
+  for (let a = 196; a <= 344; a += 9.25) {
+    if (Math.abs(a - 270) < 30) continue;
+    const r = a * Math.PI / 180;
+    s += dot(100 + Math.cos(r) * 84, 120 + Math.sin(r) * 84, .95);
+  }
+  // little gem between window and plaque
+  s += `<path d="M100 262.5 L103.2 266 L100 269.5 L96.8 266 Z" fill="${GOLD}"/>`;
+  // plaque
+  s += `<path d="M15 271 H185 L177 298 L185 325 H15 L23 298 Z" fill="#fdf6e8"${sw(1.3)}/>`;
+  s += `<path d="M28 275.6 H172 M28 320.4 H172" fill="none"${sw(.5)}/>`;
+  if (katie) {
+    // the XXII card wears jewels on every corner
+    const gem = (x, y, f) => `<circle cx="${x}" cy="${y}" r="4.6" fill="${f}"${sw(1.1)}/><circle cx="${x - 1.4}" cy="${y - 1.5}" r="1.3" fill="#fff" opacity=".85"/>`;
+    s += gem(17.5, 17.5, P.rose) + gem(182.5, 17.5, P.sky) + gem(16, 317, P.mint) + gem(184, 317, P.lilac);
+    s += `<rect x="2.5" y="2.5" width="195" height="335" rx="11" fill="none"${sw(.8)}/>`;
+  }
+  return s;
+}
+
+// ── the back: lavender, a sleepy sun medallion, two moons, stars ──────────
+function backMarkup() {
+  let s = `<rect width="200" height="340" fill="url(#g-back)"/><rect width="200" height="340" fill="url(#g-backGlow)"/>`;
+  let lat = '';
+  for (let i = -340; i <= 200; i += 12) lat += `M${i} 0 L${i + 340} 340 `;
+  for (let i = 0; i <= 540; i += 12) lat += `M${i} 0 L${i - 340} 340 `;
+  s += `<path d="${lat}" fill="none" stroke="#fff4dc" stroke-width=".4" opacity=".2" clip-path="url(#backClip)"/>`;
+  s += `<rect x="6" y="6" width="188" height="328" rx="9" fill="none"${sw(2)}/>`;
+  s += `<rect x="10.5" y="10.5" width="179" height="319" rx="6" fill="none"${sw(.75)}/>`;
+  s += `<rect x="17" y="17" width="166" height="306" rx="4" fill="none"${sw(.6)} stroke-dasharray="1.2 2.6"/>`;
+  // art-deco fans in the corners
+  const fan = (() => {
+    let f = `<path d="M17 47 A30 30 0 0 0 47 17" fill="none"${sw(.9)}/><path d="M17 37 A20 20 0 0 0 37 17" fill="none"${sw(.6)}/>`;
+    for (let i = 0; i < 5; i++) { const a = (i + .5) / 5 * Math.PI / 2; f += `<path d="M${n2(17 + Math.cos(a) * 22)} ${n2(17 + Math.sin(a) * 22)} L${n2(17 + Math.cos(a) * 29)} ${n2(17 + Math.sin(a) * 29)}" fill="none"${sw(.8)}/>`; }
+    return f + dot(17, 17, 3) + `<circle cx="17" cy="17" r="5.5" fill="none"${sw(.6)}/>`;
+  })();
+  s += fan + `<g transform="matrix(-1 0 0 1 200 0)">${fan}</g><g transform="matrix(1 0 0 -1 0 340)">${fan}</g><g transform="matrix(-1 0 0 -1 200 340)">${fan}</g>`;
+  // the spine: star · moon · sun · moon · star
+  s += `<path d="M100 60 V66 M100 110 V118 M100 222 V230 M100 274 V280" fill="none"${sw(.8)}/>`;
+  s += `<path d="M100 40 V52 M100 288 V300" fill="none"${sw(.6)} stroke-dasharray="1.5 2.5"/>`;
+  s += `<path d="M56 120 L80 146 M144 120 L120 146 M56 220 L80 194 M144 220 L120 194" fill="none"${sw(.6)} stroke-dasharray="1.4 2.6"/>`;
+  // medallion
+  s += `<circle cx="100" cy="170" r="52" fill="none"${sw(1.3)}/><circle cx="100" cy="170" r="44.5" fill="none"${sw(.55)}/>`;
+  for (let i = 0; i < 36; i++) { const a = i / 36 * Math.PI * 2; s += dot(100 + Math.cos(a) * 48.3, 170 + Math.sin(a) * 48.3, .95); }
+  for (let i = 0; i < 8; i++) {
+    const a = i / 8 * Math.PI * 2 - Math.PI / 2, x = 100 + Math.cos(a) * 61, y = 170 + Math.sin(a) * 61;
+    if (i % 2) s += dot(x, y, 1.5); else if (i !== 0 && i !== 4) s += sparkle(x, y, 4.6, '#fff3d0', .7);
+  }
+  let rd = '';
+  for (let i = 0; i < 16; i++) {
+    const a = i / 16 * Math.PI * 2 - Math.PI / 2, a1 = a - .09, a2 = a + .09, R = i % 2 ? 34 : 41;
+    rd += `M${n2(100 + Math.cos(a1) * 24.5)} ${n2(170 + Math.sin(a1) * 24.5)} L${n2(100 + Math.cos(a) * R)} ${n2(170 + Math.sin(a) * R)} L${n2(100 + Math.cos(a2) * 24.5)} ${n2(170 + Math.sin(a2) * 24.5)} `;
+  }
+  s += `<path d="${rd}" fill="${P.butterL}"${sw(.9)}/>`;
+  s += `<circle cx="100" cy="170" r="23" fill="url(#g-sun)"${sw(1.8)}/>`;
+  s += `<path d="M86 162 Q88 155 95 152" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>`;
+  s += eyesSleep(92, 108, 168.5, 3.6, 1.4) + blush(86.5, 113.5, 176, 3.8, 2.2) + smile(100, 177, 2.8, 1.3);
+  // the moons, each in a little ring
+  s += `<circle cx="100" cy="88" r="22" fill="none"${sw(.8)}/><circle cx="100" cy="252" r="22" fill="none"${sw(.8)}/>`;
+  s += `<g transform="rotate(-90 100 88)"><path d="${moonletP(100, 88, 14.5, .6)}" fill="${P.butterL}"${sw(1.3)}/></g>`;
+  s += `<g transform="rotate(90 100 252)"><path d="${moonletP(100, 252, 14.5, .6)}" fill="${P.butterL}"${sw(1.3)}/></g>`;
+  s += star(100, 34, 8, P.butterL, 1) + star(100, 306, 8, P.butterL, 1, 90);
+  s += star(52, 116, 7.2, P.butterL, .9) + star(148, 116, 7.2, P.butterL, .9) + star(52, 224, 7.2, P.butterL, .9) + star(148, 224, 7.2, P.butterL, .9);
+  // side jewels
+  s += `<path d="M30 170 L36 162 L42 170 L36 178 Z M170 170 L164 162 L158 170 L164 178 Z" fill="${P.roseL}"${sw(.9)}/>`;
+  s += dot(24, 170, 1.2) + dot(176, 170, 1.2) + dot(36, 150, 1) + dot(164, 150, 1) + dot(36, 190, 1) + dot(164, 190, 1);
+  s += sparkle(64, 70, 3.6, '#fff3d0', .6) + sparkle(136, 70, 3.6, '#fff3d0', .6) + sparkle(64, 270, 3.6, '#fff3d0', .6) + sparkle(136, 270, 3.6, '#fff3d0', .6);
+  return s;
+}
+
+// ── the illustrations ────────────────────────────────────────────────────
+const ART = {};
+
+ART.bunny = function (k) {
+  let s = k ? '' : rays(100, 150) + specks(11, 14, [100, 175, 70]);
+  s += `<path d="M22 262 V247 Q60 233 100 241 Q140 233 178 245 V262 Z" fill="${P.mintL}"${sw(1.3)}/>`;
+  s += `<path d="M38 252 q3 -6 6 0 M150 250 q3 -6 6 0 M118 256 q2.5 -5 5 0 M74 257 q2 -4 4 0" fill="none"${sw(.9)}/>`;
+  s += flower(48, 249, 4.4, P.white) + flower(156, 249, 4, P.roseL) + flower(136, 255, 2.8, P.butter) + flower(64, 255, 2.7, P.skyL);
+  s += `<ellipse cx="100" cy="243" rx="40" ry="5" fill="${P.mintD}" opacity=".55"/>`;
+  s += bunnyBody(100, 0, k);
+  if (!k) s += sparkle(46, 96, 7.5) + sparkle(156, 90, 6.5) + sparkle(157, 186, 4.6) + sparkle(43, 182, 4.2) + sparkle(128, 62, 3.6);
+  return s;
+};
+function bunnyBody(cx, dy, k) {
+  const Y = v => n2(v + dy);
+  let s = '';
+  // ears (behind the head): left upright, right with a soft lean
+  s += `<g transform="rotate(-12 ${cx - 15} ${Y(134)})"><ellipse cx="${cx - 15}" cy="${Y(100)}" rx="12.5" ry="32" fill="${P.white}"${sw(2.1)}/><ellipse cx="${cx - 15}" cy="${Y(103)}" rx="5.6" ry="22" fill="${P.rose}"/></g>`;
+  s += `<g transform="rotate(17 ${cx + 15} ${Y(134)})"><ellipse cx="${cx + 15}" cy="${Y(102)}" rx="12.5" ry="30" fill="${P.white}"${sw(2.1)}/><ellipse cx="${cx + 15}" cy="${Y(105)}" rx="5.6" ry="20.5" fill="${P.rose}"/></g>`;
+  // body
+  s += `<path d="M${cx - 37} ${Y(240)} C${cx - 45} ${Y(210)} ${cx - 33} ${Y(184)} ${cx} ${Y(184)} C${cx + 33} ${Y(184)} ${cx + 45} ${Y(210)} ${cx + 37} ${Y(240)} Z" fill="${P.white}"${sw(2.1)}/>`;
+  s += `<path d="M${cx - 22} ${Y(232)} Q${cx} ${Y(238)} ${cx + 22} ${Y(232)}" fill="none" stroke="${P.roseL}" stroke-width="3" stroke-linecap="round" opacity=".7"/>`;
+  if (k) {
+    s += '';
+  } else {
+    // a little heart, held in both paws
+    s += `<path d="${heartP(cx, Y(214), 21)}" fill="${P.rose}"${sw(1.4)}/>`;
+    s += `<path d="M${cx - 6} ${Y(209)} Q${cx - 4} ${Y(206.5)} ${cx - 1.5} ${Y(208)}" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".8"/>`;
+    s += `<ellipse cx="${cx - 10}" cy="${Y(219)}" rx="6.2" ry="5" fill="${P.white}"${sw(1.5)}/><ellipse cx="${cx + 10}" cy="${Y(219)}" rx="6.2" ry="5" fill="${P.white}"${sw(1.5)}/>`;
+  }
+  // feet
+  s += `<ellipse cx="${cx - 18}" cy="${Y(240)}" rx="12" ry="6.6" fill="${P.white}"${sw(1.8)}/><ellipse cx="${cx + 18}" cy="${Y(240)}" rx="12" ry="6.6" fill="${P.white}"${sw(1.8)}/>`;
+  s += `<path d="M${cx - 21} ${Y(237)} v3 M${cx - 15} ${Y(237)} v3 M${cx + 15} ${Y(237)} v3 M${cx + 21} ${Y(237)} v3" fill="none"${sw(.8)}/>`;
+  // head
+  s += `<ellipse cx="${cx}" cy="${Y(160)}" rx="34" ry="29" fill="${P.white}"${sw(2.1)}/>`;
+  s += eyesDot(cx - 12.5, cx + 12.5, Y(158), 3.4) + blush(cx - 21, cx + 21, Y(169), 5.6, 3.3);
+  s += `<path d="M${cx - 3.2} ${Y(165)} Q${cx} ${Y(163)} ${cx + 3.2} ${Y(165)} Q${cx} ${Y(169.5)} ${cx - 3.2} ${Y(165)} Z" fill="${P.roseD}"/>`;
+  s += mouthW(cx, Y(169.5), 2.2);
+  s += `<path d="M${cx - 30} ${Y(163)} l-9 -2 M${cx - 30} ${Y(168)} l-9 2 M${cx + 30} ${Y(163)} l9 -2 M${cx + 30} ${Y(168)} l9 2" fill="none"${sw(.75)}/>`;
+  s += crown(cx, Y(134), k ? 1.35 : 1, P.rose);
+  return s;
+}
+
+ART.birthday = function () {
+  let s = rays(100, 150) + specks(21, 12, [100, 170, 70]);
+  s += `<path d="M64 118 C58 142 76 160 80 200 M138 112 C146 140 126 162 122 200" fill="none"${sw(1)}/>`;
+  s += balloon(64, 92, 20, 24, P.rose, true) + balloon(138, 86, 19, 23, P.sky, false);
+  // confetti
+  const conf = [[44, 140, P.mint, 20], [158, 150, P.butter, -30], [36, 196, P.rose, 50], [164, 196, P.lilac, -10], [52, 64, P.butter, 70], [150, 54, P.mint, 15], [104, 58, P.lilac, -40], [86, 70, P.rose, 25]];
+  conf.forEach(c => { s += `<rect x="${c[0] - 3.4}" y="${c[1] - 1.6}" width="6.8" height="3.2" rx="1.4" fill="${c[2]}"${sw(.5)} transform="rotate(${c[3]} ${c[0]} ${c[1]})"/>`; });
+  // the cushion
+  s += `<path d="M44 224 C42 202 56 196 72 198 L128 198 C144 196 158 202 156 224 C158 246 144 250 128 248 L72 248 C56 250 42 246 44 224 Z" fill="${P.lilac}"${sw(2)}/>`;
+  s += `<path d="M52 212 Q100 204 148 212" fill="none" stroke="#fff" stroke-width="1.4" opacity=".5" stroke-linecap="round"/>`;
+  s += `<path d="M70 222 l5 3 m6 0 l5 -3 M95 220 l5 3 m6 0 l5 -3 M120 222 l5 3 m6 0 l5 -3" fill="none"${sw(.7)}/>`;
+  s += dot(78, 226, 1.8) + dot(103, 224, 1.8) + dot(128, 226, 1.8);
+  s += `<path d="M46 240 q-4 8 0 13 q4 -5 0 -13 M154 240 q-4 8 0 13 q4 -5 0 -13" fill="${P.butter}"${sw(1)}/>`;
+  // the tiara
+  const cx = 100, by = 207;
+  const d = `M${cx - 40} ${by} C${cx - 40} ${by - 10} ${cx - 36} ${by - 18} ${cx - 31} ${by - 24} L${cx - 24} ${by - 14} C${cx - 21} ${by - 28} ${cx - 16} ${by - 36} ${cx - 12} ${by - 42} L${cx - 6} ${by - 27} C${cx - 4} ${by - 41} ${cx - 2} ${by - 52} ${cx} ${by - 60} C${cx + 2} ${by - 52} ${cx + 4} ${by - 41} ${cx + 6} ${by - 27} L${cx + 12} ${by - 42} C${cx + 16} ${by - 36} ${cx + 21} ${by - 28} ${cx + 24} ${by - 14} L${cx + 31} ${by - 24} C${cx + 36} ${by - 18} ${cx + 40} ${by - 10} ${cx + 40} ${by} Z`;
+  s += `<path d="${d}" fill="${P.butter}"${sw(1.9)}/>`;
+  s += `<path d="M${cx - 36} ${by - 4} Q${cx} ${by - 11} ${cx + 36} ${by - 4}" fill="none"${sw(.9)}/>`;
+  s += `<path d="${heartP(cx, by - 24, 14)}" fill="${P.rose}"${sw(1.1)}/>`;
+  s += `<circle cx="${cx - 19}" cy="${by - 12}" r="3.2" fill="${P.sky}"${sw(.8)}/><circle cx="${cx + 19}" cy="${by - 12}" r="3.2" fill="${P.mint}"${sw(.8)}/>`;
+  s += pearl(cx - 31, by - 24, 2.4) + pearl(cx - 12, by - 42, 2.4) + pearl(cx, by - 60, 2.9) + pearl(cx + 12, by - 42, 2.4) + pearl(cx + 31, by - 24, 2.4);
+  s += sparkle(cx - 46, by - 52, 6) + sparkle(cx + 48, by - 44, 5) + sparkle(cx + 2, by - 76, 4.5);
+  return s;
+};
+
+ART.star = function () {
+  let s = rays(100, 146) + specks(31, 10, [100, 150, 70]);
+  s += `<path d="${moonletP(150, 68, 9, .6)}" fill="${P.butterL}"${sw(1.1)}/>`;
+  s += `<path d="${cloudP(100, 248, 132)}" fill="${P.white}"${sw(2)}/>`;
+  s += `<path d="${cloudP(52, 252, 52)}" fill="${P.skyL}"${sw(1.4)}/><path d="${cloudP(150, 252, 50)}" fill="${P.skyL}"${sw(1.4)}/>`;
+  // twinkle ticks
+  let tk = '';
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2 - Math.PI / 2 + .31; tk += `M${n2(100 + Math.cos(a) * 62)} ${n2(146 + Math.sin(a) * 62)} L${n2(100 + Math.cos(a) * 70)} ${n2(146 + Math.sin(a) * 70)} `; }
+  s += `<path d="${tk}" fill="none"${sw(1.3)}/>`;
+  s += `<path d="${starP(100, 148, 55, 27, -90, .2)}" fill="url(#g-star)"${sw(2.4)}/>`;
+  s += `<path d="M78 128 Q82 120 90 117" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".85"/>`;
+  s += eyesHappy(89, 111, 149, 4.6) + blush(81, 119, 159, 5, 3) + smile(100, 158, 4.2);
+  s += star(44, 96, 7.5) + star(158, 112, 6) + star(150, 196, 5) + star(46, 168, 4.6);
+  s += sparkle(64, 64, 5) + sparkle(126, 76, 3.6) + sparkle(160, 150, 3.4);
+  return s;
+};
+
+ART.cake = function () {
+  let s = rays(100, 150) + specks(41, 12, [100, 180, 66]);
+  s += `<circle cx="100" cy="103" r="24" fill="url(#g-flame)"/>`;
+  s += `<path d="M90 247 L85 257 H115 L110 247 Z" fill="${P.butterL}"${sw(1.4)}/>`;
+  s += `<ellipse cx="100" cy="245" rx="57" ry="7" fill="${P.cream}"${sw(1.8)}/>`;
+  // bottom tier
+  s += `<rect x="54" y="194" width="92" height="48" rx="7" fill="#fff3e3"${sw(2.2)}/>`;
+  s += `<path d="M54 202 Q54 194 62 194 H138 Q146 194 146 202 V205 Q143 213 139 206 Q135 200 131 208 Q127 219 122 207 Q118 200 113 207 Q108 215 103 206 Q99 200 94 208 Q89 218 84 206 Q80 200 75 207 Q70 215 65 205 Q60 199 54 205 Z" fill="${P.rose}"${sw(1.6)}/>`;
+  s += eyesHappy(88, 112, 226, 4, 1.6) + blush(79, 121, 232, 4.8, 2.8) + smile(100, 231, 3.2, 1.4);
+  s += dot(64, 236, 1.6, P.mint) + dot(136, 236, 1.6, P.sky) + dot(70, 226, 1.4, P.butterD) + dot(130, 226, 1.4, P.lilac);
+  // top tier
+  s += `<rect x="68" y="152" width="64" height="44" rx="6" fill="${P.roseL}"${sw(2.2)}/>`;
+  s += `<path d="M68 160 Q68 152 75 152 H125 Q132 152 132 160 V162 Q129 169 125 163 Q121 157 117 165 Q113 174 108 164 Q104 157 99 164 Q95 172 90 163 Q86 157 82 165 Q78 171 74 163 Q71 158 68 162 Z" fill="#fffaf2"${sw(1.4)}/>`;
+  const spr = [[78, 180, P.mint, 30], [90, 186, P.butterD, -20], [110, 182, P.sky, 40], [122, 187, P.lilac, -35], [100, 189, P.mint, 10], [84, 175, P.lilac, 70], [117, 175, P.butterD, -60]];
+  spr.forEach(c => { s += `<rect x="${c[0] - 2.6}" y="${c[1] - 1}" width="5.2" height="2" rx="1" fill="${c[2]}" transform="rotate(${c[3]} ${c[0]} ${c[1]})"/>`; });
+  // strawberries on top
+  const berry = (x, y) => `<path d="M${x} ${y + 9} C${x - 8} ${y + 3} ${x - 8} ${y - 5} ${x} ${y - 4} C${x + 8} ${y - 5} ${x + 8} ${y + 3} ${x} ${y + 9} Z" fill="#f2879f"${sw(1.2)}/>` +
+    `<path d="${leafP(x, y - 4, -150, 6, 2.6)} ${leafP(x, y - 4, -30, 6, 2.6)} ${leafP(x, y - 4, -90, 5, 2.2)}" fill="${P.mint}"${sw(.8)}/>` +
+    dot(x - 2.5, y, .7, '#fff3c4') + dot(x + 2.5, y + 1, .7, '#fff3c4') + dot(x, y + 4, .7, '#fff3c4');
+  s += berry(80, 146) + berry(120, 146);
+  // candle + flame
+  s += `<rect x="95" y="118" width="10" height="35" rx="2.5" fill="${P.sky}"${sw(1.6)}/>`;
+  s += `<path d="M96 127 l8 -4 M96 135 l8 -4 M96 143 l8 -4 M96 151 l8 -4" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>`;
+  s += `<path d="M100 118 V111" ${ink(1.3)}/>`;
+  s += `<path d="M100 89 C107 98 109 105 105 110 C102.5 113.5 97.5 113.5 95 110 C91 105 93 98 100 89 Z" fill="${P.butter}"${sw(1.3)}/>`;
+  s += `<path d="M100 99 C103 103 103.5 107 101.5 109 C100.5 110 99.5 110 98.5 109 C96.5 107 97 103 100 99 Z" fill="#ffb38f"/>`;
+  s += sparkle(56, 112, 6.5) + sparkle(146, 104, 5.5) + sparkle(152, 166, 4) + sparkle(46, 168, 4.2);
+  return s;
+};
+
+ART.telephone = function () {
+  let s = rays(100, 170) + specks(51, 12, [100, 175, 70]);
+  // ring ring
+  s += `<path d="M38 128 Q31 116 38 103 M30 132 Q20 116 30 99 M162 128 Q169 116 162 103 M170 132 Q180 116 170 99" fill="none"${sw(1.3)}/>`;
+  s += heart(66, 84, 13, P.rose) + heart(136, 78, 11, P.roseL) + heart(102, 66, 9, P.rose);
+  // cord
+  s += `<path d="${coilP(147, 214, 152, 150, 7, 4.5)}" fill="none"${sw(1.4)}/>`;
+  // heart body
+  s += `<path d="${heartP(100, 190, 118)}" fill="${P.rose}"${sw(2.4)}/>`;
+  s += `<path d="M56 172 Q57 158 70 152" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".75"/>`;
+  // dial
+  s += `<circle cx="100" cy="192" r="25" fill="${P.cream}"${sw(1.8)}/>`;
+  for (let i = 0; i < 10; i++) {
+    const a = (-70 + i * 30) * Math.PI / 180;
+    s += `<circle cx="${n2(100 + Math.cos(a) * 16.5)}" cy="${n2(192 + Math.sin(a) * 16.5)}" r="3.3" fill="#fff"${sw(.8)}/>`;
+  }
+  s += `<circle cx="100" cy="192" r="8.5" fill="${P.roseL}"${sw(1.2)}/>` + heart(100, 192.5, 8, P.roseD, .7);
+  s += `<path d="M${n2(100 + Math.cos(1.25) * 21)} ${n2(192 + Math.sin(1.25) * 21)} L${n2(100 + Math.cos(1.25) * 27)} ${n2(192 + Math.sin(1.25) * 27)}" fill="none"${sw(1.4)}/>`;
+  // handset resting on top
+  s += `<path d="M48 142 C46 130 56 126 66 128 C82 116 118 116 134 128 C144 126 154 130 152 142 C151 150 142 152 134 150 L128 148 C112 139 88 139 72 148 L66 150 C58 152 49 150 48 142 Z" fill="${P.lilac}"${sw(2.1)}/>`;
+  s += `<path d="M76 127 Q100 119 124 127" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>`;
+  s += `<path d="M52 142 h12 M136 142 h12" fill="none"${sw(.9)}/>`;
+  s += sparkle(42, 186, 5) + sparkle(160, 174, 4.6) + sparkle(84, 60, 3.8);
+  return s;
+};
+
+ART.sun = function () {
+  let s = specks(61, 10, [100, 150, 80]);
+  // rays: triangles + wavy, alternating
+  let tri = '', wav = '';
+  for (let i = 0; i < 16; i++) {
+    const a = i / 16 * Math.PI * 2 - Math.PI / 2;
+    if (i % 2 === 0) {
+      const a1 = a - .13, a2 = a + .13;
+      tri += `M${n2(100 + Math.cos(a1) * 43)} ${n2(148 + Math.sin(a1) * 43)} L${n2(100 + Math.cos(a) * 70)} ${n2(148 + Math.sin(a) * 70)} L${n2(100 + Math.cos(a2) * 43)} ${n2(148 + Math.sin(a2) * 43)} Z `;
+    } else {
+      const ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
+      let w = '';
+      for (let j = 0; j <= 12; j++) { const r = 45 + j * 1.6, o = Math.sin(j / 12 * Math.PI * 2) * 2.4; w += (j ? 'L' : 'M') + n2(100 + ux * r + nx * o) + ' ' + n2(148 + uy * r + ny * o) + ' '; }
+      wav += w;
+    }
+  }
+  s += `<path d="${tri}" fill="${P.butter}"${sw(1.4)}/><path d="${wav}" fill="none"${sw(1.6)}/>`;
+  // hills + clouds
+  s += `<path d="M22 262 V236 C54 214 84 220 104 236 C124 222 152 214 178 230 V262 Z" fill="${P.mint}"${sw(1.8)}/>`;
+  s += `<path d="M22 262 V249 C58 236 96 240 120 252 C140 244 160 242 178 246 V262 Z" fill="${P.mintL}"${sw(1.3)}/>`;
+  s += flower(44, 238, 3.6, P.white) + flower(150, 232, 3.4, P.roseL) + flower(132, 252, 2.6, P.butter);
+  s += `<path d="${cloudP(48, 212, 40)}" fill="${P.white}"${sw(1.5)}/><path d="${cloudP(154, 202, 36)}" fill="${P.white}"${sw(1.5)}/>`;
+  // the sun
+  s += `<circle cx="100" cy="148" r="39" fill="url(#g-sun)"${sw(2.4)}/>`;
+  s += `<path d="M76 136 Q79 124 90 118" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>`;
+  s += eyesHappy(88, 112, 145, 5) + blush(79, 121, 157, 6, 3.4);
+  s += `<path d="M92.5 155 Q100 165 107.5 155 Z" fill="#ef93a8" stroke="${INK}" stroke-width="1.5" stroke-linejoin="round"/>`;
+  s += sparkle(40, 80, 5) + sparkle(162, 88, 5.5) + sparkle(160, 140, 3.5);
+  return s;
+};
+
+ART.letter = function () {
+  let s = rays(100, 168) + specks(71, 12, [100, 170, 66]);
+  s += `<path d="M34 236 Q46 230 58 234 M28 246 Q44 240 60 244 M42 254 Q52 250 62 252" fill="none"${sw(1)}/>`;
+  s += heart(70, 98, 13, P.rose) + heart(132, 90, 10, P.roseL) + heart(104, 76, 8.5, P.rose) + heart(150, 120, 7, P.roseL);
+  s += `<g transform="rotate(-7 100 172)">`;
+  s += wing(55, 156, -1) + wing(145, 156, 1);
+  s += `<rect x="54" y="140" width="92" height="64" rx="5" fill="#fff7ee"${sw(2.2)}/>`;
+  s += `<path d="M57 201 L91 172 M143 201 L109 172" fill="none"${sw(1)}/>`;
+  s += `<path d="M55.5 142 L100 179 L144.5 142 Z" fill="${P.roseXL}"${sw(1.8)}/>`;
+  // wax seal
+  let wax = '';
+  for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, r = i % 2 ? 11 : 12.4; wax += (i ? 'L' : 'M') + n2(100 + Math.cos(a) * r) + ' ' + n2(180 + Math.sin(a) * r) + ' '; }
+  s += `<path d="${wax}Z" fill="${P.roseD}"${sw(1.2)}/>`;
+  s += `<path d="${heartP(100, 181, 11)}" fill="none" stroke="#fde3ea" stroke-width="1.5"/>`;
+  s += `</g>`;
+  s += sparkle(42, 124, 5) + sparkle(162, 178, 5) + sparkle(152, 64, 3.6);
+  return s;
+};
+
+ART.moon = function () {
+  let s = rays(100, 160, .2) + specks(81, 10, [100, 160, 64]);
+  s += star(44, 82, 6) + star(160, 92, 7) + star(38, 160, 4.4) + sparkle(150, 60, 4) + sparkle(58, 56, 3.4) + sparkle(166, 150, 3.6);
+  // the berry moon
+  s += `<circle cx="100" cy="162" r="48" fill="url(#g-berry)"${sw(2.4)}/>`;
+  const seeds = [[76, 134, -30], [92, 124, -10], [112, 126, 15], [128, 140, 35], [66, 156, -50], [136, 162, 50], [70, 186, -40], [130, 188, 40], [84, 202, -15], [116, 202, 15], [100, 140, 0], [100, 206, 0]];
+  seeds.forEach(q => { s += `<ellipse cx="${q[0]}" cy="${q[1]}" rx="1.7" ry="2.7" fill="#fff0c2"${sw(.6)} transform="rotate(${q[2]} ${q[0]} ${q[1]})"/>`; });
+  s += `<path d="M70 142 Q74 128 88 121" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".7"/>`;
+  // leafy calyx + stem
+  s += `<path d="${leafP(100, 116, -160, 22, 7)} ${leafP(100, 116, -125, 20, 6.5)} ${leafP(100, 116, -55, 20, 6.5)} ${leafP(100, 116, -20, 22, 7)} ${leafP(100, 116, -90, 17, 6)}" fill="${P.mint}"${sw(1.4)}/>`;
+  s += `<path d="M100 104 C100 96 104 90 111 88" fill="none"${sw(2.2)}/>`;
+  s += eyesSleep(86, 114, 165, 5.2) + blush(77, 123, 176, 6, 3.4) + smile(100, 176, 3.4);
+  s += zP(132, 120, 5.5) + zP(142, 106, 7.5);
+  s += `<path d="${cloudP(66, 246, 70)}" fill="${P.white}"${sw(1.8)}/><path d="${cloudP(140, 250, 62)}" fill="${P.skyL}"${sw(1.6)}/>`;
+  return s;
+};
+
+ART.kiss = function () {
+  let s = rays(100, 168) + specks(91, 10, [100, 172, 70]);
+  s += heart(50, 100, 15, P.rose) + heart(152, 110, 11, P.roseL) + heart(140, 80, 8, P.rose) + heart(58, 214, 7, P.roseL);
+  s += `<circle cx="100" cy="176" r="52" fill="url(#g-peach)"${sw(2.3)}/>`;
+  s += `<path d="M100 124 C95 115 101 106 108 110 C112 113 109 119 104 117" fill="none"${sw(1.8)}/>`;
+  // the kiss print
+  s += `<g transform="rotate(-12 100 146)"><path d="M85 146 C88 138 94.5 137 100 141 C105.5 137 112 138 115 146 C110 156 90 156 85 146 Z" fill="#ef8aa6"${sw(.9)}/><path d="M86.5 146.5 C93.5 149 106.5 149 113.5 146.5" fill="none" stroke="#d76d8d" stroke-width="1.2" stroke-linecap="round"/><path d="M90 143.2 Q93 141.4 96 142.6" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".8"/></g>`;
+  s += `<path d="M78 136 l-5 -4 M80 128 l-3 -6 M121 128 l4 -5 M124 136 l6 -2" fill="none"${sw(1.1)}/>`;
+  s += eyesSleep(80, 120, 180, 6.2, 1.8) + blush(69, 131, 194, 8, 4.6) + smile(100, 195, 5.2, 1.7);
+  s += sparkle(40, 150, 5) + sparkle(162, 170, 4.6) + sparkle(110, 74, 4);
+  return s;
+};
+
+ART.hair = function () {
+  let s = rays(100, 136) + specks(101, 10, [100, 150, 70]);
+  // handle
+  s += `<path d="M93 184 C94 212 95 232 96 246 C97 252 103 252 104 246 C105 232 106 212 107 184 Z" fill="${P.butter}"${sw(2)}/>`;
+  s += `<circle cx="100" cy="251" r="5" fill="${P.butter}"${sw(1.6)}/>`;
+  // ornate frame
+  s += `<ellipse cx="100" cy="134" rx="43" ry="51" fill="${P.butter}"${sw(2.2)}/>`;
+  for (let i = 0; i < 22; i++) { const a = i / 22 * Math.PI * 2; s += dot(100 + Math.cos(a) * 38.5, 134 + Math.sin(a) * 46.5, 1.05); }
+  s += `<path d="${heartP(100, 81, 13)}" fill="${P.rose}"${sw(1.3)}/>`;
+  s += `<ellipse cx="100" cy="134" rx="33" ry="41" fill="url(#g-glass)"${sw(1.3)}/>`;
+  s += `<path d="M76 124 L92 102 M79 138 L101 108" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity=".8"/>`;
+  s += eyesHappy(90, 110, 140, 3.8, 1.5) + blush(84, 116, 149, 4.2, 2.5) + smile(100, 148, 3, 1.4);
+  s += sparkle(120, 112, 6.5, '#ffffff', .9);
+  s += bow(100, 190, 1, P.rose);
+  // a few perfect curls
+  s += `<path d="M44 106 C36 112 38 124 46 124 C52 124 52 116 47 116 M156 106 C164 112 162 124 154 124 C148 124 148 116 153 116 M40 160 C32 166 34 178 42 178 C48 178 48 170 43 170 M160 160 C168 166 166 178 158 178 C152 178 152 170 157 170" fill="none"${sw(1.5)}/>`;
+  s += sparkle(150, 74, 6) + sparkle(48, 72, 4.6) + sparkle(152, 214, 4.4) + sparkle(48, 214, 4);
+  return s;
+};
+
+ART.nap = function () {
+  let s = rays(100, 170, .18) + specks(111, 9, [100, 190, 70]);
+  s += `<path d="${moonletP(150, 74, 11, .6)}" fill="${P.butterL}"${sw(1.2)}/>` + star(54, 70, 5.5) + sparkle(124, 58, 3.6) + sparkle(40, 112, 3.4);
+  s += zP(98, 156, 6) + zP(110, 138, 8) + zP(126, 114, 10, 1.7);
+  // cushion
+  s += `<ellipse cx="100" cy="234" rx="68" ry="17" fill="${P.lilac}"${sw(2)}/>`;
+  s += `<ellipse cx="100" cy="229" rx="58" ry="9" fill="${P.lilacL}" opacity=".75"/>`;
+  s += `<path d="M33 236 q-6 6 -3 12 q5 -3 3 -12 M167 236 q6 6 3 12 q-5 -3 -3 -12" fill="${P.butter}"${sw(.9)}/>`;
+  // body
+  s += `<path d="M58 228 C50 198 70 174 104 174 C136 174 152 194 148 216 C146 226 140 230 130 230 L70 230 C63 230 59 230 58 228 Z" fill="#fff4ea"${sw(2.2)}/>`;
+  s += `<path d="M112 176 C126 178 138 186 142 198 C130 196 118 190 112 176 Z" fill="${P.butter}"/>`;
+  s += `<path d="M126 212 C132 206 140 206 145 210 C140 214 132 216 126 212 Z" fill="${P.butter}"/>`;
+  // tail curled around the front
+  s += `<path d="M146 214 C158 232 130 241 104 237 C90 235 84 231 86 226" fill="none" stroke="${GOLD}" stroke-width="10.4" stroke-linecap="round"/>`;
+  s += `<path d="M146 214 C158 232 130 241 104 237 C90 235 84 231 86 226" fill="none" stroke="#fff4ea" stroke-width="6.6" stroke-linecap="round"/>`;
+  s += `<path d="M90 234.6 C88 233 86 230 86 226" fill="none" stroke="${P.butter}" stroke-width="6.6" stroke-linecap="round"/>`;
+  // head
+  s += `<path d="M53 189 L57 164 L73 180 Z M77 178 L91 159 L95 184 Z" fill="#fff4ea"${sw(2)}/>`;
+  s += `<path d="M57 183 L59 171 L67 180 Z M80 179 L88 168 L90 181 Z" fill="${P.rose}"/>`;
+  s += `<ellipse cx="74" cy="198" rx="25.5" ry="21" fill="#fff4ea"${sw(2.2)}/>`;
+  s += `<path d="M84 180 C88 182 92 188 92 194 C88 190 86 186 84 180 Z" fill="${P.butter}"/>`;
+  s += eyesSleep(64, 84, 197, 4.2, 1.6) + blush(58, 90, 205, 4.6, 2.6);
+  s += `<path d="M72 202.5 L76 202.5 L74 205 Z" fill="${P.roseD}" stroke="${P.roseD}" stroke-width="1" stroke-linejoin="round"/>` + mouthW(74, 205.5, 1.8);
+  s += `<path d="M52 200 l-8 -1 M52 204 l-8 2 M96 200 l8 -1 M96 204 l8 2" fill="none"${sw(.7)}/>`;
+  s += `<ellipse cx="66" cy="219" rx="7.5" ry="4.6" fill="#fff4ea"${sw(1.5)}/><ellipse cx="82" cy="219" rx="7.5" ry="4.6" fill="#fff4ea"${sw(1.5)}/>`;
+  return s;
+};
+
+ART.treat = function () {
+  let s = rays(100, 150) + specks(121, 12, [100, 170, 66]);
+  s += `<defs><clipPath id="coneClip"><path d="M74 192 L126 192 L103 252 Q100 258 97 252 Z"/></clipPath></defs>`;
+  s += `<path d="M74 192 L126 192 L103 252 Q100 258 97 252 Z" fill="#f3cf8c"${sw(2.2)}/>`;
+  let wf = '';
+  for (let i = -6; i <= 6; i++) wf += `M${74 + i * 9} 186 l40 70 M${126 - i * 9} 186 l-40 70 `;
+  s += `<path d="${wf}" fill="none" clip-path="url(#coneClip)"${sw(.9)}/>`;
+  // scoops
+  s += `<path d="M70 196 C64 170 82 158 100 158 C118 158 136 170 130 196 C127 202 122 199 118 196 C114 204 108 203 104 197 C100 205 94 204 90 197 C86 203 80 202 78 196 C75 201 71 200 70 196 Z" fill="${P.mint}"${sw(2)}/>`;
+  s += `<path d="M74 160 C70 134 86 122 100 122 C114 122 130 134 126 160 C123 165 119 162 116 160 C112 167 106 166 102 161 C98 168 92 166 89 160 C85 165 80 164 78 160 C76 164 74 163 74 160 Z" fill="${P.rose}"${sw(2)}/>`;
+  const spr = [[84, 132, P.butterD, 30], [96, 128, P.sky, -20], [112, 131, P.mint, 50], [118, 141, P.lilac, -10], [80, 146, P.mint, -40]];
+  spr.forEach(c => { s += `<rect x="${c[0] - 2.6}" y="${c[1] - 1}" width="5.2" height="2" rx="1" fill="${c[2]}" transform="rotate(${c[3]} ${c[0]} ${c[1]})"/>`; });
+  s += `<path d="M78 172 Q82 164 92 162" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".6"/>`;
+  s += eyesHappy(91, 109, 145, 3.6, 1.5) + blush(84, 116, 151, 4.4, 2.6) + smile(100, 150, 3, 1.4);
+  // cherry
+  s += `<path d="M104 108 C106 98 113 92 122 91" fill="none"${sw(1.6)}/>`;
+  s += `<circle cx="102" cy="114" r="8.5" fill="#ef7d98"${sw(1.6)}/><circle cx="99" cy="111" r="2.2" fill="#fff" opacity=".8"/>`;
+  s += heart(146, 120, 10, P.roseL) + sparkle(52, 120, 6) + sparkle(150, 174, 4.4) + sparkle(54, 196, 4) + sparkle(140, 70, 4);
+  return s;
+};
+
+ART.bouquet = function () {
+  let s = rays(100, 130) + specks(131, 10, [100, 160, 70]);
+  // stems + leaves
+  s += `<path d="M100 220 L100 118 M100 220 C96 190 84 160 74 132 M100 220 C104 190 116 160 127 130" fill="none" stroke="${GOLD}" stroke-width="3.6" stroke-linecap="round"/>`;
+  s += `<path d="M100 220 L100 118 M100 220 C96 190 84 160 74 132 M100 220 C104 190 116 160 127 130" fill="none" stroke="${P.mintD}" stroke-width="1.6" stroke-linecap="round"/>`;
+  s += `<path d="${leafP(96, 178, -150, 34, 9)} ${leafP(104, 174, -32, 34, 9)} ${leafP(100, 166, -100, 26, 7)}" fill="${P.mint}"${sw(1.4)}/>`;
+  // baby's breath
+  [[64, 152], [70, 160], [58, 162], [136, 150], [142, 160], [130, 160], [86, 104], [114, 102]].forEach(q => { s += `<circle cx="${q[0]}" cy="${q[1]}" r="3" fill="${P.white}"${sw(.7)}/>`; });
+  s += tulip(74, 130, -16, P.butter, false) + tulip(127, 128, 16, P.lilac, false) + tulip(100, 112, 0, P.rose, true);
+  // wrap
+  s += `<path d="M60 170 L100 254 L140 170 C126 180 74 180 60 170 Z" fill="${P.lilacL}"${sw(2)}/>`;
+  s += `<path d="M60 170 C78 186 92 206 100 254" fill="none"${sw(.9)}/>`;
+  s += `<path d="M66 176 Q100 186 134 176" fill="none" stroke="#fff" stroke-width="1.4" opacity=".6" stroke-linecap="round"/>`;
+  s += bow(100, 212, 1.05, P.rose);
+  s += sparkle(46, 96, 6) + sparkle(156, 92, 5.5) + sparkle(156, 214, 4.2) + sparkle(42, 214, 4.2);
+  return s;
+};
+
+ART.hug = function () {
+  let s = rays(100, 160) + specks(141, 10, [100, 180, 70]);
+  s += heart(48, 108, 13, P.roseL) + heart(152, 100, 15, P.rose) + heart(144, 66, 8, P.roseL) + heart(56, 74, 7, P.rose);
+  // feet
+  s += `<ellipse cx="78" cy="240" rx="14" ry="9.5" fill="${P.honey}"${sw(1.9)}/><ellipse cx="122" cy="240" rx="14" ry="9.5" fill="${P.honey}"${sw(1.9)}/>`;
+  s += `<ellipse cx="78" cy="241" rx="6.5" ry="4.6" fill="${P.roseL}"/><ellipse cx="122" cy="241" rx="6.5" ry="4.6" fill="${P.roseL}"/>`;
+  // body
+  s += `<ellipse cx="100" cy="204" rx="38" ry="37" fill="${P.honey}"${sw(2.2)}/>`;
+  // ears + head
+  s += `<circle cx="74" cy="110" r="12" fill="${P.honey}"${sw(2)}/><circle cx="126" cy="110" r="12" fill="${P.honey}"${sw(2)}/>`;
+  s += `<circle cx="74" cy="110" r="6" fill="${P.roseL}"/><circle cx="126" cy="110" r="6" fill="${P.roseL}"/>`;
+  s += `<circle cx="100" cy="136" r="32" fill="${P.honey}"${sw(2.2)}/>`;
+  s += `<ellipse cx="100" cy="148" rx="13" ry="10" fill="${P.honeyL}"${sw(1.3)}/>`;
+  s += `<ellipse cx="100" cy="143" rx="4.4" ry="3.2" fill="${INK}"/>`;
+  s += `<path d="M100 146 v3.2 M100 149.2 q-3 3 -6 .8 M100 149.2 q3 3 6 .8"${ink(1.3)}/>`;
+  s += eyesDot(88, 112, 130, 3.2) + blush(79, 121, 145, 5, 3);
+  // the heart, hugged
+  s += `<path d="${heartP(100, 207, 54)}" fill="${P.rose}"${sw(2)}/>`;
+  s += `<path d="M80 196 Q82 189 89 187" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/>`;
+  s += `<path d="M64 186 C64 202 76 214 90 214 C96 214 97 206 92 203 C84 202 76 196 72 184 Z" fill="${P.honey}"${sw(1.8)}/>`;
+  s += `<path d="M136 186 C136 202 124 214 110 214 C104 214 103 206 108 203 C116 202 124 196 128 184 Z" fill="${P.honey}"${sw(1.8)}/>`;
+  s += sparkle(160, 160, 5) + sparkle(40, 162, 4.6) + sparkle(100, 80, 4);
+  return s;
+};
+
+ART.world = function () {
+  let s = rays(100, 160, .2) + specks(151, 10, [100, 160, 74]);
+  s += star(40, 92, 6) + star(160, 214, 5.5) + sparkle(44, 220, 4.4) + sparkle(160, 120, 3.6);
+  s += `<defs><clipPath id="planetClip"><circle cx="100" cy="162" r="44"/></clipPath></defs>`;
+  // ring, back half
+  const ring = (front) => `<g transform="translate(100 162) rotate(-14)"><path d="${front ? 'M-76 0 A76 18 0 0 0 76 0' : 'M-76 0 A76 18 0 0 1 76 0'}" fill="none" stroke="${GOLD}" stroke-width="9" stroke-linecap="round"/><path d="${front ? 'M-76 0 A76 18 0 0 0 76 0' : 'M-76 0 A76 18 0 0 1 76 0'}" fill="none" stroke="${front ? P.butterL : P.butter}" stroke-width="5.6" stroke-linecap="round"/></g>`;
+  s += ring(false);
+  s += `<circle cx="100" cy="162" r="44" fill="url(#g-planet)"${sw(2.3)}/>`;
+  s += `<g clip-path="url(#planetClip)"><path d="M58 140 C70 130 84 136 82 148 C80 158 64 160 56 154 Z M118 124 C132 120 146 132 140 142 C134 150 120 144 116 136 Z M120 186 C132 182 146 190 140 200 C132 210 116 204 114 196 Z M64 184 C72 180 80 186 76 194 C72 200 62 196 64 184 Z" fill="${P.mint}"${sw(1.2)}/></g>`;
+  s += `<path d="M70 146 Q74 132 88 126" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>`;
+  s += eyesHappy(87, 113, 163, 4.4) + blush(78, 122, 174, 5.5, 3) + smile(100, 173, 4);
+  s += ring(true);
+  s += bow(100, 120, .95, P.rose);
+  s += `<circle cx="152" cy="92" r="8" fill="${P.butterL}"${sw(1.4)}/>` + dot(149, 90, 1.2, P.butterD) + dot(155, 95, .9, P.butterD);
+  s += `<path d="M118 96 Q134 84 146 88" fill="none" stroke="${GOLD}" stroke-width=".8" stroke-dasharray="1.5 3"/>`;
+  return s;
+};
+
+// the card that isn't in any deck
+ART.katie = function () {
+  let s = rays(100, 150, .34);
+  // a halo of little stars
+  for (let i = 0; i <= 10; i++) {
+    const a = (198 + i * 14.4) * Math.PI / 180;
+    const x = 100 + Math.cos(a) * 68, y = 150 + Math.sin(a) * 72;
+    s += i % 2 ? sparkle(x, y, 4.2, '#fff6d6', .8) : star(x, y, 5.2, P.butterL, .9);
+  }
+  s += specks(161, 10, [100, 175, 80]);
+  // the crescent she sits on
+  s += `<path d="M34 214 C40 260 160 260 166 214 C150 242 50 242 34 214 Z" fill="url(#g-crescent)"${sw(2.1)}/>`;
+  s += eyesSleep(60, 72, 236, 2.6, 1.2) + blush(56, 76, 240.5, 2.6, 1.6);
+  // the wand
+  s += sparkle(166, 128, 4.4) + sparkle(136, 132, 3.2) + sparkle(168, 160, 3);
+  s += bunnyBody(100, -6, true);
+  s += `<path d="M110 228 L150 152" fill="none"${sw(2.8)}/><path d="M110 228 L150 152" fill="none" stroke="${P.butterL}" stroke-width="1.1" stroke-linecap="round"/>`;
+  s += `<ellipse cx="116.5" cy="214.5" rx="7" ry="5.6" fill="${P.white}"${sw(1.6)} transform="rotate(-28 116.5 214.5)"/>`;
+  s += `<ellipse cx="123.5" cy="201.5" rx="7" ry="5.6" fill="${P.white}"${sw(1.6)} transform="rotate(-28 123.5 201.5)"/>`;
+  s += `<path d="${starP(151, 146, 13, 6.4, -90, .22)}" fill="url(#g-star)"${sw(1.7)}/>`;
+  return s;
+};
+
+const ART_IDS = CONFIG.cards.map(c => c.id);
+const PAL = { bunny: 'mint', birthday: 'rose', star: 'dusk', cake: 'butter', telephone: 'sky', sun: 'peach',
+  letter: 'rose', moon: 'night', kiss: 'peach', hair: 'sky', nap: 'night', treat: 'mint', bouquet: 'butter',
+  hug: 'peach', world: 'dusk', katie: 'pearl' };
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DEFS — gradients, clips, the shared drawings (each drawn once, <use>d
+   everywhere), and the white line-masks that tell the foil where to sit.
+   ═══════════════════════════════════════════════════════════════════════ */
+const stops = (a) => a.map(s => `<stop offset="${s[0]}" stop-color="${s[1]}"${s[2] != null ? ` stop-opacity="${s[2]}"` : ''}/>`).join('');
+const WIN = {
+  mint: ['#d2eddf', '#fbf7ec'], rose: ['#fbd6e0', '#fff6ef'], dusk: ['#dccff3', '#fbe1ea'],
+  butter: ['#fbe9bb', '#fffaf0'], sky: ['#d0e4fa', '#fbf7f0'], peach: ['#fddfcc', '#fff8ef'],
+  night: ['#cdbff0', '#f0e7f9'],
+};
+function defsMarkup() {
+  let d = '<defs>';
+  d += `<linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="340">${stops([[0, '#9a6b22'], [.15, '#c4953f'], [.3, '#ddb86a'], [.43, '#a6772b'], [.58, '#cfa354'], [.72, '#9c6e27'], [.86, '#d4ae60'], [1, '#a4772b']])}</linearGradient>`;
+  d += `<radialGradient id="paper" cx=".5" cy=".42" r=".78">${stops([[0, '#fffcf6'], [.62, '#fdf3e3'], [1, '#f3e1c6']])}</radialGradient>`;
+  for (const k in WIN) d += `<linearGradient id="w-${k}" gradientUnits="userSpaceOnUse" x1="0" y1="42" x2="0" y2="262">${stops([[0, WIN[k][0]], [1, WIN[k][1]]])}</linearGradient>`;
+  d += `<linearGradient id="w-pearl" gradientUnits="userSpaceOnUse" x1="22" y1="42" x2="178" y2="262">${stops([[0, '#fcc6dd'], [.22, '#ffe6b0'], [.44, '#c8edd9'], [.64, '#c2dafc'], [.82, '#dac9fb'], [1, '#fcc9df']])}</linearGradient>`;
+  d += `<radialGradient id="g-star" cx=".42" cy=".36" r=".7">${stops([[0, '#fff9dc'], [.65, '#f9df96'], [1, '#efc46a']])}</radialGradient>`;
+  d += `<radialGradient id="g-sun" cx=".42" cy=".38" r=".7">${stops([[0, '#fff8d6'], [.6, '#fbe39c'], [1, '#f2c467']])}</radialGradient>`;
+  d += `<radialGradient id="g-berry" cx=".4" cy=".35" r=".72">${stops([[0, '#ffe8ee'], [.6, '#f7b9c8'], [1, '#ec94ac']])}</radialGradient>`;
+  d += `<radialGradient id="g-peach" cx=".42" cy=".38" r=".72">${stops([[0, '#fffaf6'], [.62, '#feeadf'], [1, '#f9d4c2']])}</radialGradient>`;
+  d += `<linearGradient id="g-glass" x1="0" y1="0" x2=".6" y2="1">${stops([[0, '#f1f7ff'], [.5, '#cfe0f7'], [1, '#e4d8f6']])}</linearGradient>`;
+  d += `<radialGradient id="g-planet" cx=".4" cy=".35" r=".72">${stops([[0, '#ecf6ff'], [.55, '#c6ddf5'], [1, '#a3c3ea']])}</radialGradient>`;
+  d += `<radialGradient id="g-flame">${stops([[0, '#ffe8a8', .9], [1, '#ffe8a8', 0]])}</radialGradient>`;
+  d += `<linearGradient id="g-crescent" x1="0" y1="0" x2="0" y2="1">${stops([[0, '#fff5cf'], [1, '#f3d283']])}</linearGradient>`;
+  d += `<linearGradient id="g-back" x1="0" y1="0" x2="0" y2="1">${stops([[0, '#c9b3ef'], [.5, '#b096e2'], [1, '#9d80d6']])}</linearGradient>`;
+  d += `<linearGradient id="g-kback" x1="0" y1="0" x2="1" y2="1">${stops([[0, '#ffe7c0'], [.35, '#f6d0e2'], [.7, '#d9cbf3'], [1, '#f8dcb0']])}</linearGradient>`;
+  d += `<radialGradient id="g-backGlow" cx=".5" cy=".5" r=".55">${stops([[0, '#fff8ff', .55], [1, '#fff8ff', 0]])}</radialGradient>`;
+  d += `<clipPath id="archClip" clipPathUnits="userSpaceOnUse"><path d="${ARCH_D}"/></clipPath>`;
+  d += `<clipPath id="backClip" clipPathUnits="userSpaceOnUse"><rect x="10.5" y="10.5" width="179" height="319" rx="6"/></clipPath>`;
+  d += `<g id="paperS"><rect width="200" height="340" fill="url(#paper)"/></g>`;
+  d += `<g id="frameS">${frameMarkup(false)}</g><g id="kframeS">${frameMarkup(true)}</g>`;
+  d += `<g id="backS">${backMarkup()}</g>`;
+  d += `<g id="kbackS">${backMarkup().replace('url(#g-back)', 'url(#g-kback)')}</g>`;
+  ART_IDS.concat('katie').forEach(id => { d += `<g id="art-${id}">${ART[id]()}</g>`; });
+  return d + '</defs>';
+}
+// foil masks: lines solid, painted areas faint, fill="none" stays empty
+function maskURL(inner, fa) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 340" preserveAspectRatio="none"><style>*{stroke:#fff!important;fill:rgba(255,255,255,${fa})!important}[fill="none"]{fill:none!important}</style>${inner}</svg>`;
+  return `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}")`;
+}
+const MASK = {};
+function buildDefs() {
+  $('defs').innerHTML = defsMarkup();
+  const fr = frameMarkup(false);
+  ART_IDS.forEach(id => { MASK[id] = maskURL(fr + ART[id](), .06); });
+  MASK.katie = maskURL(frameMarkup(true) + ART.katie(), .2);
+  MASK.back = maskURL(backMarkup(), .12);
+}
+
+/* ── card titles: measured once the fonts land, so they always fit ─────── */
+const TFIT = {};
+const mctx = document.createElement('canvas').getContext('2d');
+function titleLines(title) {
+  let t = String(title).trim(), the = false;
+  if (/^the\s+/i.test(t)) { the = true; t = t.replace(/^the\s+/i, ''); }
+  t = t.toUpperCase();
+  let lines = [t];
+  if (t.length > 11 && t.indexOf(' ') > 0) {
+    const w = t.split(' '); let best = null;
+    for (let i = 1; i < w.length; i++) {
+      const a = w.slice(0, i).join(' '), b = w.slice(i).join(' '), sc = Math.max(a.length, b.length);
+      if (!best || sc < best.sc) best = { a, b, sc };
+    }
+    lines = [best.a, best.b];
+  }
+  return { the, lines };
+}
+function measure(font, txt, track) {
+  mctx.font = font;
+  return mctx.measureText(txt).width + Math.max(0, txt.length - 1) * track;
+}
+function fitTitle(def) {
+  if (def.id === 'katie') {
+    const t = NAME.toUpperCase();
+    const w = measure('700 100px "Cinzel Decorative", Cinzel, Georgia, serif', t, 6);
+    return (TFIT.katie = { lines: [t], size: n2(Math.min(30, 138 / (w / 100))) });
+  }
+  const tl = titleLines(def.title);
+  const two = tl.lines.length > 1, maxS = two ? 15.5 : 19;
+  let wmax = 0;
+  tl.lines.forEach(l => { wmax = Math.max(wmax, measure('700 100px Cinzel, Georgia, serif', l, 3.5)); });
+  tl.size = n2(Math.min(maxS, 146 / (wmax / 100)));
+  return (TFIT[def.id] = tl);
+}
+function titleMarkup(def) {
+  const f = TFIT[def.id] || fitTitle(def);
+  const num = def.id === 'katie' ? CONFIG.katieNumeral : def.num;
+  let s = `<text class="c-num" x="100" y="29.4" text-anchor="middle" font-size="11.5">${num}</text>`;
+  if (def.id === 'katie') {
+    return s + `<text class="c-the" x="100" y="287" text-anchor="middle" font-size="10.5">the one and only</text>` +
+      `<text class="c-katie" x="100" y="314" text-anchor="middle" font-size="${f.size}">${f.lines[0]}</text>`;
+  }
+  const two = f.lines.length > 1;
+  if (f.the) s += `<text class="c-the" x="100" y="${two ? 284.6 : 288}" text-anchor="middle" font-size="${two ? 10.5 : 11}">the</text>`;
+  if (two) {
+    const y1 = f.the ? 301.2 : 296, y2 = f.the ? 316.8 : 313;
+    s += `<text class="c-ttl" x="100" y="${y1}" text-anchor="middle" font-size="${f.size}">${f.lines[0]}</text>`;
+    s += `<text class="c-ttl" x="100" y="${y2}" text-anchor="middle" font-size="${f.size}">${f.lines[1]}</text>`;
+  } else {
+    s += `<text class="c-ttl" x="100" y="${f.the ? 309 : 304}" text-anchor="middle" font-size="${f.size}">${f.lines[0]}</text>`;
+  }
+  return s;
+}
+function faceSVG(def) {
+  const k = def.id === 'katie';
+  return `<svg viewBox="0 0 200 340" preserveAspectRatio="none" aria-hidden="true"><use href="#paperS"/>` +
+    `<path d="${ARCH_D}" fill="url(#w-${PAL[def.id]})"/><g clip-path="url(#archClip)"><use href="#art-${def.id}"/></g>` +
+    `<use href="#${k ? 'kframeS' : 'frameS'}"/>${titleMarkup(def)}</svg>`;
+}
+const DEF = {};
+CONFIG.cards.forEach(c => { DEF[c.id] = c; });
+DEF.katie = { id: 'katie', num: CONFIG.katieNumeral, title: NAME };
+
+/* ═══════════════════════════════════════════════════════════════════════
+   procedural textures: glitter, velvet nap, film grain, gold fringe
+   ═══════════════════════════════════════════════════════════════════════ */
+function texture(w, h, paint) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  paint(c.getContext('2d'), w, h);
+  try { return 'url(' + c.toDataURL('image/png') + ')'; } catch (e) { return 'none'; }
+}
+function buildTextures() {
+  const root = document.documentElement.style;
+  const old = _seed; _seed = 0xC0FFEE;
+  root.setProperty('--glitter', texture(128, 128, (g, w, h) => {
+    const cols = ['255,255,255', '255,236,200', '255,214,236', '214,236,255', '230,214,255'];
+    for (let i = 0; i < 230; i++) {
+      const x = srange(0, w), y = srange(0, h), r = srange(.5, 1.5);
+      g.fillStyle = `rgba(${cols[(srnd() * cols.length) | 0]},${n2(srange(.35, 1))})`;
+      g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+    }
+    g.strokeStyle = 'rgba(255,255,255,.95)'; g.lineWidth = .9;
+    for (let i = 0; i < 16; i++) {
+      const x = srange(5, w - 5), y = srange(5, h - 5), r = srange(2, 4.2);
+      g.beginPath(); g.moveTo(x - r, y); g.lineTo(x + r, y); g.moveTo(x, y - r); g.lineTo(x, y + r); g.stroke();
+    }
+  }));
+  root.setProperty('--velvet', texture(220, 220, (g, w, h) => {
+    for (let i = 0; i < 2600; i++) {
+      const x = srange(0, w), y = srange(0, h), lt = srnd() < .5;
+      g.fillStyle = lt ? `rgba(255,214,255,${n2(srange(.02, .09))})` : `rgba(8,0,18,${n2(srange(.05, .16))})`;
+      g.fillRect(x, y, 1, srange(1, 3.5));
+    }
+  }));
+  root.setProperty('--grain', texture(160, 160, (g, w, h) => {
+    const im = g.createImageData(w, h), d = im.data;
+    for (let i = 0; i < d.length; i += 4) { const v = (srnd() * 255) | 0; d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 90; }
+    g.putImageData(im, 0, 0);
+  }));
+  _seed = old;
+  const fr = `<svg xmlns='http://www.w3.org/2000/svg' width='14' height='34' viewBox='0 0 14 34'>` +
+    `<defs><linearGradient id='f' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#f7e2a6'/><stop offset='.55' stop-color='#cf9f4f'/><stop offset='1' stop-color='#9f7330' stop-opacity='.85'/></linearGradient></defs>` +
+    `<rect width='14' height='4.2' fill='#4a2a5e'/><path d='M0 4.6 Q3.5 8.6 7 4.6 Q10.5 8.6 14 4.6' fill='none' stroke='#ecc87f' stroke-width='1.5'/>` +
+    `<path d='M0 2.6 H14' stroke='#f3d690' stroke-width='.8' opacity='.8'/>` +
+    `<path d='M2.2 8 L1.9 27 M4.4 8 L4.2 29.5 M6.6 8 L6.6 31 M8.8 8 L8.9 30 M11 8 L11.3 28' stroke='url(#f)' stroke-width='.85' stroke-linecap='round'/>` +
+    `<circle cx='7' cy='8.2' r='1.7' fill='#f2d28a'/></svg>`;
+  $('fringe').style.setProperty('--fringe', `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(fr)}")`);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SOUND — all synthesized. soft attacks, filtered, a generated-impulse
+   reverb, one master compressor. the AudioContext is born in her first tap.
+   ═══════════════════════════════════════════════════════════════════════ */
+const PENTA = [62, 64, 66, 69, 71, 74, 76, 78, 81, 83, 86, 88, 90, 93, 95];
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+function buzz(p) {
+  try {
+    if (!navigator.vibrate) return;
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+    navigator.vibrate(p);
+  } catch (e) {}
+}
+const SND = (function () {
+  let ac = null, master = null, wet = null, noise = null, padOut = null, padFilt = null;
+  let muted = QS.get('mute') === '1';
+  const padOsc = [];
+  const now = () => ac.currentTime;
+  const ok = () => !!ac && !muted && ac.state === 'running';
+
+  function init() {
+    if (ac) { if (ac.state !== 'running' && !document.hidden) ac.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+    try { ac = new AC({ latencyHint: 'interactive' }); } catch (e) { try { ac = new AC(); } catch (e2) { return; } }
+    const comp = ac.createDynamicsCompressor();
+    comp.threshold.value = -18; comp.knee.value = 16; comp.ratio.value = 3.2; comp.attack.value = .004; comp.release.value = .3;
+    master = ac.createGain(); master.gain.value = muted ? 0 : .9;
+    const tame = ac.createBiquadFilter(); tame.type = 'highshelf'; tame.frequency.value = 6500; tame.gain.value = -5;
+    master.connect(tame); tame.connect(comp); comp.connect(ac.destination);
+    const conv = ac.createConvolver(); conv.buffer = impulse(3.4, 2.5);
+    const rlp = ac.createBiquadFilter(); rlp.type = 'lowpass'; rlp.frequency.value = 4800;
+    const rg = ac.createGain(); rg.gain.value = .6;
+    wet = ac.createGain(); wet.connect(conv); conv.connect(rlp); rlp.connect(rg); rg.connect(master);
+    noise = ac.createBuffer(1, ac.sampleRate * 2.5, ac.sampleRate);
+    const nd = noise.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    const b = ac.createBuffer(1, 1, 22050), s = ac.createBufferSource(); s.buffer = b; s.connect(ac.destination); s.start(0);
+    if (ac.state === 'suspended') ac.resume();
+    startPad();
+  }
+  function impulse(sec, decay) {
+    const rate = ac.sampleRate, len = Math.floor(rate * sec), buf = ac.createBuffer(2, len, rate);
+    for (let c = 0; c < 2; c++) {
+      const d = buf.getChannelData(c); let lp = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / len;
+        lp += (Math.random() * 2 - 1 - lp) * (.55 - .4 * t);
+        d[i] = lp * Math.pow(1 - t, decay) * (i < rate * .015 ? i / (rate * .015) : 1);
+      }
+    }
+    return buf;
+  }
+  function route(node, dry, wt, pan) {
+    let n = node;
+    if (pan && ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); n.connect(p); n = p; }
+    if (dry > 0) { const g = ac.createGain(); g.gain.value = dry; n.connect(g); g.connect(master); }
+    if (wt > 0) { const g = ac.createGain(); g.gain.value = wt; n.connect(g); g.connect(wet); }
+  }
+  const G = v => { const g = ac.createGain(); g.gain.value = v == null ? 0 : v; return g; };
+  const F = (type, f, q) => { const b = ac.createBiquadFilter(); b.type = type; b.frequency.value = f; if (q != null) b.Q.value = q; return b; };
+  const O = (type, f) => { const o = ac.createOscillator(); o.type = type; o.frequency.value = f; return o; };
+  function N(t, dur) { const s = ac.createBufferSource(); s.buffer = noise; s.start(t, Math.random() * 1.8, dur + .06); return s; }
+  function adsr(g, t, a, peak, rel) {
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a);
+    g.gain.exponentialRampToValueAtTime(.0001, t + a + rel);
+  }
+
+  // ── ambient pad: detuned sines, slow filter breath ─────────────────────
+  function startPad() {
+    if (padOut) return;
+    const t = now();
+    padFilt = F('lowpass', 720, .5);
+    const lfo = O('sine', .055), lg = G(300); lfo.connect(lg); lg.connect(padFilt.frequency); lfo.start(t);
+    padOut = G(0); padOut.gain.setValueAtTime(0, t); padOut.gain.linearRampToValueAtTime(.07, t + 6);
+    const al = O('sine', .09), ag = G(.016); al.connect(ag); ag.connect(padOut.gain); al.start(t);
+    padFilt.connect(padOut); route(padOut, .8, .7);
+    [50, 57, 64, 66, 69].forEach((m, i) => {
+      const vg = G([.22, .17, .12, .11, .08][i]);
+      [-6, 6].forEach((dt, j) => { const o = O(j ? 'triangle' : 'sine', mtof(m)); o.detune.value = dt; o.connect(vg); o.start(t); padOsc.push(o); });
+      let nd = vg;
+      if (ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.value = [-.4, .3, -.15, .4, 0][i]; vg.connect(p); nd = p; }
+      nd.connect(padFilt);
+    });
+  }
+  function padTo(midis, sec) {
+    if (!ac || !padOut) return;
+    const t = now();
+    midis.forEach((m, i) => { [0, 1].forEach(j => { const o = padOsc[i * 2 + j]; if (o) o.frequency.setTargetAtTime(mtof(m), t, sec / 3); }); });
+  }
+  function padMood(level, cutoff, sec) {
+    if (!ac || !padOut) return;
+    const t = now();
+    padOut.gain.cancelScheduledValues(t); padOut.gain.setTargetAtTime(level, t, sec / 3);
+    padFilt.frequency.setTargetAtTime(cutoff, t, sec / 3);
+  }
+
+  // ── one-shots ─────────────────────────────────────────────────────────
+  function tick(when, vel, pan, f) {
+    if (!ok()) return; const t = now() + (when || 0);
+    const s = N(t, .05), bp = F('bandpass', (f || 3400) * rand(.85, 1.15), 1.3), g = G();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.3 * (vel || 1), t + .002); g.gain.exponentialRampToValueAtTime(.0005, t + .04);
+    s.connect(bp); bp.connect(g); route(g, 1, .08, pan || 0);
+  }
+  function thump(when, vel) {
+    if (!ok()) return; const t = now() + (when || 0); vel = vel || 1;
+    const s = N(t, .14), lp = F('lowpass', 420, .7), g = G();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.42 * vel, t + .004); g.gain.exponentialRampToValueAtTime(.0008, t + .11);
+    s.connect(lp); lp.connect(g); route(g, 1, .1);
+    const o = O('sine', 125), g2 = G(); o.frequency.exponentialRampToValueAtTime(58, t + .1);
+    adsr(g2, t, .004, .26 * vel, .14); o.connect(g2); route(g2, 1, .04); o.start(t); o.stop(t + .25);
+  }
+  function whoosh(when, dur, vel, f0, f1, p0, p1) {
+    if (!ok()) return; const t = now() + (when || 0); dur = dur || .45;
+    const s = N(t, dur), bp = F('bandpass', f0 || 450, .8), g = G();
+    bp.frequency.setValueAtTime(f0 || 450, t); bp.frequency.exponentialRampToValueAtTime(f1 || 2400, t + dur * .7);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.26 * (vel || 1), t + dur * .38); g.gain.exponentialRampToValueAtTime(.0005, t + dur);
+    s.connect(bp); bp.connect(g);
+    let nd = g;
+    if (ac.createStereoPanner) { const p = ac.createStereoPanner(); p.pan.setValueAtTime(p0 || 0, t); p.pan.linearRampToValueAtTime(p1 || 0, t + dur); g.connect(p); nd = p; }
+    route(nd, .9, .3);
+  }
+  function fwip(when, vel) {
+    if (!ok()) return; const t = now() + (when || 0); vel = vel || 1;
+    const s = N(t, .14), hp = F('highpass', 1300, .7), bp = F('bandpass', 2400, 1.1), g = G();
+    bp.frequency.setValueAtTime(2400, t); bp.frequency.exponentialRampToValueAtTime(6200, t + .08);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.3 * vel, t + .006); g.gain.exponentialRampToValueAtTime(.0005, t + .12);
+    s.connect(hp); hp.connect(bp); bp.connect(g); route(g, .85, .22);
+    const o = O('triangle', 720), g2 = G(); o.frequency.exponentialRampToValueAtTime(1500, t + .05);
+    adsr(g2, t, .004, .045 * vel, .07); o.connect(g2); route(g2, .8, .2); o.start(t); o.stop(t + .12);
+  }
+  function chime(when, midi, vel, pan) {
+    if (!ok()) return; const t = now() + (when || 0), f = mtof(midi || 84); vel = vel || 1;
+    const car = O('sine', f), mod = O('sine', f * 3.5), mg = G(f * 2.2), g = G();
+    mg.gain.setValueAtTime(f * 2.2, t); mg.gain.exponentialRampToValueAtTime(f * .04, t + 1.5);
+    mod.connect(mg); mg.connect(car.frequency);
+    adsr(g, t, .005, .2 * vel, 2.8); car.connect(g); route(g, .7, .55, pan || 0);
+    car.start(t); mod.start(t); car.stop(t + 3); mod.stop(t + 3);
+    [[2, .06, .03], [3.01, .045, .06], [4.2, .03, .09], [5.43, .02, .12]].forEach(r => {
+      const o = O('sine', f * r[0]), gg = G(); adsr(gg, t + r[2], .004, r[1] * vel, 1.3);
+      o.connect(gg); route(gg, .5, .65, (pan || 0) * .6); o.start(t + r[2]); o.stop(t + r[2] + 1.5);
+    });
+  }
+  function pluck(when, midi, vel, pan) {
+    if (!ok()) return; const t = now() + (when || 0), f = mtof(midi); vel = vel || 1;
+    const lp = F('lowpass', 5200, .6), g = G();
+    lp.frequency.setValueAtTime(5200, t); lp.frequency.setTargetAtTime(1300, t + .01, .18);
+    adsr(g, t, .003, .19 * vel, 1.9);
+    [['sine', 1, 1], ['triangle', 2, .22], ['sine', 3, .07]].forEach(p => {
+      const o = O(p[0], f * p[1]), og = G(p[2]); o.connect(og); og.connect(lp); o.start(t); o.stop(t + 2.1);
+    });
+    lp.connect(g); route(g, .75, .45, pan || 0);
+  }
+  function twinkle(when, vel) {
+    for (let i = 0; i < 3; i++) pluck((when || 0) + i * .075, PENTA[8 + ((Math.random() * 6) | 0)], (vel || .4) * (1 - i * .2), rand(-.5, .5));
+  }
+  function swell(when) {
+    if (!ok()) return; const t = now() + (when || 0);
+    const lp = F('lowpass', 260, .6), g = G();
+    lp.frequency.setValueAtTime(260, t); lp.frequency.exponentialRampToValueAtTime(2600, t + 2.8); lp.frequency.setTargetAtTime(1500, t + 3.2, 1.5);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.085, t + 1.7); g.gain.setTargetAtTime(.06, t + 2.5, 1.2); g.gain.setTargetAtTime(.0001, t + 6.5, 1.3);
+    lp.connect(g); route(g, .6, .65);
+    [50, 57, 62, 66, 69, 73, 76].forEach(m => {
+      [-7, 7].forEach(dt => { const o = O('sawtooth', mtof(m)); o.detune.value = dt; const og = G(.11); o.connect(og); og.connect(lp); o.start(t); o.stop(t + 12); });
+    });
+    const sub = O('sine', mtof(38)), sg = G(); adsr(sg, t, 1.6, .16, 7); sub.connect(sg); route(sg, .8, .2); sub.start(t); sub.stop(t + 10);
+  }
+  function riser(when, dur) {
+    if (!ok()) return; const t = now() + (when || 0);
+    const s = N(t, dur), bp = F('bandpass', 300, 1.6), g = G();
+    bp.frequency.setValueAtTime(300, t); bp.frequency.exponentialRampToValueAtTime(4200, t + dur);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.22, t + dur * .92); g.gain.exponentialRampToValueAtTime(.001, t + dur + .08);
+    s.connect(bp); bp.connect(g); route(g, .7, .5);
+    const o = O('sine', 180), og = G(); o.frequency.exponentialRampToValueAtTime(960, t + dur);
+    og.gain.setValueAtTime(.0001, t); og.gain.exponentialRampToValueAtTime(.05, t + dur * .9); og.gain.exponentialRampToValueAtTime(.0001, t + dur + .1);
+    o.connect(og); route(og, .6, .5); o.start(t); o.stop(t + dur + .2);
+  }
+  function burst(when) {
+    if (!ok()) return; const w = when || 0;
+    chime(w, 86, 1, 0); chime(w + .03, 93, .6, -.3); chime(w + .07, 98, .45, .3);
+    const t = now() + w, s = N(t, 1.8), hp = F('highpass', 5200, .7), g = G();
+    adsr(g, t, .01, .16, 1.6); s.connect(hp); hp.connect(g); route(g, .3, .9);
+  }
+  function hum(when) {   // the moon, mumbling in her sleep
+    if (!ok()) return; const t = now() + (when || 0);
+    const o = O('triangle', 330), lp = F('lowpass', 1100, .8), g = G(), v = O('sine', 5.5), vg = G(7);
+    o.frequency.setValueAtTime(300, t); o.frequency.linearRampToValueAtTime(392, t + .28); o.frequency.linearRampToValueAtTime(294, t + .8);
+    v.connect(vg); vg.connect(o.frequency);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.11, t + .08); g.gain.setTargetAtTime(.0001, t + .55, .15);
+    o.connect(lp); lp.connect(g); route(g, .8, .4); o.start(t); v.start(t); o.stop(t + 1.4); v.stop(t + 1.4);
+  }
+  function swirl(when) {  // the crystal ball
+    if (!ok()) return; const t = now() + (when || 0);
+    const s = N(t, 1.6), bp = F('bandpass', 900, 3), g = G(), l = O('sine', 2.2), lg = G(700);
+    l.connect(lg); lg.connect(bp.frequency); l.start(t); l.stop(t + 1.7);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.16, t + .4); g.gain.exponentialRampToValueAtTime(.0005, t + 1.6);
+    s.connect(bp); bp.connect(g); route(g, .6, .6, 0);
+    [0, .12, .24, .36].forEach((d, i) => pluck(.15 + d, PENTA[5 + i * 2], .35, -.4 + i * .27));
+  }
+  function setMuted(m) {
+    muted = !!m;
+    if (ac && master) master.gain.setTargetAtTime(muted ? 0 : .9, now(), .06);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (!ac) return;
+    if (document.hidden) ac.suspend(); else ac.resume();
+  });
+  return { init, tick, thump, whoosh, fwip, chime, pluck, twinkle, swell, riser, burst, hum, swirl, padTo, padMood, setMuted,
+    get muted() { return muted; }, get ready() { return !!ac; } };
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LAYOUT — every position on the table is computed here from the viewport
+   (phone portrait first; landscape/desktop gets its own composition).
+   cards are laid out at L.cw and only ever scaled DOWN from that.
+   ═══════════════════════════════════════════════════════════════════════ */
+let L = null;
+function readSafe() {
+  const cs = getComputedStyle($('sa'));
+  return { t: parseFloat(cs.paddingTop) || 0, r: parseFloat(cs.paddingRight) || 0, b: parseFloat(cs.paddingBottom) || 0, l: parseFloat(cs.paddingLeft) || 0 };
+}
+function solveFan(n, x0, x1, y0, y1, fw, span, fwMax) {
+  const a = span / 2 * Math.PI / 180, sa = Math.sin(a), ca = Math.cos(a);
+  const geo = (w) => { const h1 = w * 1.7, R = ((x1 - x0) / 2 - (w / 2) * ca - (h1 / 2) * sa) / sa; return { R, fh: h1, h: R * (1 - ca) + (h1 / 2) * (1 + ca) + (w / 2) * sa }; };
+  let g = geo(fw);
+  for (let it = 0; it < 40 && (g.h > y1 - y0 || g.R < g.fh * .9); it++) { fw *= .96; g = geo(fw); }
+  for (let it = 0; it < 40 && fwMax && fw < fwMax; it++) {      // room to spare? grow
+    const g2 = geo(fw * 1.03);
+    if (g2.h > (y1 - y0) * .94 || g2.R < g2.fh * .9) break;
+    fw *= 1.03; g = g2;
+  }
+  return { cx: (x0 + x1) / 2, cy: y0 + g.R + g.fh / 2 + Math.max(0, (y1 - y0 - g.h) * .3), R: g.R, span, fw, fh: g.fh, n };
+}
+function fanPos(F, i, n) {
+  const t = n > 1 ? i / (n - 1) : .5, th = (-F.span / 2 + F.span * t) * Math.PI / 180;
+  return { x: F.cx + F.R * Math.sin(th), y: F.cy - F.R * Math.cos(th), r: th * 180 / Math.PI };
+}
+function computeLayout() {
+  const W = window.innerWidth, H = window.innerHeight, sa = readSafe();
+  const o = { W, H, sa, portrait: W < H * .95 };
+  o.fringeH = Math.round(clamp(H * .036, 22, 34));
+  o.top = sa.t + 10;
+  o.bottom = H - sa.b - o.fringeH - 8;
+  const usable = o.bottom - o.top, P = o.portrait;
+  o.cw = P ? Math.round(clamp(Math.min(W * .34, usable * .2), 88, 176)) : Math.round(clamp(Math.min(H * .25, W * .14), 100, 210));
+  o.ch = o.cw * 1.7;
+  o.hz = P ? { intro: H * .46, read: Math.max(o.top + 84, H * .165), finale: H * .9 }
+           : { intro: H * .5, read: Math.max(o.top + 96, H * .19), finale: H * .9 };
+  const hzI = o.hz.intro, hzR = o.hz.read;
+
+  // ── intro ──
+  o.titleY = P ? (o.top + hzI) * .5 + 6 : (o.top + hzI) * .5 + 4;
+  const dh = Math.min(o.ch, (o.bottom - hzI) * .64);
+  o.deck = { x: W / 2, y: hzI + (o.bottom - hzI) * .45, s: dh / o.ch };
+  o.hintY = o.deck.y + dh / 2 + (P ? 30 : 36);
+  o.moon = P
+    ? { size: 88, intro: { x: 58 + sa.l, y: o.top + 56 }, read: { x: 40 + sa.l, y: o.top + 4 }, finale: { x: 50 + sa.l, y: o.top + 64 } }
+    : { size: 124, intro: { x: W * .15, y: o.top + 104 }, read: { x: W * .11, y: o.top + 46 }, finale: { x: W * .12, y: o.top + 110 } };
+  o.ball = P ? { x: W * .85, y: 7, size: 44 } : { x: W / 2 + Math.min(W * .36, 560), y: 12, size: 62 };
+
+  // ── the reading: slots, labels, the fan ──
+  o.capY = (o.top + hzR) / 2 + 2;
+  const gap = P ? W * .045 : o.cw * .34;
+  let sw = P ? Math.min(W * .26, (W - 32 - 2 * gap) / 3, o.cw * .9) : o.cw * .8;
+  const room = o.bottom - hzR - 16;
+  sw = Math.min(sw, (room - 30 - 48 - (P ? 230 : 260)) / 1.7);
+  o.sS = sw / o.cw; o.sh = sw * 1.7;
+  o.slots = [0, 1, 2].map(k => ({ x: W / 2 + (k - 1) * (sw + gap), y: hzR + 14 + o.sh / 2 }));
+  o.lblY = hzR + 14 + o.sh + 9;
+  o.lblW = sw + gap * .8;
+  o.midY = o.lblY + 30 + 24;
+  const fx0 = P ? 12 : W / 2 - Math.min(W * .36, 560), fx1 = W - fx0;
+  o.fan = solveFan(15, fx0, fx1, o.midY + 30, o.bottom - 4, P ? Math.min(W * .235, o.cw * .8) : sw * .82, P ? 72 : 54, P ? Math.min(W * .29, o.cw * .95) : sw * .95);
+  o.fS = o.fan.fw / o.cw;
+
+  // ── focus view ──
+  if (P) {
+    const fh = Math.min((usable - 250) , W * .64 * 1.7, 560);
+    o.focus = { x: W / 2, y: o.top + 44 + fh / 2, w: fh / 1.7, lblY: o.top + 10, readY: o.top + 44 + fh + 18, align: 'center' };
+    o.focus.hintY = o.focus.readY + 128; o.focus.pillY = Math.min(o.bottom - 28, o.focus.hintY + 52);
+  } else {
+    const fh = Math.min(usable * .9, 700);
+    o.focus = { x: W * .37, y: o.top + usable / 2, w: fh / 1.7, align: 'left' };
+    o.focus.colX = W * .37 + fh / 3.4 + Math.max(40, W * .05); o.focus.colW = Math.min(460, W - o.focus.colX - 60);
+    o.focus.lblY = o.focus.y - 110; o.focus.readY = o.focus.y - 76; o.focus.hintY = o.focus.y + 120; o.focus.pillY = o.focus.y + 176;
+  }
+
+  // ── the wave: her three set aside, the rest in a tableau ──
+  const tw = P ? Math.min(W * .12, 50) : o.cw * .42, th = tw * 1.7;
+  o.moreY = o.bottom - 28;
+  const trioFits = !P || H > 760;
+  o.trio = [0, 1, 2].map(k => trioFits
+    ? { x: W / 2 + (k - 1) * tw * .8, y: hzR + 10 + th / 2, r: (k - 1) * 7, s: tw / o.cw, op: 1 }
+    : { x: W / 2 + (k - 1) * 30, y: H + 140, r: (k - 1) * 9, s: .4, op: 0 });
+  const ty0 = trioFits ? hzR + 10 + th + 14 : hzR + 12, ty1 = o.moreY - 34;
+  const cols = P ? 4 : 6, rows = P ? 3 : 2, gx = P ? 8 : 18, gy = P ? 10 : 18;
+  const tx0 = P ? 12 : W / 2 - Math.min(W * .4, 600);
+  let tcw = Math.min((W - 2 * tx0 - (cols - 1) * gx) / cols, ((ty1 - ty0) - (rows - 1) * gy) / rows / 1.7, o.cw * .92);
+  const tch = tcw * 1.7, gridH = rows * tch + (rows - 1) * gy, gridW = cols * tcw + (cols - 1) * gx;
+  const gy0 = ty0 + Math.max(0, (ty1 - ty0 - gridH) / 2);
+  o.tS = tcw / o.cw;
+  o.tab = [];
+  for (let i = 0; i < 12; i++) {
+    const c = i % cols, rr = (i / cols) | 0;
+    o.tab.push({ x: W / 2 - gridW / 2 + tcw / 2 + c * (tcw + gx), y: gy0 + tch / 2 + rr * (tch + gy) });
+  }
+  o.capTwistY = trioFits || !P ? o.capY : (o.top + hzR) / 2 + 2;
+
+  // ── finale ──
+  if (P) {
+    const kw = Math.min(W * .58, usable * .5 / 1.7), kh = kw * 1.7;
+    o.katie = { x: W / 2, y: o.top + 22 + kh / 2, w: kw };
+    o.fin = { align: 'center', meanY: o.top + 22 + kh + 20 };
+  } else {
+    const kh = Math.min(usable * .86, 720), kw = kh / 1.7;
+    o.katie = { x: W * .36, y: o.top + usable / 2 + 4, w: kw };
+    const colX = W * .36 + kw / 2 + Math.max(48, W * .05);
+    o.fin = { align: 'left', colX, colW: Math.min(500, W - colX - 60), meanY: o.katie.y - 150 };
+  }
+  // the pool of light follows the action
+  o.pool = {
+    intro: { x: W / 2, y: o.deck.y + 24, w: Math.max(W * 1.2, 520), h: Math.max(dh * 1.9, 300) },
+    read: { x: W / 2, y: (o.slots[0].y + o.fan.cy - o.fan.R) / 2 + 40, w: Math.max(W * 1.3, 620), h: (o.bottom - hzR) * 1.2 },
+    finale: { x: o.katie.x, y: o.katie.y + 60, w: Math.max(W * 1.1, 600), h: H * .7 },
+  };
+  return o;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCENE — the camera tilts between acts: big sky for the intro, down to
+   the table for the reading, back up to the stars for the finale.
+   ═══════════════════════════════════════════════════════════════════════ */
+const cam = { hz: 0, from: 0, to: 0, t0: 0, dur: 1, moving: false, name: 'intro', dirty: true };
+function setCamera(name, instant, dur) {
+  cam.name = name;
+  const to = L.hz[name];
+  if (instant || RM) { cam.hz = to; cam.moving = false; cam.dirty = true; return; }
+  cam.from = cam.hz; cam.to = to; cam.t0 = performance.now(); cam.dur = (dur || 1.6) * 1000; cam.moving = true;
+}
+function stepCamera(now) {
+  if (!cam.moving) return;
+  const u = clamp((now - cam.t0) / cam.dur, 0, 1);
+  cam.hz = lerp(cam.from, cam.to, E.inOut(u)); cam.dirty = true;
+  if (u >= 1) cam.moving = false;
+}
+const el = {};
+['sky', 'skyGlow', 'starsWrap', 'shoot', 'clouds', 'moon', 'moonInner', 'moonMsg', 'table', 'ball', 'pool', 'fringe', 'stage', 'fx', 'flash',
+ 'title', 'titleH', 'titleFor', 'caption', 'hint', 'twistBtn', 'moreBtn', 'focus', 'finale', 'fMeaning', 'fNote', 'fSig', 'again',
+ 'tiltPill', 'mute', 'intro', 'gallery', 'srText', 'lbl0', 'lbl1', 'lbl2'].forEach(id => { el[id] = $(id); });
+
+function placeScene() {
+  if (!cam.dirty) return;
+  cam.dirty = false;
+  const W = L.W, H = L.H, hz = cam.hz, hzI = L.hz.intro;
+  el.sky.style.transform = `translate3d(0,${n2(hz + 70 - H * 2.4)}px,0)`;
+  el.skyGlow.style.transform = `translate3d(0,${n2(hz + 16 - H * .6)}px,0)`;
+  el.clouds.style.transform = `translate3d(0,${n2(hz * .55 + hzI * .45)}px,0)`;
+  const mp = moonAt(hz);
+  el.moon.style.transform = `translate3d(${n2(mp.x)}px,${n2(mp.y)}px,0)`;
+  el.table.style.transform = `translate3d(0,${n2(hz)}px,0)`;
+  placeStars();
+}
+function moonAt(hz) {
+  const M = L.moon, k = [[L.hz.read, M.read], [L.hz.intro, M.intro], [L.hz.finale, M.finale]];
+  if (hz <= k[0][0]) return k[0][1];
+  for (let i = 0; i < 2; i++) {
+    if (hz <= k[i + 1][0]) { const u = (hz - k[i][0]) / Math.max(1, k[i + 1][0] - k[i][0]); return { x: lerp(k[i][1].x, k[i + 1][1].x, u), y: lerp(k[i][1].y, k[i + 1][1].y, u) }; }
+  }
+  return k[2][1];
+}
+function buildScene() {
+  const W = L.W, H = L.H;
+  el.sky.style.height = (H * 2.4) + 'px';
+  el.table.style.height = (H * 1.7) + 'px';
+  el.fringe.style.setProperty('--fh', L.fringeH + 'px');
+  // moon
+  const ms = L.moon.size;
+  el.moonInner.style.width = ms + 'px'; el.moonInner.style.height = ms + 'px';
+  el.moonMsg.style.top = (ms * .34) + 'px'; el.moonMsg.style.left = (ms * .2) + 'px';
+  // crystal ball (lives on the table, so it rides the camera)
+  const b = L.ball;
+  el.ball.style.setProperty('--bs', b.size + 'px');
+  el.ball.style.left = (b.x + W * .25) + 'px';
+  el.ball.style.top = (b.y - b.size * 1.18) + 'px';
+  // clouds
+  let cs = '';
+  const wisps = [
+    { x: -.06, y: -.07, w: .62, h: 46, c: '#d9c4f3', o: .5, d: 95 },
+    { x: .48, y: -.12, w: .66, h: 54, c: '#f5c7dc', o: .38, d: 120 },
+    { x: .2, y: -.27, w: .48, h: 40, c: '#cdbaf0', o: .26, d: 140 },
+    { x: .62, y: -.38, w: .4, h: 34, c: '#e6d2f7', o: .18, d: 160 },
+  ];
+  wisps.forEach((w, i) => {
+    const pw = Math.max(260, W * w.w);
+    cs += `<svg class="wisp" style="left:${n2(W * w.x)}px;top:${n2(H * w.y - w.h)}px;width:${n2(pw)}px;height:${w.h * 2}px;opacity:${w.o};animation-duration:${w.d}s;animation-delay:${-i * 17}s" viewBox="0 0 400 80" preserveAspectRatio="none">` +
+      `<defs><filter id="cb${i}" x="-10%" y="-60%" width="120%" height="220%"><feGaussianBlur stdDeviation="6"/></filter></defs>` +
+      `<path d="M14 52 C50 34 104 40 150 42 C196 22 262 24 300 38 C338 32 378 40 390 52 C300 62 96 64 14 52Z" fill="${w.c}" filter="url(#cb${i})"/></svg>`;
+  });
+  el.clouds.innerHTML = cs;
+  cam.dirty = true;
+}
+function buildMoon() {
+  el.moonInner.innerHTML = `<svg viewBox="0 0 120 120" aria-hidden="true">
+  <defs>
+    <radialGradient id="mHalo"><stop offset="0" stop-color="#fff2cf" stop-opacity=".55"/><stop offset=".5" stop-color="#ffe6f0" stop-opacity=".16"/><stop offset="1" stop-color="#ffe6f0" stop-opacity="0"/></radialGradient>
+    <linearGradient id="mFill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff8dc"/><stop offset="1" stop-color="#f4d68f"/></linearGradient>
+    <linearGradient id="mGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9c77d"/><stop offset=".5" stop-color="#c39246"/><stop offset="1" stop-color="#e6c47a"/></linearGradient>
+  </defs>
+  <circle cx="58" cy="58" r="62" fill="url(#mHalo)"/>
+  <path d="M53.6 24.1 A38 38 0 1 0 90.1 78.8 A33 33 0 0 1 53.6 24.1 Z" fill="url(#mFill)" stroke="url(#mGold)" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M30 44 Q27 56 30 68" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/>
+  <g class="lid-shut"><path d="M30 58 Q35 62.5 40 58" fill="none" stroke="${INK}" stroke-width="1.7" stroke-linecap="round"/></g>
+  <g class="lid-open"><circle cx="35" cy="58" r="3" fill="${INK}"/><circle cx="36.2" cy="56.8" r="1" fill="#fff"/></g>
+  <ellipse cx="33" cy="67.5" rx="4.6" ry="2.7" fill="${P.rose}" opacity=".9"/>
+  <path d="M41 71 Q44 74 47 71" fill="none" stroke="${INK}" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M50 19.5 C58 11 72 11 79 19 C84 25 85 33 82 41 C79 34 74 29 66 27.5 C60 26.5 55 27.5 51 30.5 Z" fill="${P.lilac}" stroke="url(#mGold)" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M60 15.5 Q68 13.5 74 18" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".6"/>
+  <rect x="45.5" y="17" width="7" height="17" rx="3.2" fill="#fff5e2" stroke="url(#mGold)" stroke-width="1.3" transform="rotate(-14 49 25.5)"/>
+  <circle cx="82.5" cy="44" r="4.8" fill="#fff5e2" stroke="url(#mGold)" stroke-width="1.2"/>
+  <path d="M68 20.5 l1 2 2.2.3 -1.6 1.5.4 2.2 -2-1 -2 1 .4-2.2 -1.6-1.5 2.2-.3z" fill="#fff5e2" opacity=".95"/>
+  <text class="zz" x="62" y="56" font-size="11">z</text><text class="zz z2" x="68" y="47" font-size="14">z</text><text class="zz z3" x="76" y="36" font-size="17">z</text>
+  </svg>`;
+  el.ball.insertAdjacentHTML('beforeend', `<svg class="stand" viewBox="0 0 64 24" aria-hidden="true"><defs><linearGradient id="bGold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a97b30"/><stop offset=".35" stop-color="#f1d590"/><stop offset=".6" stop-color="#c49449"/><stop offset="1" stop-color="#e2bf74"/></linearGradient></defs>
+  <path d="M8 21 Q32 27 56 21 L52 14 Q32 18 12 14 Z" fill="url(#bGold)"/><path d="M12 14 Q32 18 52 14 L48 9 Q32 12 16 9 Z" fill="#7a4c8a" opacity=".85"/>
+  <path d="M16 9 Q20 2 24 1 M48 9 Q44 2 40 1 M32 11 V3" stroke="url(#bGold)" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>`);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   STARS — drawn once into five layers; the twinkle is CSS opacity on the
+   layers (compositor only), the shooting star is one DOM streak.
+   ═══════════════════════════════════════════════════════════════════════ */
+let DPR = 1, nextShoot = 7, fieldH = 0, finaleGlowV = 0;
+function sprite(size, paint) { const c = document.createElement('canvas'); c.width = c.height = size; paint(c.getContext('2d'), size); return c; }
+const SPR = {
+  dot: sprite(32, (g, s) => { const r = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.25, 'rgba(255,244,230,.8)'); r.addColorStop(1, 'rgba(255,240,255,0)'); g.fillStyle = r; g.fillRect(0, 0, s, s); }),
+  spark: sprite(64, (g, s) => {
+    const c = s / 2, r = g.createRadialGradient(c, c, 0, c, c, c * .5); r.addColorStop(0, 'rgba(255,250,235,.9)'); r.addColorStop(1, 'rgba(255,240,255,0)');
+    g.fillStyle = r; g.fillRect(0, 0, s, s);
+    g.fillStyle = '#fff8e6'; g.beginPath(); g.moveTo(c, 2); g.quadraticCurveTo(c + 3, c - 3, s - 2, c); g.quadraticCurveTo(c + 3, c + 3, c, s - 2); g.quadraticCurveTo(c - 3, c + 3, 2, c); g.quadraticCurveTo(c - 3, c - 3, c, 2); g.fill();
+  }),
+};
+function buildStars() {
+  const W = L.W, H = L.H, dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  fieldH = Math.round(H * 1.35 + 20);
+  el.starsWrap.style.height = fieldH + 'px';
+  const ctxs = [...el.starsWrap.querySelectorAll('canvas')].map(c => {
+    c.width = Math.round(W * dpr); c.height = Math.round(fieldH * dpr);
+    const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, fieldH); return g;
+  });
+  const old = _seed; _seed = 0x57A25;
+  const n = Math.round(clamp(W * H / 1900, 110, 320));
+  for (let i = 0; i < n; i++) {
+    const u = Math.pow(srnd(), .7), x = srange(0, W), y = fieldH - 10 - u * H * 1.25;
+    const r = srange(.5, 1.6), a = srange(.35, 1), big = srnd() < .075, g = ctxs[big ? 4 : i % 4];
+    g.globalAlpha = a;
+    if (big) { const z = 9 + r * 5; g.drawImage(SPR.spark, x - z, y - z, z * 2, z * 2); }
+    else { const z = r * 3.2; g.drawImage(SPR.dot, x - z, y - z, z * 2, z * 2); }
+  }
+  _seed = old;
+}
+function placeStars() {
+  el.starsWrap.style.transform = `translate3d(0,${n2(cam.hz * .9 + L.hz.intro * .1 - fieldH)}px,0)`;
+}
+function shootNow() {
+  const sEl = el.shoot, W = L.W, hz = cam.hz;
+  if (hz < 120) return;
+  const dir = Math.random() < .5 ? -1 : 1, dx = 200 + Math.random() * 60, dy = dx * .5;
+  sEl.style.left = n2(dir < 0 ? rand(W * .4, W * .95) : rand(W * .05, W * .6)) + 'px';
+  sEl.style.top = n2(rand(L.top + 24, Math.max(L.top + 50, hz * .42))) + 'px';
+  sEl.style.setProperty('--sx', n2(dir * dx) + 'px'); sEl.style.setProperty('--sy', n2(dy) + 'px');
+  sEl.style.setProperty('--sa', n2(Math.atan2(dy, dir * dx) * 180 / Math.PI) + 'deg');
+  sEl.classList.remove('go'); void sEl.offsetWidth; sEl.classList.add('go');
+}
+function stepShoot(dt) {
+  if (STILL || RM) return;
+  nextShoot -= dt;
+  if (nextShoot <= 0) { nextShoot = rand(9, 17); shootNow(); }
+}
+function resizeCanvases() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  el.fx.width = Math.round(L.W * DPR); el.fx.height = Math.round(L.H * DPR);
+  el.fx.style.width = L.W + 'px'; el.fx.style.height = L.H + 'px';
+  fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  buildStars();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FX — sparkle bursts, trails, little hearts. one pooled canvas on top.
+   ═══════════════════════════════════════════════════════════════════════ */
+const fctx = el.fx.getContext('2d');
+const FXC = ['#ffe3a0', '#fffaf0', '#ffc0d4', '#dccaff', '#c6e4ff', '#c9f2dd'];
+const FXS = FXC.map(col => sprite(48, (g, s) => {
+  const c = s / 2, r = g.createRadialGradient(c, c, 0, c, c, c * .55); r.addColorStop(0, col); r.addColorStop(1, 'rgba(255,255,255,0)');
+  g.globalAlpha = .55; g.fillStyle = r; g.fillRect(0, 0, s, s); g.globalAlpha = 1;
+  g.fillStyle = col; g.beginPath(); g.moveTo(c, 3); g.quadraticCurveTo(c + 2.6, c - 2.6, s - 3, c); g.quadraticCurveTo(c + 2.6, c + 2.6, c, s - 3);
+  g.quadraticCurveTo(c - 2.6, c + 2.6, 3, c); g.quadraticCurveTo(c - 2.6, c - 2.6, c, 3); g.fill();
+  g.fillStyle = '#fff'; g.beginPath(); g.arc(c, c, 2.2, 0, 6.283); g.fill();
+}));
+const FXHEART = sprite(48, (g, s) => {
+  g.fillStyle = '#ffb3c8'; g.strokeStyle = '#fff3f6'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(24, 38); g.bezierCurveTo(8, 28, 4, 16, 14, 11); g.bezierCurveTo(19, 8, 23, 11, 24, 15);
+  g.bezierCurveTo(25, 11, 29, 8, 34, 11); g.bezierCurveTo(44, 16, 40, 28, 24, 38); g.fill(); g.stroke();
+});
+const parts = [];
+for (let i = 0; i < 420; i++) parts.push({ on: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 8, rot: 0, spin: 0, grav: 0, drag: 1, img: null });
+let fxLive = 0;
+function emit(x, y, vx, vy, life, size, img, grav, drag, spin) {
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (p.on) continue;
+    p.on = true; p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = p.max = life; p.size = size; p.img = img;
+    p.grav = grav; p.drag = drag; p.rot = Math.random() * 6.28; p.spin = spin; fxLive++;
+    return;
+  }
+}
+function burst(x, y, n, o) {
+  if (RM) n = Math.ceil(n / 3);
+  o = o || {};
+  const sp = o.speed || 260, cols = o.cols || [0, 1, 2, 3];
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 6.283, v = sp * (.25 + Math.random() * .75);
+    const img = o.hearts && Math.random() < o.hearts ? FXHEART : FXS[cols[(Math.random() * cols.length) | 0]];
+    emit(x + Math.cos(a) * (o.r || 0), y + Math.sin(a) * (o.r || 0), Math.cos(a) * v, Math.sin(a) * v - (o.up || 60),
+      (o.life || 1.1) * (.6 + Math.random() * .6), (o.size || 14) * (.5 + Math.random() * .8), img, o.grav == null ? 260 : o.grav, o.drag || 2.2, rand(-4, 4));
+  }
+}
+function trail(x, y) { if (!RM && Math.random() < .7) emit(x + rand(-8, 8), y + rand(-8, 8), rand(-20, 20), rand(-30, 10), rand(.4, .8), rand(6, 12), FXS[(Math.random() * 4) | 0], 40, 1.5, rand(-3, 3)); }
+function drift(n, area) {   // slow rising motes (the finale)
+  for (let i = 0; i < n; i++) emit(rand(area.x0, area.x1), rand(area.y0, area.y1), rand(-10, 10), rand(-34, -12), rand(2.5, 4.5), rand(7, 15),
+    Math.random() < .2 ? FXHEART : FXS[(Math.random() * 5) | 0], -4, .3, rand(-1.5, 1.5));
+}
+function stepFx(dt) {
+  if (!fxLive) return;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (!p.on) continue;
+    const k = Math.exp(-p.drag * dt);
+    p.vx *= k; p.vy = p.vy * k + p.grav * dt;
+    p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.spin * dt;
+    p.life -= dt;
+    if (p.life <= 0) { p.on = false; fxLive--; }
+  }
+}
+let fxClear = false;
+function drawFx() {
+  if (!fxLive && !fxClear) return;
+  fctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  fctx.clearRect(0, 0, L.W, L.H);
+  fxClear = fxLive > 0;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (!p.on) continue;
+    const u = p.life / p.max, a = u > .8 ? (1 - u) / .2 : Math.min(1, u * 1.6);
+    const c = Math.cos(p.rot) * DPR, s = Math.sin(p.rot) * DPR, sz = p.size * (.6 + .4 * u);
+    fctx.globalAlpha = a;
+    fctx.setTransform(c, s, -s, c, p.x * DPR, p.y * DPR);
+    fctx.drawImage(p.img, -sz / 2, -sz / 2, sz, sz);
+  }
+  fctx.globalAlpha = 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TILT — one light, one tilt vector for every live card. sources, in
+   order: pinned (?tilt=), finger drag on a card, mouse over a card, the
+   phone's gyro (after a tap), else a slow figure-eight sway.
+   ═══════════════════════════════════════════════════════════════════════ */
+const TILT = { x: .3, y: -.2, vx: 0, vy: 0, drag: null, hover: null, gyro: false, got: false, asked: false, gx: 0, gy: 0, b0: 0, g0: 0 };
+function tiltTarget(t) {
+  if (TILT_PIN) return TILT_PIN;
+  if (TILT.drag) return TILT.drag;
+  if (TILT.hover) return TILT.hover;
+  if (TILT.gyro) return [TILT.gx, TILT.gy];
+  if (STILL || RM) return [.42, -.28];
+  return [.5 * Math.sin(t * .5) + .12 * Math.sin(t * 1.23), .32 * Math.sin(t * .39 + 1.2)];
+}
+function stepTilt(t, dt) {
+  const g = tiltTarget(t);
+  if (TILT_PIN || STILL) { TILT.x = g[0]; TILT.y = g[1]; TILT.vx = TILT.vy = 0; return; }
+  const k = TILT.drag || TILT.hover ? 220 : 60, d = TILT.drag || TILT.hover ? 24 : 12;
+  let rem = dt;
+  while (rem > 0) {
+    const h = Math.min(rem, 1 / 120);
+    TILT.vx += (k * (g[0] - TILT.x) - d * TILT.vx) * h; TILT.x += TILT.vx * h;
+    TILT.vy += (k * (g[1] - TILT.y) - d * TILT.vy) * h; TILT.y += TILT.vy * h;
+    rem -= h;
+  }
+}
+function tr(e, x, y) { if (e) e.style.transform = 'translate3d(' + n2(x) + 'px,' + n2(y) + 'px,0)'; }
+function applyHolo(card) {
+  const tx = clamp(TILT.x, -1.2, 1.2), ty = clamp(TILT.y, -1.2, 1.2);
+  card.tiltX = -ty * 12 * card.tiltAmt; card.tiltY = tx * 15 * card.tiltAmt;
+  const h = card.up ? card.hxF : card.hxB;
+  if (!h) return;
+  const W = card.cw, H = W * 1.7;
+  const lx = (tx * .44 - .04) * W, ly = (ty * .42 - .04) * H;       // light, from the face centre
+  tr(h.fa, -.62 * W * tx, -.62 * H * ty);
+  tr(h.fb, .3 * W * tx, .3 * H * ty);
+  tr(h.sh, -.55 * W * tx, -.55 * H * ty);
+  tr(h.gm, lx, ly);
+  tr(h.gt, -lx + tx * 9, -ly + ty * 9);
+  tr(h.gl, lx, ly);
+  if (h.gl) h.gl.style.opacity = n2(.5 + clamp(Math.hypot(tx, ty), 0, 1) * .45);
+}
+function onOrient(e) {
+  if (e.beta == null || e.gamma == null) return;
+  if (!TILT.got) { TILT.got = true; TILT.gyro = true; TILT.b0 = e.beta; TILT.g0 = e.gamma; tiltResult(true); }
+  let gx = e.gamma - TILT.g0, gy = e.beta - TILT.b0;
+  const ang = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  if (ang === 90) { const q = gx; gx = gy; gy = -q; } else if (ang === -90 || ang === 270) { const q = gx; gx = -gy; gy = q; }
+  TILT.gx = clamp(gx / 20, -1.1, 1.1); TILT.gy = clamp(gy / 22, -1.1, 1.1);
+  TILT.b0 += (e.beta - TILT.b0) * .006; TILT.g0 += (e.gamma - TILT.g0) * .006;
+}
+function enableGyro() {
+  if (TILT.asked) return;
+  TILT.asked = true;
+  const DOE = window.DeviceOrientationEvent;
+  if (!DOE) { tiltResult(false); return; }
+  const listen = () => {
+    window.addEventListener('deviceorientation', onOrient);
+    setTimeout(() => { if (!TILT.got) tiltResult(false); }, 1600);
+  };
+  try {
+    if (typeof DOE.requestPermission === 'function') {
+      DOE.requestPermission().then(r => { if (r === 'granted') listen(); else tiltResult(false); }).catch(() => tiltResult(false));
+    } else listen();
+  } catch (e) { tiltResult(false); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CARDS — placement springs (x, y, r, s, flip, lift, opacity) or a timed
+   path for choreography. render() only touches the DOM when a value moved.
+   ═══════════════════════════════════════════════════════════════════════ */
+const PROPS = ['x', 'y', 'r', 's', 'fl', 'lift', 'op'];
+const EPS = { x: .02, y: .02, r: .01, s: .0004, fl: .0006, lift: .0008, op: .002 };
+const HX_BACK = '<div class="hx"><div class="fm"><i class="fb"></i><i class="fa"></i></div><div class="gm"><i></i></div><i class="gl"></i></div>';
+const HOLO_I = '<div class="hx"><div class="fm"><i class="fb"></i><i class="fa"></i></div><i class="sh"></i><div class="gm"><i></i></div><i class="gl"></i></div>';
+function hxRefs(face) {
+  const h = face.querySelector('.hx');
+  if (!h) return null;
+  return { fa: h.querySelector('.fa'), fb: h.querySelector('.fb'), sh: h.querySelector('.sh'), gm: h.querySelector('.gm'), gt: h.querySelector('.gm i'), gl: h.querySelector('.gl') };
+}
+class Card {
+  constructor(parent, cw, back) {
+    const e = this.el = document.createElement('div');
+    e.className = 'card';
+    e.innerHTML = `<div class="cshadow"></div><div class="cglow"></div><div class="ctilt"><div class="face back"><svg viewBox="0 0 200 340" preserveAspectRatio="none" aria-hidden="true"><use href="#${back || 'backS'}"/></svg>${HX_BACK}</div><div class="edge"></div><div class="face front"></div></div>`;
+    parent.appendChild(e);
+    this.shadow = e.children[0]; this.tilt = e.children[2]; this.edge = this.tilt.children[1]; this._ev = false; this.shade = 1;
+    this.back = this.tilt.children[0]; this.front = this.tilt.children[2];
+    this.back.style.setProperty('--mask', MASK.back);
+    this.hxB = hxRefs(this.back); this.hxF = null; this.up = false;
+    this.p = { x: 0, y: 0, r: 0, s: 1, fl: 0, lift: 0, op: 1 };
+    this.v = { x: 0, y: 0, r: 0, s: 0, fl: 0, lift: 0, op: 0 };
+    this.t = { x: 0, y: 0, r: 0, s: 1, fl: 0, lift: 0, op: 1 };
+    this.k = 150; this.d = 21; this.kfl = 120; this.dfl = 13;
+    this.path = null; this.rest = false;
+    this.tiltX = 0; this.tiltY = 0; this.tiltAmt = 1; this.live = false;
+    this.z = 1; this._z = -1; this._tf = this._tt = this._sh = ''; this._op = -1;
+    this.def = null; this.role = ''; this.slot = -1; this.idx = 0; this.breath = 0; this.float = 0;
+    this.setCW(cw);
+  }
+  setCW(cw) { this.cw = cw; this.el.style.setProperty('--cw', n2(cw) + 'px'); }
+  setFace(def) {
+    if (this.def === def && this.front.firstChild) return;
+    this.def = def;
+    this.front.innerHTML = faceSVG(def) + HOLO_I;
+    this.front.style.setProperty('--mask', MASK[def.id]);
+    this.hxF = hxRefs(this.front);
+  }
+  setLive(on) {     // full holo stack on/off
+    if (this.live === on) return;
+    this.live = on;
+    this.el.classList.toggle('holo', on);
+    if (!on) { this.tiltX = this.tiltY = 0; }
+  }
+  to(o, k, d) { for (const key in o) this.t[key] = o[key]; if (k) this.k = k; if (d) this.d = d; this.rest = false; }
+  snap(o) {
+    for (const key in o) { this.t[key] = this.p[key] = o[key]; this.v[key] = 0; }
+    this.path = null; this.rest = false;
+  }
+  go(dur, fn, done) {     // timed choreography: fn(u, p) writes this.p directly
+    this.path = { t0: performance.now(), dur: dur * 1000, fn, done };
+    this.rest = false;
+  }
+  step(dt, now) {
+    if (this.path) {
+      const P = this.path, u = clamp((now - P.t0) / P.dur, 0, 1);
+      P.fn(u, this.p);
+      if (u >= 1) {
+        this.path = null;
+        for (let i = 0; i < 7; i++) { const key = PROPS[i]; this.t[key] = this.p[key]; this.v[key] = 0; }
+        if (P.done) P.done(this);
+      }
+      return;
+    }
+    if (this.rest) return;
+    let moving = false;
+    for (let i = 0; i < 7; i++) {
+      const key = PROPS[i], tgt = this.t[key];
+      let x = this.p[key], v = this.v[key];
+      if (x === tgt && v === 0) continue;
+      const fl = key === 'fl', k = fl ? this.kfl : this.k, d = fl ? this.dfl : this.d;
+      let rem = dt;
+      while (rem > 0) { const h = rem < 1 / 120 ? rem : 1 / 120; v += (k * (tgt - x) - d * v) * h; x += v * h; rem -= h; }
+      if (Math.abs(tgt - x) < EPS[key] && Math.abs(v) < EPS[key] * 8) { x = tgt; v = 0; } else moving = true;
+      this.p[key] = x; this.v[key] = v;
+    }
+    this.rest = !moving;
+  }
+  render() {
+    const p = this.p, cw = this.cw, lift = p.lift;
+    const br = this.breath ? 1 + this.breath * BREATH : 1, fy = this.float ? FLOAT * this.float : 0;
+    const tf = 'translate3d(' + n2(p.x) + 'px,' + n2(p.y + fy - lift * cw * .12) + 'px,0) rotate(' + n2(p.r) + 'deg) scale(' + (p.s * br * (1 + lift * .06)).toFixed(4) + ')';
+    if (tf !== this._tf) { this.el.style.transform = tf; this._tf = tf; }
+    const tt = 'rotateX(' + n2(this.tiltX) + 'deg) rotateY(' + n2(p.fl * 180 + this.tiltY) + 'deg)';
+    if (tt !== this._tt) { this.tilt.style.transform = tt; this._tt = tt; }
+    const sh = 'translate3d(' + n2(lift * cw * .05) + 'px,' + n2(cw * .05 + lift * cw * .22) + 'px,0) scale(' + n2(1 + lift * .12) + ')';
+    const so = n2((.8 - lift * .3) * this.shade);
+    if (sh !== this._sh || so !== this._so) { this.shadow.style.transform = sh; this.shadow.style.opacity = so; this._sh = sh; this._so = so; }
+    const ev = Math.abs(Math.sin(p.fl * Math.PI)) > .035;
+    if (ev !== this._ev) { this.edge.style.display = ev ? 'block' : 'none'; this._ev = ev; }
+    const op = Math.round(clamp(p.op, 0, 1) * 1000) / 1000;
+    if (op !== this._op) { this.el.style.opacity = op; this.el.style.visibility = op < .005 ? 'hidden' : 'visible'; this._op = op; }
+    if (this.z !== this._z) { this.el.style.zIndex = this.z; this._z = this.z; }
+    const up = Math.cos(p.fl * Math.PI) < 0;
+    if (up !== this.up) { this.up = up; this.el.classList.toggle('up', up); }
+  }
+  hit(x, y, pad) {        // point inside the card's resting rectangle?
+    const t = this.t, a = -t.r * Math.PI / 180, dx = x - t.x, dy = y - t.y;
+    const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a);
+    const w = this.cw * t.s / 2 + (pad || 0), h = this.cw * t.s * .85 + (pad || 0);
+    return Math.abs(lx) <= w && Math.abs(ly) <= h;
+  }
+  vis() { return { x: this.p.x, y: this.p.y, w: this.cw * this.p.s }; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE READING — state + choreography
+   ═══════════════════════════════════════════════════════════════════════ */
+let BREATH = 0, FLOAT = 0;
+const S = { phase: 'boot', fan: [], slots: [null, null, null], revealed: [false, false, false], read: [null, null, null],
+  tab: [], picks: 0, focus: null, focusKind: '', busy: false, round: 0, last: [null, null, null], lastInput: 0, hinted: 0 };
+let deck = [], big = null, kc = null, ALL = [], hovered = null;
+const timers = [];
+function later(ms, fn) { const id = setTimeout(() => { const i = timers.indexOf(id); if (i >= 0) timers.splice(i, 1); fn(); }, RM ? Math.min(ms, ms * .6) : ms); timers.push(id); return id; }
+function clearTimers() { while (timers.length) clearTimeout(timers.pop()); }
+
+function dealSpread() {
+  const sp = CONFIG.spread, keys = ['past', 'today', 'future'];
+  S.read = keys.map((k, i) => {
+    const arr = sp[k].filter(id => DEF[id]);
+    let id = arr[0];
+    if (S.round > 0 && arr.length > 1) { const pool = arr.filter(x => x !== S.last[i]); id = pool[(Math.random() * pool.length) | 0]; }
+    S.last[i] = id;
+    return DEF[id];
+  });
+}
+function restDefs() { const used = S.read.map(d => d.id); return CONFIG.cards.filter(c => used.indexOf(c.id) < 0); }
+
+// ── poses ─────────────────────────────────────────────────────────────
+function deckPose(i, n) {
+  const d = L.deck, top = i === n - 1;
+  return { x: d.x + (i - n / 2) * .14, y: d.y - (i - n / 2) * .6 * d.s, r: top ? 0 : (((i * 7919) % 9) - 4) * .32, s: d.s, fl: 0, lift: 0, op: 1 };
+}
+function fanPose(i, n) { const f = fanPos(L.fan, i, n); return { x: f.x, y: f.y, r: f.r, s: L.fS, fl: 0, lift: 0, op: 1 }; }
+function slotPose(k) { return { x: L.slots[k].x, y: L.slots[k].y, r: 0, s: L.sS, fl: S.revealed[k] ? 1 : 0, lift: 0, op: 1 }; }
+function trioPose(k) { const t = L.trio[k]; return { x: t.x, y: t.y, r: t.r, s: t.s, fl: 1, lift: 0, op: t.op }; }
+function tabPose(i) { const t = L.tab[i]; return { x: t.x, y: t.y, r: 0, s: L.tS, fl: 1, lift: 0, op: 1 }; }
+
+// ── words ─────────────────────────────────────────────────────────────
+let capIdx = 0;
+function setCaption(html, y) {
+  const ps = el.caption.children, cur = ps[capIdx], nxt = ps[1 - capIdx];
+  if (y != null) el.caption.style.top = n2(y) + 'px';
+  if (cur.classList.contains('on') && cur.innerHTML === (html || '')) return;
+  cur.classList.remove('on', 'in'); cur.classList.add('out');
+  if (!html) return;
+  nxt.innerHTML = html; nxt.classList.remove('out', 'on'); nxt.classList.add('in');
+  void nxt.offsetWidth;
+  nxt.classList.remove('in'); nxt.classList.add('on');
+  capIdx = 1 - capIdx;
+  el.srText.textContent = nxt.textContent;
+}
+function showHint(txt, y) { el.hint.textContent = txt; el.hint.style.top = n2(y) + 'px'; el.hint.classList.add('on'); }
+function hideHint() { el.hint.classList.remove('on'); }
+function balance(t, maxW, font, track) {
+  if (measure(font, t, track) <= maxW) return t;
+  const w = t.split(' '); let best = null;
+  for (let i = 1; i < w.length; i++) {
+    const a = w.slice(0, i).join(' '), b = w.slice(i).join(' '), sc = Math.max(measure(font, a, track), measure(font, b, track));
+    if (!best || sc < best.sc) best = { a, b, sc };
+  }
+  return best ? best.a + '<br>' + best.b : t;
+}
+function showLabels(on) {
+  CONFIG.slots.forEach((t, k) => {
+    const l = el['lbl' + k];
+    l.innerHTML = balance(t, L.lblW - 8, '500 10.5px Jost, sans-serif', 1.7); l.style.left = n2(L.slots[k].x) + 'px'; l.style.top = n2(L.lblY) + 'px'; l.style.width = n2(L.lblW) + 'px';
+    l.classList.toggle('on', !!on);
+  });
+}
+function pill(btn, on, txt, y) {
+  if (txt != null) btn.innerHTML = txt;
+  if (y != null) btn.style.top = n2(y - 24) + 'px';
+  btn.classList.toggle('on', !!on);
+}
+const PH = [0, 1, 2].map(() => { const d = document.createElement('div'); d.className = 'ph'; el.stage.appendChild(d); return d; });
+function placePH() {
+  PH.forEach((d, k) => {
+    const w = L.cw * L.sS, h = w * 1.7;
+    d.style.width = n2(w) + 'px'; d.style.height = n2(h) + 'px';
+    d.style.transform = `translate3d(${n2(L.slots[k].x - w / 2)}px,${n2(L.slots[k].y - h / 2)}px,0)`;
+  });
+}
+function showPH(on) { PH.forEach((d, k) => d.classList.toggle('on', !!on && !S.slots[k])); }
+function placePool(name) {
+  const p = L.pool[name];
+  el.pool.style.transform = `translate3d(${n2(p.x)}px,${n2(p.y)}px,0) scale(${n2(p.w / 100)},${n2(p.h / 100)})`;
+}
+function placeTitle() {
+  el.title.style.top = n2(L.titleY - el.title.offsetHeight / 2) + 'px';
+}
+
+// ── 0 · intro ─────────────────────────────────────────────────────────
+function intro(instant) {
+  S.phase = 'intro'; S.busy = !instant;
+  el.ball.classList.remove('away');
+  setCamera('intro', instant);
+  placePool('intro');
+  el.title.classList.remove('away');
+  setCaption('');
+  showLabels(false); showPH(false); hideHint();
+  pill(el.twistBtn, false); pill(el.moreBtn, false);
+  deck.forEach((c, i) => {
+    c.role = 'deck'; c.idx = i; c.z = i + 1; c.breath = .012; c.float = 0; c.shade = i === 0 ? 1.15 : 0;
+    c.setLive(i === deck.length - 1);
+    const p = deckPose(i, deck.length);
+    if (instant) c.snap(p);
+    else {
+      c.snap(Object.assign({}, p, { y: p.y + 70, op: 0, s: p.s * .94 }));
+      later(260 + i * 34, () => c.to(p, 120, 16));
+    }
+  });
+  if (instant) { showHint(CONFIG.tapDeck, L.hintY); S.busy = false; }
+  else later(1500, () => { showHint(CONFIG.tapDeck, L.hintY); S.busy = false; });
+}
+
+// ── 1 · shuffle: split, riffle, square up, fan out ──────────────────────
+function shuffle() {
+  if (S.phase !== 'intro' || S.busy) return;
+  S.phase = 'shuffling'; S.busy = true;
+  hideHint(); buzz(12);
+  el.title.classList.add('away');
+  setCaption(CONFIG.shuffling, L.titleY);
+  const d = L.deck, n = deck.length, cw = L.cw * d.s;
+  deck.forEach(c => { c.breath = 0; c.shade = .35; c.setLive(false); c.to({ s: d.s * .96, lift: .15 }, 380, 24); });
+  SND.whoosh(.08, .35, .6, 600, 2200, 0, 0);
+  // split
+  later(120, () => {
+    deck.forEach((c, i) => {
+      const left = i < 7, j = left ? i : i - 7;
+      c.to({ x: d.x + (left ? -1 : 1) * cw * .38, y: d.y - 8 - j * .7, r: left ? -10 : 10, s: d.s * .98, lift: .35 }, 240, 22);
+      c.z = left ? 10 + j : 30 + j;
+    });
+  });
+  // riffle: alternate drops from the inside corners of each half
+  const order = [];
+  for (let j = 0; j < 8; j++) { if (j < 7) order.push(deck[j]); if (7 + j < n) order.push(deck[7 + j]); }
+  const t0 = 560, gap = RM ? 20 : 46;
+  order.forEach((c, j) => {
+    later(t0 + j * gap, () => {
+      const from = { x: c.p.x, y: c.p.y, r: c.p.r }, to = { x: d.x + rand(-2.5, 2.5), y: d.y - (j - n / 2) * .6 * d.s, r: rand(-3, 3) };
+      c.z = 60 + j;
+      c.go(.2, (u, p) => { const e = E.out3(u); p.x = lerp(from.x, to.x, e); p.y = lerp(from.y, to.y, e) - Math.sin(u * Math.PI) * 6; p.r = lerp(from.r, to.r, e); p.lift = .35 * (1 - u); });
+      SND.tick(0, .5 + .5 * Math.sin(j / n * Math.PI), from.x < d.x ? -.35 : .35, 3200);
+    });
+  });
+  const tq = t0 + order.length * gap + 230;
+  // square up
+  later(tq, () => {
+    deck = order.slice();
+    deck.forEach((c, i) => { c.z = 1 + i; c.to(Object.assign(deckPose(i, n), { s: d.s }), 300, 26); });
+    SND.thump(0, .8); buzz(8);
+  });
+  later(tq + 140, () => { deck.forEach((c, i) => c.to({ x: d.x + (i - n / 2) * .14, r: 0 }, 400, 30)); SND.thump(.02, .45); });
+  // fan out while the camera settles on the table
+  later(tq + 420, () => fanOut(false));
+}
+function fanOut(instant) {
+  S.fan = deck.slice();
+  const n = S.fan.length;
+  if (!instant) {
+    setCamera('read', false, 1.5);
+    placePool('read');
+    SND.whoosh(.05, .9, .9, 380, 2600, -.5, .5);
+  }
+  S.fan.forEach((c, i) => {
+    c.role = 'fan'; c.idx = i; c.z = 10 + i; c.breath = 0; c.shade = .5; c.setLive(false);
+    const p = fanPose(i, n);
+    if (instant) c.snap(p);
+    else later(i * 38, () => { c.to(p, 120, 17); if (i % 3 === 0) SND.tick(0, .3, lerp(-.5, .5, i / n), 4200); });
+  });
+  const done = () => {
+    S.phase = 'fan'; S.busy = false;
+    setCaption(CONFIG.pickThree, L.capY);
+    showLabels(true); showPH(true);
+  };
+  if (instant) done(); else later(n * 38 + 520, done);
+}
+
+// ── 2 · picking. the card she taps is not the card she gets. ────────────
+function hover(c) {
+  if (hovered === c) return;
+  if (hovered && hovered.role === 'fan') { hovered.to({ lift: 0, y: fanPose(hovered.idx, S.fan.length).y }, 260, 22); hovered.el.classList.remove('lit'); }
+  hovered = c;
+  if (c) {
+    const p = fanPose(c.idx, S.fan.length);
+    c.to({ lift: .7, y: p.y - L.cw * L.fS * .16 }, 420, 22); c.el.classList.add('lit');
+    SND.tick(0, .32, clamp((c.p.x / L.W) * 2 - 1, -.8, .8), 4600);
+  }
+}
+function fanHit(x, y) {
+  for (let i = S.fan.length - 1; i >= 0; i--) if (S.fan[i].hit(x, y, 4)) return S.fan[i];
+  return null;
+}
+function pick(c) {
+  if (S.phase !== 'fan' || S.picks >= 3 || c.role !== 'fan') return;
+  const k = S.picks++;
+  hover(null);
+  S.fan.splice(S.fan.indexOf(c), 1);
+  S.slots[k] = c; c.role = 'slot'; c.slot = k; c.z = 300; c.shade = 1;
+  c.setFace(S.read[k]);                          // ← rigged by slot order
+  buzz(14); SND.fwip(0, .7); SND.whoosh(.06, .55, .8, 500, 2100, clamp(c.p.x / L.W * 2 - 1, -1, 1) * .6, (k - 1) * .4);
+  c.el.classList.add('lit');
+  const from = { x: c.p.x, y: c.p.y - L.cw * L.fS * .2, r: c.p.r, s: c.p.s }, to = slotPose(k), dir = to.x > from.x ? 1 : -1;
+  c.to({ lift: 1, y: from.y, s: from.s * 1.06 }, 420, 24);
+  later(120, () => {
+    const sx = c.p.x, sy = c.p.y, sr = c.p.r, ss = c.p.s, arc = Math.min(110, Math.abs(sy - to.y) * .35 + 40);
+    c.go(RM ? .3 : .62, (u, p) => {
+      const e = E.out3(u), m = Math.sin(u * Math.PI);
+      p.x = lerp(sx, to.x, e); p.y = lerp(sy, to.y, E.inOutSine(u)) - m * arc;
+      p.r = lerp(sr, 0, E.out5(u)) + m * 8 * dir; p.s = lerp(ss, to.s, e) * (1 + m * .1); p.lift = 1 - u * .5;
+      if (u < .92) trail(p.x, p.y);
+    }, () => {
+      c.z = 40 + k; c.el.classList.remove('lit');
+      c.to({ lift: 0, s: to.s }, 260, 18);
+      c.p.s = to.s * .95;
+      SND.thump(0, .6); PH[k].classList.remove('on'); PH[k].classList.add('ping');
+      const l = el['lbl' + k]; l.classList.add('hot'); later(1400, () => l.classList.remove('hot'));
+      burst(to.x, to.y - L.sh / 2, 8, { speed: 120, size: 10, up: 30, life: .8 });
+    });
+  });
+  S.fan.forEach((f, i) => { f.idx = i; f.z = 10 + i; f.to(fanPose(i, S.fan.length), 110, 17); });
+  setCaption(CONFIG.picked[k], L.capY);
+  if (S.picks === 3) {
+    S.phase = 'placing';
+    later(900, () => {
+      S.phase = 'placed';
+      setCaption(CONFIG.turnOver, L.capY);
+      showHint(CONFIG.tapCard, L.midY);
+    });
+  }
+}
+
+// ── 3 · turning them over ───────────────────────────────────────────────
+function reveal(k) {
+  const c = S.slots[k];
+  if (!c || S.busy) return;
+  if (S.revealed[k]) { openFocus(c, CONFIG.slots[k], c.def.reading); return; }
+  S.busy = true; hideHint();
+  buzz([10, 40, 16]);
+  c.z = 320;
+  c.to({ lift: 1, s: L.sS * 1.14 }, 300, 20);
+  SND.fwip(.04, 1);
+  later(80, () => { c.kfl = 75; c.dfl = 9.5; c.to({ fl: 1 }); });
+  later(250, () => {
+    burst(c.p.x, c.p.y, 34, { speed: 300, size: 15, life: 1.1, up: 80 });
+    SND.chime(0, [81, 84, 88][k], .9, (k - 1) * .4);
+    c.el.classList.add('lit');
+  });
+  later(820, () => {
+    S.revealed[k] = true;
+    c.el.classList.remove('lit');
+    openFocus(c, CONFIG.slots[k], c.def.reading);
+  });
+}
+function readingHTML(txt) { return String(txt).split(/(?<=[.?!)])\s+/).map((w, i) => `<span style="transition-delay:${(.25 + i * .32).toFixed(2)}s">${w}</span>`).join(' '); }
+const fq = { lbl: el.focus.querySelector('.flbl'), read: el.focus.querySelector('.fread'), hint: el.focus.querySelector('.fhint') };
+function layoutFocusText() {
+  const F = L.focus, left = F.align === 'left';
+  [fq.lbl, fq.read, fq.hint].forEach(n => {
+    n.style.textAlign = left ? 'left' : 'center';
+    n.style.left = left ? n2(F.colX) + 'px' : '0'; n.style.right = left ? 'auto' : '0';
+    n.style.width = left ? n2(F.colW) + 'px' : 'auto';
+    n.style.padding = left ? '0' : '0 24px';
+  });
+  fq.lbl.style.top = n2(F.lblY) + 'px'; fq.read.style.top = n2(F.readY) + 'px'; fq.hint.style.top = n2(F.hintY) + 'px';
+  if (left) { fq.read.style.top = n2(F.y - 70) + 'px'; fq.lbl.style.top = n2(F.y - 108) + 'px'; }
+}
+function openFocus(c, label, text, instant) {
+  S.phase = 'focus'; S.focus = c; S.busy = true;
+  big.setFace(c.def); big.setLive(true);
+  const v = c.vis(), w = big.cw;
+  const start = { x: v.x, y: v.y - c.p.lift * c.cw * .12, r: c.p.r, s: v.w / w * (1 + c.p.lift * .06), fl: 1, lift: c.p.lift, op: 1 };
+  const end = { x: L.focus.x, y: L.focus.y, r: 0, s: 1, fl: 1, lift: .22, op: 1 };
+  big.z = 1;
+  if (instant) big.snap(end); else { big.snap(start); big.to(end, 110, 16); }
+  c.snap({ op: 0 });
+  fq.lbl.textContent = label; fq.read.innerHTML = readingHTML(text); fq.hint.textContent = CONFIG.putBack;
+  layoutFocusText();
+  el.focus.classList.add('on'); document.body.classList.add('focusing');
+  if (!instant) { SND.whoosh(0, .5, .55, 420, 1600, 0, 0); SND.padMood(.085, 1100, 1.5); }
+  const wantPill = COARSE && 'DeviceOrientationEvent' in window && !TILT.asked;
+  if (wantPill) { el.tiltPill.style.left = n2(L.focus.align === 'left' ? L.focus.colX + 120 : L.W / 2) + 'px'; pill(el.tiltPill, true, CONFIG.tiltAsk, L.focus.pillY); }
+  if (instant) S.busy = false; else later(560, () => { S.busy = false; });
+}
+function closeFocus() {
+  const c = S.focus;
+  if (!c || S.busy) return;
+  S.busy = true;
+  el.focus.classList.remove('on'); document.body.classList.remove('focusing'); pill(el.tiltPill, false);
+  SND.whoosh(0, .4, .45, 1600, 500, 0, 0); SND.padMood(.07, 720, 1.5);
+  const home = c.role === 'slot' ? slotPose(c.slot) : c.role === 'trio' ? trioPose(c.slot) : tabPose(c.idx);
+  big.to({ x: home.x, y: home.y, r: home.r, s: (c.cw * home.s) / big.cw, lift: 0 }, 150, 19);
+  later(RM ? 200 : 430, () => {
+    c.snap(Object.assign(home, { fl: 1 }));
+    big.snap({ op: 0 }); big.setLive(false);
+    S.focus = null; S.busy = false;
+    if (c.role === 'slot') {
+      if (S.revealed.every(Boolean) && S.phase === 'focus') afterThree();
+      else { S.phase = 'placed'; showHint(CONFIG.tapCard, L.midY); }
+    } else S.phase = 'tableau';
+  });
+}
+function afterThree(instant) {
+  S.phase = 'revealed';
+  hideHint();
+  S.slots.forEach(c => { c.setLive(true); c.tiltAmt = .55; });
+  const line = fill(CONFIG.combined, { past: S.read[0].short, today: S.read[1].short, future: S.read[2].short });
+  setCaption(line, L.capY);
+  if (instant) pill(el.twistBtn, true, CONFIG.twistAsk, L.midY);
+  else later(1300, () => { if (S.phase === 'revealed') { pill(el.twistBtn, true, CONFIG.twistAsk, L.midY); SND.twinkle(0, .25); } });
+}
+
+// ── 4 · the twist: the rest of the deck, in one wave ────────────────────
+function twist(instant) {
+  if (S.phase !== 'revealed' || (S.busy && !instant)) return;
+  S.phase = 'wave'; S.busy = true;
+  pill(el.twistBtn, false); showLabels(false); hideHint();
+  setCaption('', L.capTwistY);
+  S.slots.forEach((c, k) => { c.role = 'trio'; c.slot = k; c.setLive(false); c.z = 5 + k; if (instant) c.snap(trioPose(k)); else later(k * 70, () => c.to(trioPose(k), 90, 15)); });
+  const rest = restDefs();
+  S.tab = S.fan.slice();
+  S.fan = [];
+  S.tab.forEach((c, i) => {
+    c.role = 'tab'; c.idx = i; c.shade = .9; c.setFace(rest[i % rest.length]);
+    if (instant) { c.snap(tabPose(i)); c.z = 20 + i; return; }
+    later(380 + i * 95, () => {
+      c.z = 100 + i; c.k = 95; c.d = 15; c.kfl = 85; c.dfl = 10;
+      c.to(Object.assign(tabPose(i), { lift: .9 }));
+      SND.pluck(.12, PENTA[1 + i], .55, clamp(tabPose(i).x / L.W * 2 - 1, -.8, .8));
+      later(170, () => burst(c.p.x, c.p.y, 7, { speed: 140, size: 10, up: 40, life: .8, cols: [0, 1, 2, 4] }));
+      later(520, () => { c.to({ lift: 0 }); c.z = 20 + i; });
+    });
+  });
+  const end = () => {
+    S.phase = 'tableau'; S.busy = false;
+    setCaption(`${CONFIG.twistLines[0]}<span class="late"><br>${CONFIG.twistLines[1]}</span>`, L.capTwistY);
+    if (instant) { el.caption.classList.add('instant-late'); pill(el.moreBtn, true, CONFIG.oneMore, L.moreY); }
+    else { el.caption.classList.remove('instant-late'); later(2600, () => { if (S.phase === 'tableau') { pill(el.moreBtn, true, CONFIG.oneMore, L.moreY); SND.twinkle(0, .3); } }); }
+  };
+  if (instant) end(); else { SND.padMood(.06, 1400, 2); later(380 + S.tab.length * 95 + 700, end); }
+}
+
+// ── 5 · the card that isn't in any deck ─────────────────────────────────
+const finLines = [];
+function buildFinaleText() {
+  const F = L.fin, note = CONFIG.farAway ? CONFIG.noteFar : CONFIG.noteNear;
+  el.fMeaning.innerHTML = CONFIG.katieMeaning.map(t => `<span class="ln">${fill(t)}</span>`).join('');
+  el.fNote.innerHTML = note.map(t => `<span class="ln">${fill(t)}</span>`).join('');
+  el.fSig.innerHTML = `<span class="ln">— ${ME}</span>`;
+  el.again.textContent = CONFIG.again;
+  finLines.length = 0;
+  el.finale.querySelectorAll('.ln').forEach(n => finLines.push(n));
+  [el.fMeaning, el.fNote, el.fSig].forEach(n => {
+    n.style.textAlign = F.align; n.style.left = F.align === 'left' ? n2(F.colX) + 'px' : '0';
+    n.style.right = F.align === 'left' ? 'auto' : '0'; n.style.width = F.align === 'left' ? n2(F.colW) + 'px' : 'auto';
+    n.style.padding = F.align === 'left' ? '0' : '0 22px';
+  });
+  el.fMeaning.style.top = n2(F.meanY) + 'px';
+  const mh = el.fMeaning.offsetHeight || 70;
+  el.fNote.style.top = n2(F.meanY + mh + (L.portrait ? 18 : 26)) + 'px';
+  const nh = el.fNote.offsetHeight || 100;
+  el.fSig.style.top = n2(F.meanY + mh + nh + (L.portrait ? 26 : 36)) + 'px';
+  const sh = el.fSig.offsetHeight || 34;
+  const ay = F.meanY + mh + nh + sh + (L.portrait ? 34 : 50);
+  el.again.style.top = n2(Math.min(ay, L.bottom - 40)) + 'px';
+  if (F.align === 'left') { el.again.style.left = n2(F.colX) + 'px'; el.again.style.transform = 'none'; el.again.style.padding = '0'; }
+  else { el.again.style.left = '50%'; el.again.style.transform = 'translateX(-50%)'; el.again.style.padding = '0 18px'; }
+}
+function katiePose() { return { x: L.katie.x, y: L.katie.y, r: 0, s: 1, fl: 1, lift: .35, op: 1 }; }
+function finale(instant) {
+  if (S.phase !== 'tableau' && !instant) return;
+  S.phase = 'spiral'; S.busy = true;
+  pill(el.moreBtn, false); setCaption('');
+  buildFinaleText();
+  setCamera('finale', instant, 2.3);
+  el.ball.classList.add('away');
+  placePool('finale');
+  const C = { x: L.W / 2, y: L.portrait ? L.H * .46 : L.H * .5 };
+  const cards = S.tab.concat(S.slots);
+  if (instant) {
+    cards.forEach(c => { c.snap({ op: 0 }); c.setLive(false); });
+    kc.snap(katiePose()); kc.setLive(true); kc.float = 4;
+    finaleGlowV = 1;
+    finLines.forEach(n => n.classList.add('on')); el.again.classList.add('on');
+    S.phase = 'finale'; S.busy = false;
+    return;
+  }
+  SND.riser(0, 1.75); SND.padMood(.035, 420, 1.2); buzz(10);
+  cards.forEach((c, j) => {
+    c.setLive(false); c.el.classList.remove('lit');
+    const x0 = c.p.x, y0 = c.p.y, r0 = Math.hypot(x0 - C.x, y0 - C.y), a0 = Math.atan2(y0 - C.y, x0 - C.x), s0 = c.p.s, rot0 = c.p.r;
+    later(j * 34, () => {
+      c.z = 200 + j;
+      c.go(1.55, (u, p) => {
+        const e = E.in2(u), a = a0 + E.inOut(u) * Math.PI * 2.4;
+        p.x = C.x + Math.cos(a) * r0 * (1 - e); p.y = C.y + Math.sin(a) * r0 * (1 - e) * .82;
+        p.r = rot0 + 600 * E.in3(u); p.s = s0 * (1 - .82 * E.in3(u)); p.lift = .6 * Math.sin(u * Math.PI);
+        p.op = u > .82 ? (1 - u) / .18 : 1;
+        if (j % 3 === 0 && u > .2) trail(p.x, p.y);
+      }, () => { c.p.op = 0; });
+    });
+  });
+  later(1720, () => {
+    el.flash.style.transition = 'opacity .18s ease'; el.flash.style.opacity = '1';
+    later(200, () => { el.flash.style.transition = 'opacity 1.3s ease'; el.flash.style.opacity = '0'; });
+    burst(C.x, C.y, 110, { speed: 560, size: 18, life: 1.7, hearts: .22, up: 90, grav: 140, drag: 1.4, cols: [0, 1, 2, 3, 4, 5] });
+    SND.burst(0); SND.swell(.15); buzz([20, 50, 30, 50, 60]);
+    shootNow(); finaleGlowV = 1;
+    // rise
+    kc.setLive(true); kc.float = 0;
+    kc.snap({ x: C.x, y: C.y + 30, r: -10, s: .1, fl: -3, lift: 1, op: 1 }); kc.z = 400;
+    const K = katiePose();
+    kc.go(RM ? .6 : 2.1, (u, p) => {
+      const e = E.out3(u);
+      p.x = lerp(C.x, K.x, e); p.y = lerp(C.y + 30, K.y, E.outBack(Math.min(1, u * 1.05)));
+      p.s = lerp(.1, 1, E.outBack(u)); p.fl = lerp(-3, 1, E.out5(u)); p.r = lerp(-10, 0, e); p.lift = 1 - .65 * u;
+      if (u < .7) trail(p.x + rand(-40, 40), p.y + rand(-60, 60));
+    }, () => { kc.float = 4; SND.chime(0, 93, .55, .2); burst(K.x, K.y - L.katie.w * .7, 16, { speed: 160, size: 12, life: 1.2, up: 20 }); });
+  });
+  const T0 = 1720 + 2100;
+  later(T0 - 300, () => { S.phase = 'finale'; S.busy = false; });
+  const gaps = [0, 900, 2300, 3000, 3700, 4700];
+  finLines.forEach((n, i) => later(T0 + (gaps[i] != null ? gaps[i] : 3700 + i * 700), () => n.classList.add('on')));
+  later(T0 + 6200, () => { el.again.classList.add('on'); });
+  later(T0 + 800, () => SND.twinkle(0, .3));
+  later(T0 + 3200, () => drift(16, { x0: L.W * .1, x1: L.W * .9, y0: L.H * .5, y1: L.H }));
+}
+function katieTap() {
+  buzz(10); SND.chime(0, [86, 88, 90, 93][(Math.random() * 4) | 0], .55, 0);
+  burst(kc.p.x, kc.p.y - L.katie.w * .4, 26, { speed: 260, size: 14, hearts: .35, life: 1.2 });
+  kc.v.s += 1.4; kc.v.r += rand(-30, 30);
+}
+function again() {
+  if (S.phase !== 'finale') return;
+  S.phase = 'resetting'; S.busy = true; buzz(8);
+  el.again.classList.remove('on'); finLines.forEach(n => n.classList.remove('on'));
+  SND.whoosh(0, .7, .7, 2400, 400, 0, 0); SND.padMood(.07, 720, 2);
+  kc.to({ s: .2, op: 0, lift: 0, y: L.katie.y + 40 }, 90, 14); kc.float = 0;
+  later(500, () => { kc.setLive(false); finaleGlowV = 0; });
+  S.round++; dealSpread();
+  deck = S.tab.concat(S.slots);
+  S.tab = []; S.fan = []; S.slots = [null, null, null]; S.revealed = [false, false, false]; S.picks = 0;
+  deck.forEach(c => { c.kfl = 120; c.dfl = 13; c.k = 150; c.d = 21; c.snap({ fl: 0, op: 0, lift: 0 }); c.tiltAmt = 1; });
+  later(450, () => { intro(false); });
+}
+
+// ── little secrets ──────────────────────────────────────────────────────
+let moonT = 0;
+function moonRect() { const m = moonAt(cam.hz); return { x: m.x, y: m.y, r: L.moon.size * .42 }; }
+function wakeMoon() {
+  if (Date.now() - moonT < 2600) return;
+  moonT = Date.now(); buzz(8);
+  el.moon.classList.add('awake');
+  el.moonMsg.textContent = fill(CONFIG.moonSays);
+  el.moonMsg.classList.add('on');
+  SND.hum(0);
+  setTimeout(() => { el.moon.classList.remove('awake'); }, 1700);
+  setTimeout(() => { el.moonMsg.classList.remove('on'); }, 2600);
+}
+let ballT = 0, ballI = 0;
+function ballRect() { const b = L.ball; return { x: b.x, y: cam.hz + b.y - b.size * .7, r: b.size * .6 }; }
+function ballSay() {
+  if (Date.now() - ballT < 2400) return;
+  ballT = Date.now(); buzz(8);
+  const b = el.ball;
+  b.querySelector('.msg').textContent = CONFIG.ballSays[ballI++ % CONFIG.ballSays.length];
+  b.classList.remove('swirl'); void b.offsetWidth; b.classList.add('swirl', 'say');
+  SND.swirl(0);
+  const r = ballRect(); burst(r.x, r.y, 14, { speed: 120, size: 10, up: 60, life: 1, cols: [1, 3, 4] });
+  setTimeout(() => b.classList.remove('say'), 2300);
+}
+function tapSparkle(x, y) {
+  burst(x, y, 9, { speed: 150, size: 11, up: 30, life: .8 });
+  SND.pluck(0, PENTA[7 + ((Math.random() * 6) | 0)], .25, clamp(x / L.W * 2 - 1, -.8, .8));
+}
+function tiltResult(ok) {
+  if (!el.tiltPill.classList.contains('on')) return;
+  el.tiltPill.innerHTML = ok ? CONFIG.tiltOn : CONFIG.tiltNo;
+  setTimeout(() => pill(el.tiltPill, false), ok ? 1300 : 2200);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   INPUT — one pointer handler for touch + mouse; buttons handle themselves
+   ═══════════════════════════════════════════════════════════════════════ */
+const app = $('app');
+let ptr = null;
+function kick(c, prop, v) { c.v[prop] += v; c.rest = false; }
+function deckHit(x, y) { const t = deck[deck.length - 1]; return t && t.hit(x, y, 18); }
+function slotHit(x, y) { for (let k = 0; k < 3; k++) if (S.slots[k] && S.slots[k].hit(x, y, 6)) return k; return -1; }
+function nudgeFan() { S.fan.forEach((c, i) => later(i * 14, () => kick(c, 'r', (i % 2 ? 1 : -1) * 50))); SND.tick(0, .4, 0, 3000); }
+function inMoon(x, y) { const m = moonRect(); return Math.hypot(x - m.x, y - m.y) < m.r + 8; }
+function inBall(x, y) { const b = ballRect(); return b.y < L.H - L.fringeH && Math.hypot(x - b.x, y - b.y) < b.r + 8; }
+app.addEventListener('pointerdown', (e) => {
+  if (e.target.closest && e.target.closest('button')) return;
+  SND.init();
+  S.lastInput = performance.now();
+  const x = e.clientX, y = e.clientY, ph = S.phase;
+  ptr = { id: e.pointerId, x0: x, y0: y, moved: false, mode: null };
+  try { app.setPointerCapture(e.pointerId); } catch (err) {}
+  if (ph === 'focus') { ptr.mode = 'focus'; ptr.onCard = big.hit(x, y, 14); return; }
+  if (ph === 'finale' && kc.hit(x, y, 10)) { ptr.mode = 'katie'; return; }
+  if (inMoon(x, y)) { wakeMoon(); return; }
+  if (inBall(x, y)) { ballSay(); return; }
+  if (S.busy) return;
+  if (ph === 'intro') { if (deckHit(x, y)) shuffle(); else tapSparkle(x, y); return; }
+  if (ph === 'fan') { const c = fanHit(x, y); if (c) { ptr.mode = 'fan'; hover(c); } else tapSparkle(x, y); return; }
+  if (ph === 'placed' || ph === 'revealed') {
+    const k = slotHit(x, y);
+    if (k >= 0) { reveal(k); return; }
+    if (fanHit(x, y)) {
+      if (ph === 'revealed') { SND.chime(0, 79, .45); twist(); }
+      else { nudgeFan(); setCaption(CONFIG.notYet, L.capY); later(2300, () => { if (S.phase === 'placed') setCaption(CONFIG.turnOver, L.capY); }); }
+      return;
+    }
+    tapSparkle(x, y); return;
+  }
+  if (ph === 'tableau') {
+    for (let i = S.tab.length - 1; i >= 0; i--) if (S.tab[i].hit(x, y, 2)) { openFocus(S.tab[i], CONFIG.otherLabel, S.tab[i].def.reading); return; }
+    for (let k = 2; k >= 0; k--) { const c = S.slots[k]; if (c && c.p.op > .5 && c.hit(x, y, 2)) { openFocus(c, CONFIG.slots[k], c.def.reading); return; } }
+    tapSparkle(x, y); return;
+  }
+  tapSparkle(x, y);
+});
+function liveUnder(x, y) {
+  if (S.phase === 'focus' && big.hit(x, y, 0)) return big;
+  if (S.phase === 'finale' && kc.hit(x, y, 0)) return kc;
+  if (S.phase === 'revealed') { const k = slotHit(x, y); if (k >= 0) return S.slots[k]; }
+  return null;
+}
+function hoverTilt(x, y) {
+  const c = liveUnder(x, y);
+  if (!c) { TILT.hover = null; return; }
+  const w = c.cw * c.p.s;
+  TILT.hover = [clamp((x - c.p.x) / (w * .5), -1, 1), clamp((y - c.p.y) / (w * .85), -1, 1)];
+}
+function interactiveAt(x, y) {
+  const ph = S.phase;
+  if (inMoon(x, y) || inBall(x, y)) return true;
+  if (ph === 'intro') return deckHit(x, y);
+  if (ph === 'fan') return !!fanHit(x, y);
+  if (ph === 'placed' || ph === 'revealed') return slotHit(x, y) >= 0 || (ph === 'revealed' && !!fanHit(x, y));
+  if (ph === 'tableau') return S.tab.some(c => c.hit(x, y, 2));
+  if (ph === 'focus') return true;
+  if (ph === 'finale') return kc.hit(x, y, 0);
+  return false;
+}
+window.addEventListener('pointermove', (e) => {
+  const x = e.clientX, y = e.clientY;
+  if (!ptr || e.pointerId !== ptr.id) {
+    if (e.pointerType === 'mouse') {
+      if (S.phase === 'fan' && !S.busy) hover(fanHit(x, y)); else hoverTilt(x, y);
+      app.style.cursor = interactiveAt(x, y) ? 'pointer' : 'default';
+    }
+    return;
+  }
+  if (!ptr.moved && Math.hypot(x - ptr.x0, y - ptr.y0) > 9) ptr.moved = true;
+  if (ptr.mode === 'fan') { const c = fanHit(x, y); if (c) hover(c); }
+  else if ((ptr.mode === 'focus' && ptr.onCard) || ptr.mode === 'katie') {
+    if (ptr.moved) TILT.drag = [clamp((x - ptr.x0) / 80, -1.2, 1.2), clamp((y - ptr.y0) / 100, -1.2, 1.2)];
+  }
+});
+function endPtr(e) {
+  if (!ptr || e.pointerId !== ptr.id) return;
+  const p = ptr, up = e.type === 'pointerup';
+  ptr = null; TILT.drag = null;
+  if (p.mode === 'fan') { const c = hovered; if (c && up) pick(c); else hover(null); }
+  else if (p.mode === 'focus') { if (!p.moved && up) closeFocus(); }
+  else if (p.mode === 'katie') { if (!p.moved && up) katieTap(); }
+}
+window.addEventListener('pointerup', endPtr);
+window.addEventListener('pointercancel', endPtr);
+window.addEventListener('blur', () => { TILT.drag = null; TILT.hover = null; });
+app.addEventListener('contextmenu', e => e.preventDefault());
+window.addEventListener('keydown', (e) => {
+  if (e.key !== ' ' && e.key !== 'Enter') return;
+  if (document.activeElement && document.activeElement.tagName === 'BUTTON') return;
+  e.preventDefault(); SND.init(); S.lastInput = performance.now();
+  if (S.busy) return;
+  const ph = S.phase;
+  if (ph === 'intro') shuffle();
+  else if (ph === 'fan') pick(S.fan[(S.fan.length / 2) | 0]);
+  else if (ph === 'placed') { const k = S.revealed.indexOf(false); if (k >= 0) reveal(k); }
+  else if (ph === 'focus') closeFocus();
+  else if (ph === 'revealed') twist();
+  else if (ph === 'tableau') finale();
+  else if (ph === 'finale') again();
+});
+el.twistBtn.addEventListener('click', () => { SND.init(); S.lastInput = performance.now(); SND.chime(0, 79, .45); twist(); });
+el.moreBtn.addEventListener('click', () => { SND.init(); S.lastInput = performance.now(); finale(); });
+el.again.addEventListener('click', () => { SND.init(); again(); });
+el.tiltPill.addEventListener('click', () => { SND.init(); el.tiltPill.innerHTML = '✨ …'; enableGyro(); });
+el.mute.addEventListener('click', () => { SND.init(); const m = !SND.muted; SND.setMuted(m); el.mute.classList.toggle('muted', m); if (!m) SND.twinkle(0, .3); });
+
+// ── idle: if she hasn't touched anything for a few seconds, a nudge ─────
+function idleHints(now) {
+  if (S.busy || STILL || ptr) return;
+  if (now - S.lastInput < 4200 || now - S.hinted < 5600) return;
+  S.hinted = now;
+  if (S.phase === 'intro') deck.forEach((c, i) => later(i * 16, () => { kick(c, 'y', -(240 + i * 8)); kick(c, 'r', (i % 2 ? 1 : -1) * 14); }));
+  else if (S.phase === 'fan') S.fan.forEach((c, i) => later(i * 42, () => kick(c, 'lift', 5.5)));
+  else if (S.phase === 'placed') {
+    const k = S.revealed.indexOf(false), c = S.slots[k];
+    if (c) { kick(c, 'r', 90); later(140, () => kick(c, 'r', -80)); c.el.classList.add('lit'); later(1000, () => c.el.classList.remove('lit')); }
+  }
+}
+
+// ── glints: a soft travelling shine on one resting card at a time ────────
+let glintT = 0;
+function glints(now) {
+  if (STILL || RM || NOGLINT || now < glintT || document.body.classList.contains('focusing')) return;
+  glintT = now + rand(420, 900);
+  let pick = null;
+  for (let tries = 0; tries < 8 && !pick; tries++) {
+    const c = ALL[(Math.random() * ALL.length) | 0];
+    if (!c || c.live || c.path || !c.rest || c.p.op < .9 || c === big || c === kc) continue;
+    if (c.role === 'deck' && c !== deck[deck.length - 1]) continue;
+    pick = c;
+  }
+  if (!pick) return;
+  const f = pick.up ? pick.front : pick.back;
+  f.classList.remove('gl'); void f.offsetWidth; f.classList.add('gl');
+  setTimeout(() => f.classList.remove('gl'), 1250);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOOP
+   ═══════════════════════════════════════════════════════════════════════ */
+let lastT = 0, AT = 2.6, raf = 0;
+function frame(now) {
+  raf = requestAnimationFrame(frame);
+  let dt = (now - lastT) / 1000; lastT = now;
+  if (!(dt > 0)) dt = 0; if (dt > .05) dt = .05;
+  if (!STILL) AT += dt;
+  BREATH = STILL || RM ? 0 : Math.sin(AT * 1.6);
+  FLOAT = STILL || RM ? 0 : Math.sin(AT * .9);
+  stepCamera(now); placeScene();
+  stepTilt(AT, dt);
+  for (let i = 0; i < ALL.length; i++) {
+    const c = ALL[i], was = c.rest && !c.path;
+    c.step(dt, now);
+    if (c.live) applyHolo(c);
+    if (!was || c.live || c.breath || c.float) c.render();
+  }
+  stepShoot(dt);
+  stepFx(dt); drawFx();
+  idleHints(now);
+  glints(now);
+}
+function start() { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } }
+function stop() { if (raf) cancelAnimationFrame(raf); raf = 0; }
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); else start(); });
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ?s= — every key state, built instantly in its settled pose
+   ═══════════════════════════════════════════════════════════════════════ */
+function applyState(n) {
+  document.body.classList.add('instant');
+  clearTimers();
+  dealSpread();
+  intro(true);
+  if (n >= 1) {
+    el.title.classList.add('away'); hideHint();
+    setCamera('read', true); placePool('read');
+    fanOut(true);
+  }
+  if (n >= 2) {
+    [S.fan[3], S.fan[8], S.fan[11]].forEach((c, k) => {
+      S.fan.splice(S.fan.indexOf(c), 1);
+      S.slots[k] = c; c.role = 'slot'; c.slot = k; c.z = 40 + k; c.shade = 1; c.setFace(S.read[k]); c.snap(slotPose(k));
+    });
+    S.picks = 3;
+    S.fan.forEach((c, i) => { c.idx = i; c.z = 10 + i; c.snap(fanPose(i, S.fan.length)); });
+    showPH(false);
+    S.phase = 'placed'; setCaption(CONFIG.turnOver, L.capY); showHint(CONFIG.tapCard, L.midY);
+  }
+  if (n === 3) {
+    S.revealed[0] = true; S.slots[0].snap(slotPose(0)); hideHint();
+    openFocus(S.slots[0], CONFIG.slots[0], S.slots[0].def.reading, true);
+  }
+  if (n >= 4) { S.revealed = [true, true, true]; S.slots.forEach((c, k) => c.snap(slotPose(k))); afterThree(true); }
+  if (n >= 5) twist(true);
+  if (n >= 6) finale(true);
+  S.busy = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.remove('instant')));
+}
+
+/* ── QA gallery: every face, the back, the XXII card ───────────────────── */
+function gallery() {
+  el.gallery.classList.add('on');
+  const gw = Math.round(clamp((L.W - 70) / (L.W > 900 ? 5 : 2), 120, 250));
+  el.gallery.style.setProperty('--gw', gw + 'px');
+  CONFIG.cards.concat([DEF.katie, null]).forEach(d => {
+    const g = document.createElement('div'); g.className = 'g'; el.gallery.appendChild(g);
+    const c = new Card(g, gw, d && d.id === 'katie' ? 'kbackS' : 'backS');
+    if (d) { c.setFace(d); if (d.id === 'katie') c.el.classList.add('katie'); }
+    c.snap({ x: 0, y: 0, s: 1, fl: d ? 1 : 0, op: 1 });
+    c.el.style.left = '50%'; c.el.style.top = '50%';
+    if (QS.get('holo') === '1') c.setLive(true);
+    ALL.push(c);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   BOOT + RESIZE
+   ═══════════════════════════════════════════════════════════════════════ */
+function poolName() { return cam.name === 'intro' ? 'intro' : cam.name === 'finale' ? 'finale' : 'read'; }
+function relayout() {
+  ALL.forEach(c => { if (c.path && c !== kc) c.path = null; });
+  const ph = S.phase, fin = ph === 'spiral' || ph === 'finale';
+  deck.concat(S.tab).forEach(c => {
+    if (fin) return;
+    if (c.role === 'deck') c.to(deckPose(c.idx, deck.length));
+    else if (c.role === 'fan') c.to(fanPose(c.idx, S.fan.length));
+    else if (c.role === 'slot') c.to(slotPose(c.slot));
+    else if (c.role === 'trio') c.to(trioPose(c.slot));
+    else if (c.role === 'tab') c.to(tabPose(c.idx));
+  });
+  if (ph === 'focus') { big.to({ x: L.focus.x, y: L.focus.y, s: 1 }); layoutFocusText(); }
+  if (fin) {
+    kc.to(katiePose());
+    const on = finLines.map(n => n.classList.contains('on')), ag = el.again.classList.contains('on');
+    buildFinaleText();
+    finLines.forEach((n, i) => n.classList.toggle('on', !!on[i]));
+    el.again.classList.toggle('on', ag);
+  }
+  el.caption.style.top = n2(ph === 'wave' || ph === 'tableau' ? L.capTwistY : L.capY) + 'px';
+  const lblOn = el.lbl0.classList.contains('on');
+  showLabels(lblOn);
+  if (el.hint.classList.contains('on')) el.hint.style.top = n2(ph === 'intro' ? L.hintY : L.midY) + 'px';
+  el.twistBtn.style.top = n2(L.midY - 24) + 'px';
+  el.moreBtn.style.top = n2(L.moreY - 24) + 'px';
+}
+let rzT = 0;
+function onResize() {
+  clearTimeout(rzT);
+  rzT = setTimeout(() => {
+    const W = window.innerWidth, H = window.innerHeight;
+    if (Math.abs(W - L.W) < 2 && Math.abs(H - L.H) < 2) return;
+    L = computeLayout();
+    buildScene(); resizeCanvases();
+    deck.forEach(c => c.setCW(L.cw)); big.setCW(L.focus.w); kc.setCW(L.katie.w);
+    cam.hz = L.hz[cam.name]; cam.moving = false; cam.dirty = true;
+    placePH(); placeTitle(); placePool(poolName());
+    relayout();
+  }, 140);
+}
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', onResize);
+if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
+
+function refreshFaces() {
+  for (const k in TFIT) delete TFIT[k];
+  ALL.forEach(c => { if (c.def) { const d = c.def; c.def = null; c.setFace(d); } });
+  placeTitle();
+  if (S.phase === 'finale') relayout();
+}
+function boot() {
+  buildDefs(); buildTextures();
+  L = computeLayout();
+  el.titleH.textContent = CONFIG.title;
+  el.titleFor.textContent = fill(CONFIG.forLine);
+  document.title = document.title;
+  buildScene(); buildMoon(); resizeCanvases();
+  for (let i = 0; i < 15; i++) {
+    const c = new Card(el.stage, L.cw);
+    c.el.style.setProperty('--gd', (-(i * 0.43) % 7.5).toFixed(2) + 's');
+    deck.push(c);
+  }
+  big = new Card(el.focus, L.focus.w); big.snap({ op: 0 }); big.tiltAmt = 1;
+  kc = new Card(el.finale, L.katie.w, 'kbackS'); kc.el.classList.add('katie'); kc.setFace(DEF.katie); kc.snap({ op: 0 });
+  ALL = deck.concat([big, kc]);
+  placePH(); placeTitle(); placePool('intro');
+  cam.hz = L.hz.intro; cam.dirty = true;
+  if (SND.muted) el.mute.classList.add('muted');
+  if (STILL || QS.has('noanim')) document.body.classList.add('still');
+  if (GALLERY) gallery();
+  if (STAGE0 != null) { applyState(STAGE0); el.intro.style.transition = 'none'; el.intro.classList.add('gone'); }
+  else { dealSpread(); intro(false); requestAnimationFrame(() => el.intro.classList.add('gone')); }
+  S.lastInput = performance.now();
+  start();
+  window.__bday = {
+    get state() { return S.phase; }, go: (n) => applyState(n), tilt: (x, y) => { TILT_PIN = [x, y]; },
+    get layout() { return L; }, S, deck: () => deck,
+  };
+}
+boot();
+if (document.fonts && document.fonts.load) {
+  Promise.all([
+    document.fonts.load('700 20px Cinzel'), document.fonts.load('700 20px "Cinzel Decorative"'),
+    document.fonts.load('italic 500 20px "Cormorant Garamond"'), document.fonts.load('italic 600 20px "Cormorant Garamond"'),
+  ]).then(() => refreshFaces()).catch(() => {});
+}
+})();
+</script>
+</body>
+</html>
