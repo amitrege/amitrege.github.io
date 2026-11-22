@@ -11,7 +11,7 @@
     "status": "Live Demo",
     "blurb": "An AI agent is dropped into a game it has never seen and recovers the rules as runnable code, tested cell by cell against every recorded observation. Includes invented rule variants that exist in no training data. Every reconstruction is decompiled back to code and playable.",
     "tech": "Claude Opus 4.8, Node, InsForge, GitHub Pages",
-    "link": "https://amitrege.github.io/glassbox/",
+    "link": "https://amitrege.com/glassbox/",
     "repo": "https://github.com/amitrege/glassbox"
   },
   {

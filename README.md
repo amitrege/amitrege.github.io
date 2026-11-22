@@ -72,7 +72,17 @@ In GitHub repository settings:
 - Go to **Settings > Pages**
 - Set **Build and deployment** source to **GitHub Actions**
 
-Your live site URL: `https://amitrege.github.io`
+Your live site URL: `https://amitrege.com` (`https://amitrege.github.io` redirects there)
+
+## Custom Domain
+
+`amitrege.com` is registered at Cloudflare and served by GitHub Pages.
+
+- Cloudflare DNS: four `A` and four `AAAA` records on `amitrege.com` pointing at
+  GitHub Pages, plus `www` as a `CNAME` to `amitrege.github.io`. Keep them
+  **DNS only** (grey cloud); proxying breaks GitHub's HTTPS certificate.
+- GitHub **Settings > Pages**: custom domain `amitrege.com`, **Enforce HTTPS** on.
+  No `CNAME` file is needed because the site deploys via GitHub Actions.
 
 ## Legacy Site
 
