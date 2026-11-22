@@ -1,0 +1,175 @@
+%!TEX program = xelatex
+% Industry Resume — Amit Kiran Rege
+\documentclass[10.5pt]{article}
+
+\usepackage[top=0.44in, bottom=0.4in, left=0.55in, right=0.55in]{geometry}
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{enumitem}
+\usepackage{microtype}
+\usepackage{amssymb}   % defines \blacksquare (the list bullet); was missing, so bullets silently didn't render
+\usepackage{tikz}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{parskip}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+% ── Fonts ────────────────────────────────────────────────────────────────────
+\setmainfont{Helvetica Neue}[
+  Scale          = 0.97
+]
+
+% ── Colors ───────────────────────────────────────────────────────────────────
+\definecolor{navy}{HTML}{0D2340}
+\definecolor{accent}{HTML}{1A5CCC}
+\definecolor{muted}{HTML}{5A6170}
+\definecolor{rule}{HTML}{C8D8F0}
+
+\hypersetup{colorlinks=true, urlcolor=accent}
+
+% ── Section head ─────────────────────────────────────────────────────────────
+\newcommand{\rezsec}[1]{%
+  \vspace{8pt}%
+  \noindent
+  {\color{accent}\rule[-2pt]{2.4pt}{9pt}}%
+  \hspace{5pt}%
+  {\small\bfseries\color{navy}\MakeUppercase{#1}}%
+  \hspace{6pt}%
+  {\color{rule}\leaders\hrule height 0.5pt\hfill\kern0pt}%
+  \vspace{2pt}\par%
+}
+
+% ── Compact bullets ──────────────────────────────────────────────────────────
+\setlist[itemize]{
+  leftmargin = 11pt,
+  nosep,
+  topsep     = 1pt,
+  itemsep    = 1.5pt,
+  parsep     = 0pt,
+  label      = {\color{accent!60}\tiny$\blacksquare$}
+}
+
+% ── Experience entry ─────────────────────────────────────────────────────────
+\newcommand{\expentry}[2]{%
+  {\small\textbf{#1}\hfill\textit{\color{muted}#2}}\par
+}
+
+% ── Project row ──────────────────────────────────────────────────────────────
+\newcommand{\projrow}[3]{%
+  \textbf{#1} & #2 & \href{#3}{\color{accent}\small github/\texttt{#1}}\\[1.5pt]%
+}
+
+% ═════════════════════════════════════════════════════════════════════════════
+\begin{document}
+% ═════════════════════════════════════════════════════════════════════════════
+
+% ── Header ───────────────────────────────────────────────────────────────────
+{\LARGE\bfseries\color{navy} Amit Kiran Rege}
+\hfill
+{\footnotesize\color{muted}
+  \href{mailto:amitkiranrege@gmail.com}{amitkiranrege@gmail.com}~~·~~%
+  \href{https://github.com/amitrege}{github.com/amitrege}~~·~~%
+  \href{https://amitrege.com}{amitrege.com}~~·~~%
+  +1\,(303)\,960-4240%
+}\par\vspace{1pt}
+{\small\color{muted} ML Researcher~·~\href{https://phonely.ai}{Phonely}~·~PhD, Computer Science, CU Boulder}
+
+\vspace{2pt}
+{\color{accent}\rule{\linewidth}{1.2pt}}
+
+% ── Summary ──────────────────────────────────────────────────────────────────
+\vspace{3pt}
+{\small ML Researcher at Phonely, training and deploying voice agents for customers handling millions of calls a month. Research in Reinforcement Learning and Human-AI collaboration: applying RL to LLM post-training, foundational multi-agent bandits, and the mathematics of interpretability.
+Published at AISTATS, L4DC (oral), IEEE CDC, and Physical Review Applied; 6 papers currently under submission.}
+
+% ── Research Focus ───────────────────────────────────────────────────────────
+\rezsec{Research}
+{\small Reinforcement Learning Theory~·~Multi-Agent Bandits~·~Data Attribution for Interactive Learning~·~AI Interpretability \& Safety~·~Generative Models}
+
+% ── Publications ─────────────────────────────────────────────────────────────
+\rezsec{Selected Publications}
+\begin{itemize}
+  \item \textbf{Learning from Local Walks on Dynamic Graphs with Bandit Feedback} \hfill {\color{muted}\small IEEE CDC 2026}
+  \item \textbf{Multi-Agent Lipschitz Bandits} \hfill {\color{muted}\small AISTATS 2026}
+  \item \textbf{Flickering Multi-Armed Bandits} \hfill {\color{muted}\small L4DC 2026}~{\small\bfseries\color{accent}[Oral]}
+  \item \textbf{A Unified Framework for Locality in Scalable MARL} \hfill {\color{muted}\small L4DC 2026}
+  \item \textbf{Incentivized Lipschitz Bandits} \hfill {\color{muted}\small IEEE CDC 2025}
+  \item \textbf{Where Did Your Model Learn That? — Label-free Influence for SSL} \hfill {\color{muted}\small arXiv 2024}
+  \item \textbf{Hamiltonian Learning using Machine Learning} \hfill {\color{muted}\small Physical Review Applied 2024}
+  \item {\color{muted}\small\itshape + 6 papers under submission: RL attribution theory, oracle separations for RL, interpretability auditability, KL-regularized agent monitorability}
+\end{itemize}
+
+% ── Open Source ──────────────────────────────────────────────────────────────
+\rezsec{Open Source Projects}
+{\small
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{@{}l X r@{}}
+  \textbf{tinygrad-classroom} &
+    Interactive autograd: scalar neuron $\to$ backprop, built for teaching &
+    \href{https://github.com/amitrege/tinygrad-classroom}{\color{accent}\texttt{amitrege/tinygrad-classroom}}\\
+  \textbf{NeuroSteer} &
+    Stepwise activation steering library for Llama-style decoder LLMs &
+    \href{https://github.com/amitrege/NeuroSteer}{\color{accent}\texttt{amitrege/NeuroSteer}}\\
+  \textbf{tracemap} &
+    Training-data influence with query heatmaps for image classifiers &
+    \href{https://github.com/amitrege/tracemap}{\color{accent}\texttt{amitrege/tracemap}}\\
+  \textbf{rl-attr-code} &
+    Exact RL data attribution distinguishing replay vs.\ interventional effects &
+    \href{https://github.com/amitrege/rl-attr-code}{\color{accent}\texttt{amitrege/rl-attr-code}}\\
+\end{tabularx}
+}
+
+% ── Experience ───────────────────────────────────────────────────────────────
+\rezsec{Experience}
+
+\expentry{ML Researcher — Phonely}{Sep 2026 – Present}
+\begin{itemize}
+  \item Train and deploy voice agents to customers handling millions of calls a month
+\end{itemize}
+
+\vspace{3pt}
+\expentry{Investment Associate — Deming Center Venture Fund, CU Boulder}{Apr 2025 – May 2026}
+\begin{itemize}
+  \item Source and evaluate early-stage deep-tech companies for CU Boulder's student venture fund
+  \item Led investment in Great Sky (AI chip startup); closed at fund's highest valuation ever (\$50M)
+\end{itemize}
+
+\vspace{3pt}
+\expentry{Student Engineer — DARPA Subterranean Challenge, Team MARBLE}{Summer 2019}
+\begin{itemize}
+  \item Built object detection \& localization pipeline for robots navigating lightless underground mines
+  \item Placed \textbf{4\textsuperscript{th} of 11 teams} worldwide against NASA JPL, CMU, and UPenn
+\end{itemize}
+
+\vspace{3pt}
+\expentry{Research Intern — École Normale Supérieure (advised by Prof.\ Cezara Dragoi)}{Feb – Jul 2018}
+\begin{itemize}
+  \item Formally verified round-based synchronicity of Raft and Viewstamp consensus protocols
+\end{itemize}
+
+% ── Education ────────────────────────────────────────────────────────────────
+\rezsec{Education}
+{\small
+\textbf{PhD, Computer Science}~·~University of Colorado Boulder \hfill 2020–2026\\[1pt]
+\textbf{MS, Computer Science}~·~University of Colorado Boulder \hfill GPA: 4.0/4.0~·~2020\\[1pt]
+\textbf{BE (Hons.), Computer Science}~·~BITS Pilani–Goa \hfill 2018
+}
+
+% ── Skills ───────────────────────────────────────────────────────────────────
+\rezsec{Skills \& Tools}
+{\small Python~·~PyTorch~·~JAX~·~NumPy~·~C++~~|~~RL Theory~·~Bandits~·~AI Interpretability~·~Generative Models~·~Formal Verification~·~LLM Fine-tuning}
+
+% ── Talks & Outreach ─────────────────────────────────────────────────────────
+\rezsec{Talks \& Industry Engagement}
+{\small
+\textbf{LLMs from Scratch} — Spencer Fane LLP (Industry Talk) \hfill Nov 2025\\[1pt]
+\textbf{Frontiers of Generative AI} — Ensemble Innovation Ventures \hfill Jan 2026\\[1pt]
+\textbf{Theoretical Machine Learning} — KOA 94.1 FM iHeart Radio \hfill Jan 2025\\[1pt]
+\textbf{Guest Lecturer:} CSCI 7000 (Adv.\ ML), CSCI 4622 (ML), CSCI 5802 (Data Science)
+}
+
+\end{document}

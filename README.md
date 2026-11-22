@@ -46,13 +46,13 @@ npm run build
 - Put your photo in `public/assets/img/` and set `photo` in `src/data/profile.json`
 - Set `cvUrl` / `resumeUrl` in `src/data/profile.json`
 
-The CV and résumé TeX sources live only in the sibling `../cv/` directory. The
-PDFs in `public/assets/docs/` are deliberately committed copies for GitHub
-Pages; do not edit them or add TeX source here. Build, copy, and byte-verify both
-PDFs from the source directory:
+The CV and résumé sources are `cv/amit_rege_cv.tex` and `cv/amit_rege_resume.tex`.
+Edit them and push to `master`: the deploy workflow builds both PDFs and
+publishes them at `/assets/docs/`. The PDFs are build outputs and are not
+committed. To preview them locally (needs xelatex; see `cv/README.md`):
 
 ```bash
-make -C ../cv deploy
+make -C cv site
 ```
 
 ## Deploy Live

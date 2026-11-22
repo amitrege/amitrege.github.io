@@ -9,3 +9,12 @@ vendor/
 legacy-jekyll/.sass-cache/
 legacy-jekyll/.jekyll-metadata
 legacy-jekyll/_site/
+
+# CV/resume build outputs: CI builds both PDFs from cv/*.tex on deploy
+cv/*.aux
+cv/*.log
+cv/*.out
+cv/*.xdv
+cv/*.pdf
+public/assets/docs/amit_rege_cv.pdf
+public/assets/docs/amit_rege_resume.pdf

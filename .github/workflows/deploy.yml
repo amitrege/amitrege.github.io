@@ -17,12 +17,46 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  cv:
+    # macOS ships the Georgia and Helvetica Neue fonts the CV and resume use.
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install TeX
+        run: |
+          brew install --cask basictex
+          echo "/Library/TeX/texbin" >> "$GITHUB_PATH"
+          sudo /Library/TeX/texbin/tlmgr update --self
+          sudo /Library/TeX/texbin/tlmgr install $(cat cv/texlive-packages.txt)
+
+      - name: Build CV and resume
+        run: make -C cv
+
+      - name: Upload PDFs
+        uses: actions/upload-artifact@v4
+        with:
+          name: cv-pdfs
+          path: |
+            cv/amit_rege_cv.pdf
+            cv/amit_rege_resume.pdf
+          if-no-files-found: error
+
   build:
+    needs: cv
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Add CV and resume PDFs
+        uses: actions/download-artifact@v4
+        with:
+          name: cv-pdfs
+          path: public/assets/docs
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -46,6 +80,8 @@ jobs:
 
   deploy:
     needs: build
+    # Manual runs on other branches stop after the build; only the default branch deploys.
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     environment:
       name: github-pages
